@@ -5,9 +5,10 @@
 #include <Tinyfont.h>
 
 enum class AWGameState{
-  Menu = 0,
-  SinglePlayer,
-  MultiPlayer
+  showMenu,
+  playSinglePlayer,
+  playMultiPlayer,
+  showOptions
 };
 
 class AWGame{
@@ -25,6 +26,9 @@ private:
     // Methods
 
     // Game methods
+    AWGameState showMenu();
+    void startNewSinglePlayerGame();
+    void runSinglePlayerGame();
 
     // ======================
     // Data
