@@ -5,6 +5,8 @@
 #include "SpriteAssets.h"
 #include "MapData.h"
 
+#include "AnimationHelper.h"
+
 // -------------------------------------------------------
 // Constructor sets up basic stuff for the game
 
@@ -94,24 +96,32 @@ void AWGame::runSinglePlayerGame(){
   Point mapOrigin = {0,0};
   Point drawPos = {0,0};
 
+  uint8_t cursorAnimationFrame = 0;
+  uint16_t cursorAnimationTimestamp = millis();
+
     // Game loop
     while(true){
+
+      if (MILLIS_SINCE(cursorAnimationTimestamp) > 500) {
+        cursorAnimationFrame = (1+cursorAnimationFrame)%2;
+        cursorAnimationTimestamp = millis();
+      }
 
         if(!arduboy.nextFrame()) continue;
 
         arduboy.pollButtons();
 
         if (arduboy.pressed(DOWN_BUTTON)){
-          mapOrigin.y -=2;
+          mapOrigin.y -=1;
         }
         if (arduboy.pressed(UP_BUTTON)){
-          mapOrigin.y +=2;
+          mapOrigin.y +=1;
         }
         if (arduboy.pressed(LEFT_BUTTON)){
-          mapOrigin.x +=2;
+          mapOrigin.x +=1;
         }
         if (arduboy.pressed(RIGHT_BUTTON)){
-          mapOrigin.x -=2;
+          mapOrigin.x -=1;
         }
 
         arduboy.clear();
@@ -136,6 +146,9 @@ void AWGame::runSinglePlayerGame(){
             sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
           }
         }
+
+        // draw cursorIdx
+        sprites.drawPlusMask(48, 16, gameCursorAnimation_plus_mask, cursorAnimationFrame);
 
         arduboy.display();
 
