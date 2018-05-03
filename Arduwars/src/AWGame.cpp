@@ -1,4 +1,10 @@
 #include "AWGame.h"
+
+#include "Tileset.h"
+#include "SpriteAnimations.h"
+#include "SpriteAssets.h"
+#include "MapData.h"
+
 // -------------------------------------------------------
 // Constructor sets up basic stuff for the game
 
