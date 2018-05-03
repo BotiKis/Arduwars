@@ -3,6 +3,7 @@
 
 #include <Arduboy2.h>
 #include <Tinyfont.h>
+#include <Sprites.h>
 
 enum class AWGameState{
   showMenu,
@@ -33,6 +34,7 @@ private:
     // ======================
     // Data
     Arduboy2 arduboy;
+    Sprites sprites;
     Tinyfont tinyfont = Tinyfont(arduboy.getBuffer(), Arduboy2::width(), Arduboy2::height());
     AWGameState gameState;
 };

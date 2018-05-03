@@ -87,13 +87,57 @@ AWGameState AWGame::showMenu(){
 }
 
 void AWGame::startNewSinglePlayerGame(){
-  arduboy.clear();
-  tinyfont.setCursor(0, 0);
-  tinyfont.print("Single player");
-  arduboy.display();
-  delay(2000);
+  runSinglePlayerGame();
 }
 
 void AWGame::runSinglePlayerGame(){
+  Point mapOrigin = {0,0};
+  Point drawPos = {0,0};
 
+    // Game loop
+    while(true){
+
+        if(!arduboy.nextFrame()) continue;
+
+        arduboy.pollButtons();
+
+        if (arduboy.pressed(DOWN_BUTTON)){
+          mapOrigin.y -=2;
+        }
+        if (arduboy.pressed(UP_BUTTON)){
+          mapOrigin.y +=2;
+        }
+        if (arduboy.pressed(LEFT_BUTTON)){
+          mapOrigin.x +=2;
+        }
+        if (arduboy.pressed(RIGHT_BUTTON)){
+          mapOrigin.x -=2;
+        }
+
+        arduboy.clear();
+
+        for (size_t y = 0; y <= 10; y++) {
+          for (size_t x = 0; x < 20; x++) {
+
+            drawPos.x = mapOrigin.x+x*16;
+            drawPos.y = mapOrigin.y+y*16;
+
+            // ignore if out of bounds
+            if (drawPos.x <= -16 || drawPos.x >= 128 || drawPos.y <= -16 || drawPos.y >= 80) continue;
+
+            uint8_t spriteIDX = pgm_read_byte(mapData20x10+y*20+x);
+
+            if (spriteIDX == 30) {
+              sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 32);
+            }
+            if (spriteIDX == 31) {
+              sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 33);
+            }
+            sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
+          }
+        }
+
+        arduboy.display();
+
+    }
 }
