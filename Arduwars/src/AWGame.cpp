@@ -147,7 +147,7 @@ void AWGame::runSinglePlayerGame(){
             // ignore if out of bounds
             if (drawPos.x <= -16 || drawPos.x >= 128 || drawPos.y <= -16 || drawPos.y >= 80) continue;
 
-            uint8_t spriteIDX = pgm_read_byte(mapData20x10+y*24+x);
+            uint8_t spriteIDX = pgm_read_byte(mapData24x16+y*24+x);
 
             if (spriteIDX == 30) {
               sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 32);
