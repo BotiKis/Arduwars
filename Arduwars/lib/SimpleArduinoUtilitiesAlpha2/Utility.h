@@ -71,7 +71,7 @@ namespace stdlib
 
 	template< typename T > /*constexpr*/ remove_reference_t<T> && move(T && t) noexcept
 	{
-		static_cast<remove_reference_t<T> &&>(t);
+		return static_cast<remove_reference_t<T> &&>(t);
 	}
 
 	template< typename T > void swap(T& a, T& b)
@@ -89,13 +89,14 @@ namespace stdlib
 
 	template< typename T > /*constexpr*/ T&& forward(remove_reference_t<T> & t) noexcept
 	{
-		static_cast<T &&>(t);
+		return static_cast<T &&>(t);
 	}
 
 
 	template< typename T > /*constexpr*/ T&& forward(remove_reference_t<T> && t) noexcept
 	{
-		static_cast<T &&>(t);
+		static_assert(!is_lvalue_reference<T>::value, "template argument substituting T is an lvalue reference type");
+		return static_cast<T &&>(t);
 	}
 
 

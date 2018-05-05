@@ -47,94 +47,94 @@ public:
 	using SizeType = uint8_t;
 	using IndexType = uint8_t;
 	using IndexOfType = int8_t;
-
+	
 	//
 	// Constants
 	//
-
+	
 	constexpr static const SizeType Capacity = CapacityValue;
 	constexpr static const IndexOfType InvalidIndex = -1;
 	constexpr static const IndexType FirstIndex = 0;
 	constexpr static const IndexType LastIndex = Capacity - 1;
 
 private:
-
+	
 	//
 	// Member Variables
 	//
-
+	
 	ValueType items[Capacity] = {};
 	IndexType next = 0;
-
+	
 public:
 
 	//
 	// Common Member Functions
 	//
-
+	
 	// O(1)
 	bool isEmpty(void) const noexcept
 	{
 		return (this->next == FirstIndex);
 	}
-
+	
 	// O(1)
 	bool isFull(void) const noexcept
 	{
 		return (this->next > LastIndex);
 	}
-
+	
 	// O(1)
 	SizeType getCount(void) const noexcept
 	{
 		return this->next;
 	}
-
+	
 	// O(1)
 	constexpr SizeType getCapacity(void) const noexcept
 	{
 		return Capacity;
 	}
-
+	
 	// O(1)
 	ValueType * getData(void) noexcept
 	{
 		return &this->items[FirstIndex];
 	}
-
+	
 	// O(1)
 	const ValueType * getData(void) const noexcept
 	{
 		return &this->items[FirstIndex];
 	}
-
+	
 	// O(1)
-	ValueType & operator [](const IndexType & index)
+	ValueType & operator [](IndexType index)
 	{
 		return this->items[index];
 	}
-
+	
 	// O(1)
-	const ValueType & operator [](const IndexType & index) const
+	const ValueType & operator [](IndexType index) const
 	{
 		return this->items[index];
 	}
-
+	
 	// O(N)
 	void clear(void);
-
+	
 	// O(N)
 	void fill(const ValueType & item);
-
+	
 	// O(N)
 	bool contains(const ValueType & item) const;
-
+	
 	// O(N)
 	IndexOfType indexOfFirst(const ValueType & item) const;
-
+	
 	// O(N)
 	IndexOfType indexOfLast(const ValueType & item) const;
-
+	
 public:
 
 	//
@@ -176,18 +176,18 @@ public:
 
 	// O(1)
 	void unprepend(void);
-
+	
 	// O(N)
 	bool removeFirst(const ValueType & item);
-
+	
 	// O(N)
 	bool removeLast(const ValueType & item);
+	
+	// O(N)
+	bool removeAt(IndexType index);
 
 	// O(N)
-	bool removeAt(const IndexType & index);
-
-	// O(N)
-	bool insert(const IndexType & index, const ValueType & item);
+	bool insert(IndexType index, const ValueType & item);
 };
 
 //
@@ -302,7 +302,7 @@ bool Deque<Type, Capacity>::removeFirst(const ValueType & item)
 		{
 			--this->next;
 			for (IndexType j = i; j < this->next; ++j)
-				this->items[j] = stdlib::move(this->items[j - 1]);
+				this->items[j] = stdlib::move(this->items[j + 1]);
 			this->items[this->next].~ValueType();
 			return true;
 		}
@@ -318,7 +318,7 @@ bool Deque<Type, Capacity>::removeLast(const ValueType & item)
 		{
 			--this->next;
 			for (IndexType j = i; j < this->next; ++j)
-				this->items[j] = stdlib::move(this->items[j - 1]);
+				this->items[j] = stdlib::move(this->items[j + 1]);
 			this->items[this->next].~ValueType();
 			return true;
 		}
@@ -327,7 +327,7 @@ bool Deque<Type, Capacity>::removeLast(const ValueType & item)
 
 // O(N)
 template< typename Type, uint8_t Capacity >
-bool Deque<Type, Capacity>::removeAt(const IndexType & index)
+bool Deque<Type, Capacity>::removeAt(IndexType index)
 {
 	if(index >= this->next)
 		return false;
@@ -341,7 +341,7 @@ bool Deque<Type, Capacity>::removeAt(const IndexType & index)
 
 // O(N)
 template< typename Type, uint8_t Capacity >
-bool Deque<Type, Capacity>::insert(const IndexType & index, const ValueType & item)
+bool Deque<Type, Capacity>::insert(IndexType index, const ValueType & item)
 {
 	if(index >= this->next)
 		return false;
@@ -373,81 +373,81 @@ public:
 	using SizeType = uint8_t;
 	using IndexType = uint8_t;
 	using IndexOfType = int8_t;
-
+	
 	//
 	// Constants
 	//
-
+	
 	constexpr static const SizeType Capacity = 0;
 	constexpr static const IndexOfType InvalidIndex = -1;
 	constexpr static const IndexType FirstIndex = InvalidIndex;
 	constexpr static const IndexType LastIndex = InvalidIndex;
-
+	
 public:
 
 	//
 	// Common Member Functions
 	//
-
+	
 	// O(1)
 	constexpr bool isEmpty(void) const
 	{
 		return true;
 	}
-
+	
 	// O(1)
 	constexpr bool isFull(void) const noexcept
 	{
 		return true;
 	}
-
+	
 	// O(1)
 	constexpr SizeType getCount(void) const noexcept
 	{
 		return 0;
 	}
-
+	
 	// O(1)
 	constexpr SizeType getCapacity(void) const noexcept
 	{
 		return 0;
 	}
-
+	
 	// O(1)
 	/*constexpr*/ ValueType * getData(void) noexcept
 	{
 		return nullptr;
 	}
-
+	
 	// O(1)
 	constexpr const ValueType * getData(void) const noexcept
 	{
 		return nullptr;
 	}
-
+	
 	// O(1)
-	/*constexpr*/ ValueType & operator [](const IndexType & index) = delete;
-
+	/*constexpr*/ ValueType & operator [](IndexType index) = delete;
+	
 	// O(1)
-	constexpr const ValueType & operator [](const IndexType & index) const = delete;
-
+	constexpr const ValueType & operator [](IndexType index) const = delete;
+	
 	// O(1)
 	constexpr void clear(void) noexcept
 	{
 	}
-
+	
 	// O(1)
 	constexpr bool contains(const ValueType & item) const noexcept
 	{
 		return false;
 	}
-
+	
 	// O(1)
 	constexpr IndexOfType indexOf(const ValueType & item) const noexcept
 	{
 		return InvalidIndex;
 	}
-
+	
 public:
 
 	//
@@ -462,7 +462,7 @@ public:
 
 	// O(1)
 	/*constexpr*/ ValueType & getLast(void) = delete;
-
+	
 	// O(1)
 	constexpr const ValueType & getLast(void) const = delete;
 
@@ -487,27 +487,27 @@ public:
 	constexpr void unprepend(void)
 	{
 	}
-
+	
 	// O(N)
 	constexpr bool removeFirst(const ValueType & item)
 	{
 		return false;
 	}
-
+	
 	// O(N)
 	constexpr bool removeLast(const ValueType & item)
 	{
 		return false;
 	}
-
+	
 	// O(N)
-	constexpr bool removeAt(const IndexType & index)
+	constexpr bool removeAt(IndexType index)
 	{
 		return false;
 	}
 
 	// O(N)
-	constexpr bool insert(const IndexType & index, const ValueType & item)
+	constexpr bool insert(IndexType index, const ValueType & item)
 	{
 		return false;
 	}

@@ -42,114 +42,114 @@ public:
 	//
 	// Type Aliases
 	//
-
+	
 	using ContainerType = Container;
 	using ValueType = typename ContainerType::ValueType;
 	using SizeType = typename ContainerType::SizeType;
 	using IndexType = typename ContainerType::IndexType;
 	using IndexOfType = typename ContainerType::IndexOfType;
-
+	
 	//
 	// Constants
 	//
-
+	
 	constexpr static const SizeType Capacity = ContainerType::Capacity;
-	constexpr static const IndexOfType InvalidIndex = ContainerType::InvalidIndex;
+	constexpr static const IndexOfType InvalidIndex = ContainerType::InvalidIndex;	
 	constexpr static const IndexType FirstIndex = ContainerType::FirstIndex;
 	constexpr static const IndexType LastIndex = ContainerType::LastIndex;
 
 private:
-
+	
 	//
 	// Member Variables
 	//
-
+	
 	ContainerType container;
-
+	
 public:
 
 	//
 	// Common Member Functions
 	//
-
+	
 	// O(1)
 	bool isEmpty(void) const noexcept
 	{
 		return this->container.isEmpty();
 	}
-
+	
 	// O(1)
 	bool isFull(void) const noexcept
 	{
 		return this->container.isFull();
 	}
-
+	
 	// O(1)
 	SizeType getCount(void) const noexcept
-	{
+	{		
 		return this->container.getCount();
 	}
-
+	
 	// O(1)
 	constexpr SizeType getCapacity(void) const noexcept
 	{
 		return this->container.getCapacity();
 	}
-
+	
 	// O(1)
 	ValueType * getData(void) noexcept
 	{
 		return this->container.getData();
 	}
-
+	
 	// O(1)
 	const ValueType * getData(void) const noexcept
 	{
 		return this->container.getData();
 	}
-
+	
 	// O(1)
 	ValueType & operator [](const IndexType & index)
 	{
 		return this->container[index];
 	}
-
+	
 	// O(1)
 	const ValueType & operator [](const IndexType & index) const
 	{
 		return this->container[index];
 	}
-
+	
 	// O(N)
 	void clear(void)
 	{
 		this->container.clear();
 	}
-
+	
 	// O(N)
 	void fill(const ValueType & item)
 	{
 		this->container.fill(item);
 	}
-
+	
 	// O(N)
 	bool contains(const ValueType & item) const
 	{
 		return this->container.contains(item);
 	}
-
+	
 	// O(N)
 	IndexOfType indexOfFirst(const ValueType & item) const
 	{
 		return this->container.indexOfFirst(item);
 	}
-
+	
 	// O(N)
 	IndexOfType indexOfLast(const ValueType & item) const
 	{
 		return this->container.indexOfLast(item);
 	}
-
+	
 public:
 
 	//
@@ -161,19 +161,19 @@ public:
 	{
 		return this->container.append(item);
 	}
-
+	
 	// O(N)
 	bool removeFirst(const ValueType & item)
 	{
 		return this->container.removeFirst(item);
 	}
-
+	
 	// O(N)
 	bool removeLast(const ValueType & item)
 	{
 		return this->container.removeLast(item);
 	}
-
+	
 	// O(N)
 	bool removeAt(const IndexType & index)
 	{
