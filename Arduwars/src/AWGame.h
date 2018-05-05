@@ -5,6 +5,7 @@
 #include <Tinyfont.h>
 #include <Sprites.h>
 
+// Gamestates
 enum class AWGameState{
   showMenu,
   playSinglePlayer,
@@ -12,6 +13,13 @@ enum class AWGameState{
   showOptions
 };
 
+// Global defines
+#define SCROLLSPEED_NORMAL 1
+#define SCROLLSPEED_FAST 3
+#define TILESIZE 16
+
+
+// Game class
 class AWGame{
   public:
     AWGame();

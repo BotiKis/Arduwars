@@ -97,37 +97,49 @@ void AWGame::runSinglePlayerGame(){
   Point drawPos = {0,0};
 
   uint8_t cursorAnimationFrame = 0;
-  uint16_t cursorAnimationTimestamp = millis();
+  uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
+  uint32_t cursorAnimationTimestamp = millis();
 
     // Game loop
     while(true){
 
-      if (MILLIS_SINCE(cursorAnimationTimestamp) > 500) {
-        cursorAnimationFrame = (1+cursorAnimationFrame)%2;
-        cursorAnimationTimestamp = millis();
-      }
-
+        // wait for next frame
         if(!arduboy.nextFrame()) continue;
 
+        // Handle Button Inputs
         arduboy.pollButtons();
 
         if (arduboy.pressed(DOWN_BUTTON)){
-          mapOrigin.y -=1;
+          mapOrigin.y -= scrollMultiplier;
         }
         if (arduboy.pressed(UP_BUTTON)){
-          mapOrigin.y +=1;
+          mapOrigin.y += scrollMultiplier;
         }
         if (arduboy.pressed(LEFT_BUTTON)){
-          mapOrigin.x +=1;
+          mapOrigin.x += scrollMultiplier;
         }
         if (arduboy.pressed(RIGHT_BUTTON)){
-          mapOrigin.x -=1;
+          mapOrigin.x -= scrollMultiplier;
+        }
+        if (arduboy.pressed(A_BUTTON)){
+          scrollMultiplier = SCROLLSPEED_FAST;
+        }
+        else{
+          scrollMultiplier = SCROLLSPEED_NORMAL;
         }
 
+        // animate the cursor
+        if (MILLIS_SINCE(cursorAnimationTimestamp) > 500) {
+          cursorAnimationFrame = (1+cursorAnimationFrame)%2;
+          cursorAnimationTimestamp = millis();
+        }
+
+        // Draw
         arduboy.clear();
 
-        for (size_t y = 0; y <= 10; y++) {
-          for (size_t x = 0; x < 20; x++) {
+        // draw the map
+        for (size_t y = 0; y < 16; y++) {
+          for (size_t x = 0; x < 24; x++) {
 
             drawPos.x = mapOrigin.x+x*16;
             drawPos.y = mapOrigin.y+y*16;
@@ -135,7 +147,7 @@ void AWGame::runSinglePlayerGame(){
             // ignore if out of bounds
             if (drawPos.x <= -16 || drawPos.x >= 128 || drawPos.y <= -16 || drawPos.y >= 80) continue;
 
-            uint8_t spriteIDX = pgm_read_byte(mapData20x10+y*20+x);
+            uint8_t spriteIDX = pgm_read_byte(mapData20x10+y*24+x);
 
             if (spriteIDX == 30) {
               sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 32);
