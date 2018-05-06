@@ -13,20 +13,19 @@
 // to draw a map of your like.
 // Next export your map as CSV.
 // Open the CSV and add a colon ',' to the end of each line.
-// Copy and paste the all contents in here.
+// Copy and paste the contents into an array below.
+// Add the width and height as the first two values before the map data
 //
 // IMPORTANT NOTE:
 // Don't use the sprites 32 and 33 (Tops of the Headquarters) and place a plain (#14) there instead.
 // The game will automaticaly place the right tile for you.
 
-class MapData{
-public:
-  char mapName[12];
-  const unsigned char *mapData;
-};
-
 const unsigned char PROGMEM mapData24x16[] =
 {
+  // Map size
+  24, 16,
+
+  // actual data
   24,24,24,24,24,24,23,23,23,23,23,23,23,23,23,23,23,23,23,22,24,22,23,23,
   24,24,26,24,24,25,24,23,22,24,24,22,25,22,24,24,24,23,25,24,24,24,22,23,
   24,24,14,14,14,14,24,14,14,14,24,24,14,14,14,14,14,14,14,14,26,24,24,22,
@@ -47,6 +46,9 @@ const unsigned char PROGMEM mapData24x16[] =
 
 const unsigned char PROGMEM mapData20x12[] =
 {
+  // Map size
+  20, 12,
+
   23,22,24,25,24,24,24,24,22,23,18,22,24,24,24,24,25,24,22,23,
   24,14,14,14,14,14,14,14,14,14,18,14,14,14,14,14,14,14,14,24,
   24,14,22,24,2,6,6,7,24,14,18,24,2,6,6,7,24,22,14,24,
@@ -64,6 +66,9 @@ const unsigned char PROGMEM mapData20x12[] =
 
 const unsigned char PROGMEM mapData12x12[] =
 {
+  // Map size
+  12, 12,
+
   24,14,24,25,3,0,1,8,23,23,23,23,
   24,30,26,24,4,11,12,9,22,22,26,23,
   24,14,14,24,23,4,9,24,24,24,22,23,
