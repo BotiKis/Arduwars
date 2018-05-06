@@ -39,6 +39,7 @@
 // it is recommended to use them.
 enum class AWGameState : uint8_t {
   showMenu,
+  showMapSelection,
   playSinglePlayer,
   playMultiPlayer,
   showOptions
@@ -83,6 +84,7 @@ private:
 
     // Game methods
     AWGameState showMenu();           // Displays the menu
+    AWGameState showMapSelection(AWGameState nextState);  // Displays map selection, the argument is the next planned state
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
     void runSinglePlayerGame();       // Starts a new multiplayer game
 
@@ -114,7 +116,10 @@ private:
     Player player2;
 
     // Map data
+    const unsigned char *mapData = nullptr;
     Point cursorPosition = {48, 16};
     Point mapPosition = {0,0};
+    uint8_t mapWidth;
+    uint8_t mapHeight;
 };
 #endif
