@@ -134,8 +134,6 @@ void AWGame::startNewSinglePlayerGame(){
 }
 
 void AWGame::runSinglePlayerGame(){
-  Point mapOrigin = {0,0};
-  Point drawPos = {0,0};
 
   uint8_t cursorAnimationFrame = 0;
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
@@ -151,16 +149,16 @@ void AWGame::runSinglePlayerGame(){
         arduboy.pollButtons();
 
         if (arduboy.pressed(DOWN_BUTTON)){
-          mapOrigin.y -= scrollMultiplier;
+          mapPosition.y -= scrollMultiplier;
         }
         if (arduboy.pressed(UP_BUTTON)){
-          mapOrigin.y += scrollMultiplier;
+          mapPosition.y += scrollMultiplier;
         }
         if (arduboy.pressed(LEFT_BUTTON)){
-          mapOrigin.x += scrollMultiplier;
+          mapPosition.x += scrollMultiplier;
         }
         if (arduboy.pressed(RIGHT_BUTTON)){
-          mapOrigin.x -= scrollMultiplier;
+          mapPosition.x -= scrollMultiplier;
         }
         if (arduboy.pressed(A_BUTTON)){
           scrollMultiplier = SCROLLSPEED_FAST;
@@ -178,32 +176,39 @@ void AWGame::runSinglePlayerGame(){
         // Draw
         arduboy.clear();
 
-        // draw the map
-        for (size_t y = 0; y < 16; y++) {
-          for (size_t x = 0; x < 24; x++) {
-
-            drawPos.x = mapOrigin.x+x*16;
-            drawPos.y = mapOrigin.y+y*16;
-
-            // ignore if out of bounds
-            if (drawPos.x <= -16 || drawPos.x >= 128 || drawPos.y <= -16 || drawPos.y >= 80) continue;
-
-            uint8_t spriteIDX = pgm_read_byte(mapData24x16+y*24+x);
-
-            if (spriteIDX == 30) {
-              sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 32);
-            }
-            if (spriteIDX == 31) {
-              sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 33);
-            }
-            sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
-          }
-        }
+        // Draw map
+        drawMap();
 
         // draw cursorIdx
-        sprites.drawPlusMask(48, 16, gameCursorAnimation_plus_mask, cursorAnimationFrame);
+        sprites.drawPlusMask(cursorPosition.x, cursorPosition.y, gameCursorAnimation_plus_mask, cursorAnimationFrame);
 
         arduboy.display();
-
     }
+}
+
+
+void AWGame::drawMap(){
+  Point drawPos;
+
+  // draw the map
+  for (size_t y = 0; y < 16; y++) {
+    for (size_t x = 0; x < 24; x++) {
+
+      drawPos.x = mapPosition.x+x*16;
+      drawPos.y = mapPosition.y+y*16;
+
+      // ignore if out of bounds
+      if (drawPos.x <= -16 || drawPos.x >= 128 || drawPos.y <= -16 || drawPos.y >= 80) continue;
+
+      uint8_t spriteIDX = pgm_read_byte(mapData24x16+y*24+x);
+
+      if (spriteIDX == 30) {
+        sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 32);
+      }
+      if (spriteIDX == 31) {
+        sprites.drawOverwrite(drawPos.x, drawPos.y-16, worldSprite, 33);
+      }
+      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
+    }
+  }
 }

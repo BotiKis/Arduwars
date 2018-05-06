@@ -86,6 +86,9 @@ private:
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
     void runSinglePlayerGame();       // Starts a new multiplayer game
 
+    // Game Helper
+    void drawMap();
+
     // ======================
     // Data
     // This is our instance of the Arduboy2 class. It is the foundation for
@@ -109,5 +112,9 @@ private:
     // There are always two players where the first one is the actual player and the second the AI.
     Player player1;
     Player player2;
+
+    // Map data
+    Point cursorPosition = {48, 16};
+    Point mapPosition = {0,0};
 };
 #endif
