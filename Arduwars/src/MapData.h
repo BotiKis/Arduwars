@@ -3,6 +3,22 @@
 
 #include <avr/pgmspace.h>
 
+// In this file we store our maps.
+// You can create your custom maps with tiled:The Map editor https://www.mapeditor.org/
+//
+// How to make custom maps:
+// Open Tiled and create a new Tileset with the image in Assets/ called "worldSprite_16x16.png"
+// The tile height and width should both be 16.
+// After that you can create a new map and use the earlier created tilesheet
+// to draw a map of your like.
+// Next export your map as CSV.
+// Open the CSV and add a colon ',' to the end of each line.
+// Copy and paste the all contents in here.
+//
+// IMPORTANT NOTE:
+// Don't use the sprites 32 and 33 (Tops of the Headquarters) and place a plain (#14) there instead.
+// The game will automaticaly place the right tile for you.
+
 const unsigned char PROGMEM mapData24x16[] =
 {
   17,17,17,17,17,17,16,16,16,16,16,16,16,16,16,16,16,16,16,15,17,15,16,16,
