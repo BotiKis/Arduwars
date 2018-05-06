@@ -5,6 +5,8 @@
 #include <Tinyfont.h>
 #include <Sprites.h>
 
+#include "DataClasses.h"
+
 // Documentation
 // This files contains our Main game class which defines the base of the game
 // and other relevant things.
@@ -19,10 +21,14 @@
 // Gamestates
 // This is an enumaration. It is used to define options for a certain purpose.
 // Creating a Enumaration means defining a new type like int or char but only
-// for the purpose of storing a option.
+// for the purpose of storing an option.
 //
 // E.g. creating a varable with this enum is the same as with int.
 // Sample: AWGameState foo;
+//
+// But this enum is scoped. That means you cannot assign anything
+// but an AWGameState option to it.
+// Sample:
 //  - You can not assign any int value to foo.
 //      foo == 8; // -> Wont work.
 //  - You can assign an option of AWGameState to foo.
@@ -31,7 +37,7 @@
 // Usings enums are not neccesary and their function can be replaced by other
 // tricks but it vastly improve readability with some additional type safety so
 // it is recommended to use them.
-enum class AWGameState{
+enum class AWGameState : uint8_t {
   showMenu,
   playSinglePlayer,
   playMultiPlayer,
@@ -98,5 +104,10 @@ private:
     // Here we see our enum again.
     // We create a variable which will store the current gamestate.
     AWGameState gameState;
+
+    // In these two variables we store the players.
+    // There are always two players where the first one is the actual player and the second the AI.
+    Player player1;
+    Player player2;
 };
 #endif
