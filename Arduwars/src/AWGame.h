@@ -58,7 +58,7 @@ enum class AWGameState : uint8_t {
 // But since it is very common to see #defines we stick with it.
 #define SCROLLSPEED_NORMAL 1
 #define SCROLLSPEED_FAST 3
-#define TILESIZE 16
+#define TILE_SIZE 16
 
 
 // The Game class
@@ -89,7 +89,7 @@ private:
     void runSinglePlayerGame();       // Starts a new multiplayer game
 
     // Game Helper
-    void drawMap();
+    void drawMapAtPosition(Point pos);
 
     // ======================
     // Data
@@ -117,9 +117,11 @@ private:
 
     // Map data
     const unsigned char *mapData = nullptr;
-    Point cursorPosition = {48, 16};
-    Point mapPosition = {0,0};
-    uint8_t mapWidth;
-    uint8_t mapHeight;
+    Point cursorPosition = {0, 0};
+    Point cameraPosition = {0, 0};
+    Point currentIndex = {0, 0};
+
+    Point mapSize = {0, 0};
+    Point mapSizeInPixel = {0, 0};
 };
 #endif

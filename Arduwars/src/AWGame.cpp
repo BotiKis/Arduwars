@@ -5,8 +5,8 @@
 #include "SpriteAssets.h"
 #include "MapData.h"
 
-#include "AnimationHelper.h"
 #include <UtilityFunctions.h>
+#include "PointMath.h"
 
 // -------------------------------------------------------
 // Constructor sets up basic stuff for the game
@@ -160,24 +160,23 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
       switch (cursorIdx) {
         case 0:{
           mapData = mapData12x12;
-          mapWidth  = pgm_read_byte(mapData);
-          mapHeight = pgm_read_byte(mapData+1);
           break;
         }
         case 1:{
           mapData = mapData20x12;
-          mapWidth  = pgm_read_byte(mapData);
-          mapHeight = pgm_read_byte(mapData+1);
           break;
         }
         case 2:{
           mapData = mapData24x16;
-          mapWidth  = pgm_read_byte(mapData);
-          mapHeight = pgm_read_byte(mapData+1);
           break;
         }
         default: return AWGameState::showMenu;
       }
+
+      // handle map data
+      mapSize.x  = pgm_read_byte(mapData);
+      mapSize.y  = pgm_read_byte(mapData+1);
+      mapSizeInPixel = mapSize*TILE_SIZE;
 
       return nextState;
     }
@@ -219,9 +218,7 @@ void AWGame::startNewSinglePlayerGame(){
 
 void AWGame::runSinglePlayerGame(){
 
-  uint8_t cursorAnimationFrame = 0;
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
-  uint32_t cursorAnimationTimestamp = millis();
 
     // Game loop
     while(true){
@@ -233,16 +230,16 @@ void AWGame::runSinglePlayerGame(){
         arduboy.pollButtons();
 
         if (arduboy.pressed(DOWN_BUTTON)){
-          mapPosition.y -= scrollMultiplier;
+          cursorPosition.y += scrollMultiplier;
         }
         if (arduboy.pressed(UP_BUTTON)){
-          mapPosition.y += scrollMultiplier;
+          cursorPosition.y -= scrollMultiplier;
         }
         if (arduboy.pressed(LEFT_BUTTON)){
-          mapPosition.x += scrollMultiplier;
+          cursorPosition.x -= scrollMultiplier;
         }
         if (arduboy.pressed(RIGHT_BUTTON)){
-          mapPosition.x -= scrollMultiplier;
+          cursorPosition.x += scrollMultiplier;
         }
         if (arduboy.pressed(A_BUTTON)){
           scrollMultiplier = SCROLLSPEED_FAST;
@@ -250,54 +247,78 @@ void AWGame::runSinglePlayerGame(){
         else{
           scrollMultiplier = SCROLLSPEED_NORMAL;
         }
-
-        // Limit map position
-        mapPosition.x = (mapPosition.x > 0) ? 0 : mapPosition.x;
-        mapPosition.y = (mapPosition.y > 0) ? 0 : mapPosition.y;
-        mapPosition.x = (mapPosition.x < (-mapWidth*TILESIZE)+arduboy.width()) ? (-mapWidth*TILESIZE)+arduboy.width() : mapPosition.x;
-        mapPosition.y = (mapPosition.y < (-mapHeight*TILESIZE)+arduboy.height()) ? (-mapHeight*TILESIZE)+arduboy.height() : mapPosition.y;
-
-        // animate the cursor
-        if (MILLIS_SINCE(cursorAnimationTimestamp) > 500) {
-          cursorAnimationFrame = (1+cursorAnimationFrame)%2;
-          cursorAnimationTimestamp = millis();
+        if (arduboy.pressed(B_BUTTON)) {
+          // snap to grid
+          cursorPosition.x = (((int16_t)((cursorPosition.x+TILE_SIZE)/TILE_SIZE))*TILE_SIZE)-8;
+          cursorPosition.y = (((int16_t)((cursorPosition.y+TILE_SIZE)/TILE_SIZE))*TILE_SIZE)-8;
         }
 
-        // Draw
+        // Check for bounds
+        //-8 because the cursor is 32x32 but a tile only 16x16.
+        // If we want to center both we have to substract the half of their difference which is 8.
+        if(cursorPosition.x < -8) cursorPosition.x = -8;
+        if(cursorPosition.y < -8) cursorPosition.y = -8;
+
+        // The 32 here again is the size of the cursor.
+        if(cursorPosition.x > mapSizeInPixel.x-32+8) cursorPosition.x = mapSizeInPixel.x-32+8;
+        if(cursorPosition.y > mapSizeInPixel.y-32+8) cursorPosition.y = mapSizeInPixel.y-32+8;
+
+        // Calculate camera offset
+        cameraPosition.x = cursorPosition.x - (arduboy.width()-32)/2;
+        cameraPosition.y = cursorPosition.y - (arduboy.height()-32)/2;
+
+        // Check for bounds
+        if(cameraPosition.x < 0) cameraPosition.x = 0;
+        if(cameraPosition.y < 0) cameraPosition.y = 0;
+        if(cameraPosition.x > mapSizeInPixel.x-arduboy.width()) cameraPosition.x = mapSizeInPixel.x-arduboy.width();
+        if(cameraPosition.y > mapSizeInPixel.y-arduboy.height()) cameraPosition.y = mapSizeInPixel.y-arduboy.height();
+
+        // calc currentIndex
+        currentIndex.x = ((int16_t)(cursorPosition.x+TILE_SIZE))/TILE_SIZE;
+        currentIndex.y = ((int16_t)(cursorPosition.y+TILE_SIZE))/TILE_SIZE;
+
+        // Start Drawing
         arduboy.clear();
 
-        // Draw map
-        drawMap();
+        // Draw the map first
+        drawMapAtPosition(cameraPosition * -1);
 
-        // draw cursorIdx
-        sprites.drawPlusMask(cursorPosition.x, cursorPosition.y, gameCursorAnimation_plus_mask, cursorAnimationFrame);
+        // Draw the cursor on top
+        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2);
+
+        // log index
+        arduboy.fillRect(0, 64-12, 11, 12, BLACK);
+        tinyfont.setCursor(1, 64 - 11);
+        tinyfont.print(currentIndex.x);
+        tinyfont.setCursor(1, 64 - 5);
+        tinyfont.print(currentIndex.y);
 
         arduboy.display();
     }
 }
 
 
-void AWGame::drawMap(){
+void AWGame::drawMapAtPosition(Point pos){
   Point drawPos;
 
   // draw the map
-  for (size_t y = 0; y < mapHeight; y++) {
-    for (size_t x = 0; x < mapWidth; x++) {
+  for (int8_t y = 0; y < mapSize.y; y++) {
+    for (int8_t x = 0; x < mapSize.x; x++) {
 
-      drawPos.x = mapPosition.x+x*TILESIZE;
-      drawPos.y = mapPosition.y+y*TILESIZE;
+      drawPos.x = pos.x+x*TILE_SIZE;
+      drawPos.y = pos.y+y*TILE_SIZE;
 
       // ignore if out of bounds
-      if (drawPos.x <= -TILESIZE || drawPos.x >= arduboy.width() || drawPos.y <= -TILESIZE || drawPos.y >= (arduboy.height()+TILESIZE)) continue;
+      if (drawPos.x <= -TILE_SIZE || drawPos.x >= arduboy.width() || drawPos.y <= -TILE_SIZE || drawPos.y >= (arduboy.height()+TILE_SIZE)) continue;
 
       // +2 because the first two bytes are the width and height.
-      uint8_t spriteIDX = pgm_read_byte(mapData+2+y*mapWidth+x);
+      uint8_t spriteIDX = pgm_read_byte(mapData+2+y*mapSize.x+x);
 
       if (spriteIDX == 30) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILESIZE, worldSprite, 32);
+        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 32);
       }
       if (spriteIDX == 31) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILESIZE, worldSprite, 33);
+        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 33);
       }
       sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
     }
