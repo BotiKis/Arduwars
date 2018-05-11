@@ -1,7 +1,7 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include <stdint.h>
+#include <Arduboy2.h>
 #include <List.h>
 
 // Documentation:
@@ -135,10 +135,21 @@ public:
 // This class defines a Player which has Units, Buildings, Money and other Information.
 class Player{
 public:
+
+  // Stores the players Money. MAX 255
+  // To look more amazing we append two 0s when we are printing it.
   uint8_t money;
-  char name[8];
+
+  // Stores the name of the player.
+  // Usually Player1 and Player2 but maybe we make it dynamic in future.
+  char name[9];
+
+  // Remembers the last cursor index of the player
+  Point cursorIndex;
+
+  // Stores all the units
   List<GameUnit, 24> units;          // 24 Units make approximately 72 Bytes.
-  // Approximately 73 bytes in total.
+  // Approximately 86 bytes in total.
 
   // reset the data of this class
   void reset();

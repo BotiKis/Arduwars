@@ -230,7 +230,10 @@ void Player::reset(){
   money = 20;
 
   // reset name
-  strcpy(name, "");
+  strcpy(name, "\0");
+
+  // Set cursor
+  cursorIndex = {0,0};
 
   // clear units
   units.clear();
