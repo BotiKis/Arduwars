@@ -1,6 +1,6 @@
 #include "DataClasses.h"
 
-Unit::Unit(){
+GameUnit::GameUnit(){
   // Save the provided Type
   unitType = static_cast<uint8_t>(UnitType::Soldier);
 
@@ -11,7 +11,7 @@ Unit::Unit(){
   attackRange = 0;
 }
 
-Unit::Unit(UnitType type){
+GameUnit::GameUnit(UnitType type){
   // Save the provided Type
   unitType = static_cast<uint8_t>(type);
 
@@ -144,7 +144,7 @@ Unit::Unit(UnitType type){
   }
 }
 
-Building::Building(){
+GameBuilding::GameBuilding(){
   // Save the provided Type
   buildingType = static_cast<uint8_t>(BuildingType::None);
 
@@ -155,7 +155,7 @@ Building::Building(){
   others = 0;
 }
 
-Building::Building(BuildingType type){
+GameBuilding::GameBuilding(BuildingType type){
   // Save the provided Type
   buildingType = static_cast<uint8_t>(type);
 

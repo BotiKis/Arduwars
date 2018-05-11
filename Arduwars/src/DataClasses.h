@@ -42,9 +42,6 @@ enum class UnitType : uint8_t {
 // There are only 16 in total.
 enum class BuildingType : uint8_t {
   None = 0,
-  Hill,     // Can only be moved to by Infantry
-  Mountain, // Can only be moved to by Infantry
-  Forest,
   City,
   Factory,
   Airport,
@@ -54,9 +51,17 @@ enum class BuildingType : uint8_t {
   HQPlayer2
 };
 
+// This enum defines the possible obstacles on the map.
+enum class ObstacleType : uint8_t {
+  None = 0,
+  Hill,     // Can only be moved to by Infantry
+  Mountain, // Can only be moved to by Infantry
+  Forest,
+  Shores
+};
 
 // This class defines a Unit like Soldiers or Tanks
-class Unit{
+class GameUnit{
 public:
   // For Beginners:
   // By appending a ':NUMBER' to an attribute of an class you create a Bitfield.
@@ -88,19 +93,21 @@ public:
   uint8_t defense     :2; // Can have max 3 defense.
   uint8_t moveDistance:3; // Can move in a radius of max 7 tiles.
   uint8_t attackRange :3; // Can attack in a radius of max 7 tiles.
-  uint8_t others      :5; // reserved for future use.
-  // 3 Bytes in total.
+  uint8_t mapPosX     :5; // X Position on the map - max 32.
+  uint8_t mapPosY     :5; // Y Position on the map - max 32.
+  uint8_t others      :3; // reserved for future use.
+  // 4 Bytes in total.
 
   // Constructor
   // Default constructor initializes an all 0 filled UnitType::Soldier Unit.
-  Unit();
+  GameUnit();
   // Custom Constructor is used to initialize with default content. See DataClass.cpp for the implementation.
-  Unit(UnitType atype);
+  GameUnit(UnitType atype);
 };
 
 // This class defines a Building like the HQ or Cities.
 // Mountains, Forests and other things on the Map also count as buildings.
-class Building{
+class GameBuilding{
 public:
   uint8_t buildingType  :4; // We can have 16 different buildings
                             // Also we store it as a uint8_t instead of a BuildingType,
@@ -109,14 +116,16 @@ public:
   uint8_t healthPoints  :4; // A building can have max 15 health.
   uint8_t movePenalty   :2; // A building can give a moving Unit a movement penalty up to 3.
   uint8_t defenseBonus  :2; // A building can give a stationed Unit a defense bonus up to 3.
-  uint8_t others        :4; // reserved for future use.
-  // 2 Bytes in total.
+  uint8_t mapPosX       :5; // X Position on the map - max 32.
+  uint8_t mapPosY       :5; // Y Position on the map - max 32.
+  uint8_t others        :2; // reserved for future use.
+  // 3 Bytes in total.
 
   // Constructor
   // Default constructor initializes an all 0 filled BuildingType::None Building.
-  Building();
+  GameBuilding();
   // Custom Constructor is used to initialize with default content. See DataClass.cpp for the implementation.
-  Building(BuildingType type);
+  GameBuilding(BuildingType type);
 };
 
 // This class defines a Player which has Units, Buildings, Money and other Information.
@@ -124,8 +133,7 @@ class Player{
 public:
   uint8_t money;
   Array<Unit, 24> units;          // 24 Units make approximately 72 Bytes.
-  Array<Building, 16> buildings;  // 16 Buildings approximately makes 32 Bytes.
-  // Approximately 106 bytes in total.
+  // Approximately 73 bytes in total.
 
   // Constructor is used to initialize with default content. See DataClass.cpp for the implementation.
   Player();
