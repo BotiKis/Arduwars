@@ -24,7 +24,10 @@ AWGame::AWGame(){
 
   // Initialize players
   player1 = new Player();
+  strcpy(player1->name, "PLAYER 1");
+
   player2 = new Player();
+  strcpy(player2->name, "PLAYER 2");
 
   // Now we set our Gamestate to showMenu since we want to start there.
   gameState = AWGameState::showMenu;
@@ -172,15 +175,15 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
       // select map to users choice
       switch (cursorIdx) {
         case 0:{
-          mapData = mapData12x12;
+          mapData = mapData_3;
           break;
         }
         case 1:{
-          mapData = mapData20x12;
+          mapData = mapData_2;
           break;
         }
         case 2:{
-          mapData = mapData24x16;
+          mapData = mapData_1;
           break;
         }
         default: return AWGameState::showMenu;
@@ -215,9 +218,9 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
     tinyfont.setCursor(2, 47);
     tinyfont.print(F("SKIRMISH"));
     tinyfont.setCursor(2, 53);
-    tinyfont.print(F("SEABATTLE"));
+    tinyfont.print(F("BATTLE"));
     tinyfont.setCursor(2, 59);
-    tinyfont.print(F("WAR PLANES"));
+    tinyfont.print(F("ARDUWARS"));
 
     // depending on the cursor index, we draw the cursor
     tinyfont.setCursor(64, 47 + cursorIdx*6);
@@ -234,9 +237,7 @@ void AWGame::startNewSinglePlayerGame(){
 
   // reset players
   player1->reset();
-  strcpy(player1->name, "PLAYER 1");
   player2->reset();
-  strcpy(player2->name, "PLAYER 2");
 
   // run game
   runSinglePlayerGame();
@@ -273,9 +274,7 @@ void AWGame::startNewMultiplayerPlayerGame(){
 
   // reset players
   player1->reset();
-  strcpy(player1->name, "PLAYER 1");
   player2->reset();
-  strcpy(player2->name, "PLAYER 2");
 
   runMultiPlayerGame();
 }
@@ -311,7 +310,7 @@ void AWGame::runMultiPlayerGame(){
     Point cursorPosition = currentPlayer->cursorIndex*TILE_SIZE;
     cursorPosition.x -= 8;
     cursorPosition.y -= 8;
-    
+
     // Calculate camera position
     Point cameraPosition = calculateCameraPosition(cursorPosition);
     cameraPosition.y -= mapOffsetY;

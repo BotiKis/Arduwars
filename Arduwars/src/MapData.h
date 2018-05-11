@@ -21,7 +21,7 @@
 //    The game will automaticaly place the right tile for you.
 // #2 Use a maximum of 24 Buildings. (Defined by BuildingType)
 
-const unsigned char PROGMEM mapData24x16[] =
+const unsigned char PROGMEM mapData_1[] =
 {
   // Map size
   24, 16,
@@ -45,7 +45,7 @@ const unsigned char PROGMEM mapData24x16[] =
   23,23,22,24,22,23,23,23,23,23,23,23,23,23,23,23,23,23,24,24,24,24,24,24,
 };
 
-const unsigned char PROGMEM mapData20x12[] =
+const unsigned char PROGMEM mapData_2[] =
 {
   // Map size
   20, 12,
@@ -65,7 +65,7 @@ const unsigned char PROGMEM mapData20x12[] =
 
 };
 
-const unsigned char PROGMEM mapData12x12[] =
+const unsigned char PROGMEM mapData_3[] =
 {
   // Map size
   12, 12,
