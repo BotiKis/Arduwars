@@ -14,9 +14,13 @@ AWGame::AWGame(){
 
   // First we need to initialize our Arduboy instance by called the usual methods.
   arduboy.boot(); //arduboy.begin(); <- I will forget this.
-  arduboy.setFrameRate(60);
+  arduboy.setFrameRate(30);
   arduboy.initRandomSeed();
   arduboy.audio.on();
+
+  // Initialize players
+  player1 = new Player();
+  player2 = new Player();
 
   // Now we set our Gamestate to showMenu since we want to start there.
   gameState = AWGameState::showMenu;
@@ -213,10 +217,77 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
 }
 
 void AWGame::startNewSinglePlayerGame(){
+  // reset day count;
+  daysPlayed = 0;
+
+  // reset players
+  player1->reset();
+  player2->reset();
+
+  // run game
   runSinglePlayerGame();
 }
 
 void AWGame::runSinglePlayerGame(){
+
+  // The game loop
+  while(true){
+
+    if(!arduboy.nextFrame()) continue;
+
+    arduboy.pollButtons();
+
+    if (arduboy.justPressed(A_BUTTON)) {
+      return;
+    }
+
+    arduboy.clear();
+
+    tinyfont.setCursor(1,1);
+    tinyfont.print("Singleplayer...");
+
+    arduboy.display();
+  }
+}
+
+void AWGame::startNewMultiplayerPlayerGame(){
+  // reset day count;
+  daysPlayed = 0;
+
+  // reset players
+  player1->reset();
+  player2->reset();
+
+  runMultiPlayerGame();
+}
+
+void AWGame::runMultiPlayerGame(){
+
+  Player *currentPlayer = player1;
+
+  // Game Loops
+  while (true) {
+
+    // show player round
+    doRoundOfPlayer(currentPlayer);
+
+    // check for win condition
+    if (daysPlayed == 255) {
+      #warning implement win condition
+      return;
+    }
+
+    // switch players
+    if (currentPlayer == player1)
+      currentPlayer = player2;
+    else{
+      currentPlayer = player1;
+      daysPlayed++;
+    }
+  }
+}
+
+void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
 
@@ -284,7 +355,22 @@ void AWGame::runSinglePlayerGame(){
         drawMapAtPosition(cameraPosition * -1);
 
         // Draw the cursor on top
-        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2);
+        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y, gameCursorAnimation_plus_mask, (arduboy.frameCount/15)%2);
+
+        // Draw player, day and funds
+        arduboy.fillRect(0, 0, 128, 6, BLACK);
+        tinyfont.setCursor(1, 1);
+        tinyfont.print(currentPlayer->name);
+
+        tinyfont.setCursor(50, 1);
+        tinyfont.print(F("DAY:"));
+        tinyfont.setCursor(70, 1);
+        tinyfont.print(daysPlayed);
+        tinyfont.setCursor(90, 1);
+        tinyfont.print(F("$:"));
+        tinyfont.setCursor(100, 1);
+        tinyfont.print(currentPlayer->money);
+
 
         // log index
         arduboy.fillRect(0, 64-12, 11, 12, BLACK);
@@ -296,7 +382,6 @@ void AWGame::runSinglePlayerGame(){
         arduboy.display();
     }
 }
-
 
 void AWGame::drawMapAtPosition(Point pos){
   Point drawPos;

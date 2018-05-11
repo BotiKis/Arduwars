@@ -4,7 +4,7 @@
 #include <Arduboy2.h>
 #include <Tinyfont.h>
 #include <Sprites.h>
-#include <Array.h>
+#include <List.h>
 
 #include "DataClasses.h"
 
@@ -86,8 +86,14 @@ private:
     // Game methods
     AWGameState showMenu();           // Displays the menu
     AWGameState showMapSelection(AWGameState nextState);  // Displays map selection, the argument is the next planned state
+
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
-    void runSinglePlayerGame();       // Starts a new multiplayer game
+    void runSinglePlayerGame();       // Place where the singleplayer game runs
+
+    void startNewMultiplayerPlayerGame();  // Starts a new multiplayer game
+    void runMultiPlayerGame();       // Place where the multiplayer game runs
+
+    void doRoundOfPlayer(Player *currentPlayer);
 
     // Game Helper
     void drawMapAtPosition(Point pos);
@@ -95,7 +101,7 @@ private:
     // ======================
     // Data
     // This is our instance of the Arduboy2 class. It is the foundation for
-    // every Arduboy project.
+    // every Arduboy project.44
     Arduboy2 arduboy;
 
     // This is our instance of the Sprites class.
@@ -113,11 +119,16 @@ private:
 
     // In these two variables we store the players.
     // There are always two players where the first one is the actual player and the second the AI.
-    Player player1;
-    Player player2;
+    Player *player1;
+    Player *player2;
+
+    // This attribute stores the days.
+    // A day passes if both players has ended their rounds.
+    // The game ends with a draw when it reaches 255 days.
+    uint8_t daysPlayed;
 
     // In this attribute we store the buildings on the map - max 16.
-    Array<GameBuilding, 24> gameBuildings;
+    List<GameBuilding, 24> gameBuildings;
 
     // Map data
     const unsigned char *mapData = nullptr;
