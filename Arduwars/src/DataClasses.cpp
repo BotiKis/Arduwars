@@ -229,9 +229,6 @@ void Player::reset(){
   // default 20 money
   money = 20;
 
-  // reset name
-  strcpy(name, "\0");
-
   // Set cursor
   cursorIndex = {0,0};
 
