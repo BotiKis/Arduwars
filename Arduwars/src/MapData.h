@@ -17,8 +17,9 @@
 // Add the width and height as the first two values before the map data
 //
 // IMPORTANT NOTE:
-// Don't use the sprites 32 and 33 (Tops of the Headquarters) and place a plain (#14) there instead.
-// The game will automaticaly place the right tile for you.
+// #1 Don't use the sprites 32 and 33 (Tops of the Headquarters) and place a plain (#14) there instead.
+//    The game will automaticaly place the right tile for you.
+// #2 Use a maximum of 24 Buildings. (Defined by BuildingType)
 
 const unsigned char PROGMEM mapData24x16[] =
 {
