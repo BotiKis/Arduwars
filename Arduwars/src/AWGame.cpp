@@ -14,9 +14,13 @@ AWGame::AWGame(){
 
   // First we need to initialize our Arduboy instance by called the usual methods.
   arduboy.boot(); //arduboy.begin(); <- I will forget this.
-  arduboy.setFrameRate(30);
+  #warning switch to .begin()
+  arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
   arduboy.audio.on();
+
+  // Set up text
+  tinyfont.setTextColor(BLACK);
 
   // Initialize players
   player1 = new Player();
@@ -46,6 +50,8 @@ void AWGame::run(void){
           break;
         }
         case AWGameState::playMultiPlayer:{
+          // start game
+          startNewMultiplayerPlayerGame();
           this->gameState = AWGameState::showMenu;
           break;
         }
@@ -114,6 +120,9 @@ AWGameState AWGame::showMenu(){
 
     // This clears the dispaly and makes everything black.
     arduboy.clear();
+
+    // fill the screen white
+    arduboy.fillScreen(WHITE);
 
     // Here we draw the menu text
     // The text is wrapped in a F() function which tells the compiler to
@@ -196,6 +205,9 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
     // This clears the dispaly and makes everything black.
     arduboy.clear();
 
+    // fill the screen white
+    arduboy.fillScreen(WHITE);
+
     // Draw the menu
     tinyfont.setCursor(2, 38);
     tinyfont.print(F("< BACK WITH A"));
@@ -222,7 +234,9 @@ void AWGame::startNewSinglePlayerGame(){
 
   // reset players
   player1->reset();
+  strcpy(player1->name, "PLAYER 1");
   player2->reset();
+  strcpy(player2->name, "PLAYER 2");
 
   // run game
   runSinglePlayerGame();
@@ -243,6 +257,9 @@ void AWGame::runSinglePlayerGame(){
 
     arduboy.clear();
 
+    // fill the screen white
+    arduboy.fillScreen(WHITE);
+
     tinyfont.setCursor(1,1);
     tinyfont.print("Singleplayer...");
 
@@ -256,7 +273,9 @@ void AWGame::startNewMultiplayerPlayerGame(){
 
   // reset players
   player1->reset();
+  strcpy(player1->name, "PLAYER 1");
   player2->reset();
+  strcpy(player2->name, "PLAYER 2");
 
   runMultiPlayerGame();
 }
@@ -284,12 +303,41 @@ void AWGame::runMultiPlayerGame(){
       currentPlayer = player1;
       daysPlayed++;
     }
+
+    // Draw map and HUD for new player
+    arduboy.clear();
+
+    // Calculate camera Position
+    Point cursorPosition = currentPlayer->cursorIndex*TILE_SIZE;
+    cursorPosition.x -= 8;
+    cursorPosition.y -= 8;
+    
+    // Calculate camera position
+    Point cameraPosition = calculateCameraPosition(cursorPosition);
+    cameraPosition.y -= mapOffsetY;
+
+    // Draw map
+    drawMapAtPosition(cameraPosition * -1);
+
+    // Draw HUD
+    drawHudForPlayer(currentPlayer);
+
+    arduboy.display();
+
+    showDialog(currentPlayer->name);
   }
 }
 
 void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
+
+  // Store cursor data
+  Point cursorPosition = currentPlayer->cursorIndex*TILE_SIZE;
+  cursorPosition.x -= 8;
+  cursorPosition.y -= 8;
+  Point cameraPosition = {0, 0};
+  Point currentIndex = {0, 0};
 
     // Game loop
     while(true){
@@ -334,15 +382,9 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         if(cursorPosition.x > mapSizeInPixel.x-32+8) cursorPosition.x = mapSizeInPixel.x-32+8;
         if(cursorPosition.y > mapSizeInPixel.y-32+8) cursorPosition.y = mapSizeInPixel.y-32+8;
 
-        // Calculate camera offset
-        cameraPosition.x = cursorPosition.x - (arduboy.width()-32)/2;
-        cameraPosition.y = cursorPosition.y - (arduboy.height()-32)/2;
-
-        // Check for bounds
-        if(cameraPosition.x < 0) cameraPosition.x = 0;
-        if(cameraPosition.y < 0) cameraPosition.y = 0;
-        if(cameraPosition.x > mapSizeInPixel.x-arduboy.width()) cameraPosition.x = mapSizeInPixel.x-arduboy.width();
-        if(cameraPosition.y > mapSizeInPixel.y-arduboy.height()) cameraPosition.y = mapSizeInPixel.y-arduboy.height();
+        // Calculate camera position
+        cameraPosition = calculateCameraPosition(cursorPosition);
+        cameraPosition.y -= mapOffsetY;
 
         // calc currentIndex
         currentIndex.x = ((int16_t)(cursorPosition.x+TILE_SIZE))/TILE_SIZE;
@@ -355,31 +397,27 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         drawMapAtPosition(cameraPosition * -1);
 
         // Draw the cursor on top
-        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y, gameCursorAnimation_plus_mask, (arduboy.frameCount/15)%2);
+        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the +1 looks more correct
 
-        // Draw player, day and funds
-        arduboy.fillRect(0, 0, 128, 6, BLACK);
-        tinyfont.setCursor(1, 1);
-        tinyfont.print(currentPlayer->name);
-
-        tinyfont.setCursor(50, 1);
-        tinyfont.print(F("DAY:"));
-        tinyfont.setCursor(70, 1);
-        tinyfont.print(daysPlayed);
-        tinyfont.setCursor(90, 1);
-        tinyfont.print(F("$:"));
-        tinyfont.setCursor(100, 1);
-        tinyfont.print(currentPlayer->money);
-
+        // Draw HUD
+        drawHudForPlayer(currentPlayer);
 
         // log index
-        arduboy.fillRect(0, 64-12, 11, 12, BLACK);
-        tinyfont.setCursor(1, 64 - 11);
-        tinyfont.print(currentIndex.x);
-        tinyfont.setCursor(1, 64 - 5);
-        tinyfont.print(currentIndex.y);
+        // arduboy.fillRect(0, 64-12, 11, 12, WHITE);
+        // tinyfont.setCursor(1, 64 - 11);
+        // tinyfont.print(currentIndex.x);
+        // tinyfont.setCursor(1, 64 - 5);
+        // tinyfont.print(currentIndex.y);
 
         arduboy.display();
+
+        // Check if menu was pressed
+        if (arduboy.justPressed(B_BUTTON)) {
+          if(showOption("END TURN")){
+            currentPlayer->cursorIndex = currentIndex;
+            return;
+          }
+        }
     }
 }
 
@@ -408,4 +446,120 @@ void AWGame::drawMapAtPosition(Point pos){
       sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
     }
   }
+}
+
+void AWGame::showDialog(const char *titleText){
+
+  // frame for the dialog
+  static Rect frame;
+
+  frame.width = strlen(titleText)*5+8;
+  frame.height = 16;
+  frame.x = (arduboy.width() - frame.width)/2;
+  frame.y = 24;
+
+  Point textPos;
+  textPos.x = (arduboy.width() - strlen(titleText)*5)/2;
+  textPos.y = frame.y+6;
+
+  // dialog loop
+  while (true) {
+
+    // wait for next frame
+    if(!arduboy.nextFrame()) continue;
+
+    // Get input
+    arduboy.pollButtons();
+
+    // Exit on B
+    if (arduboy.justPressed(B_BUTTON)){
+      return;
+    }
+
+    // Drawing
+    // Infobox
+    arduboy.fillRoundRect(frame.x-1, frame.y-1, frame.width+2, frame.height+2, 5, WHITE);
+    arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
+    arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
+
+    // OK Button
+    tinyfont.setCursor(textPos.x, textPos.y);
+    tinyfont.print(titleText);
+
+    arduboy.display();
+  }
+}
+
+bool AWGame::showOption(const char *buttonTitle){
+
+  // frame for the dialog
+  static Rect frame;
+
+  frame.width = strlen(buttonTitle)*5+8;
+  frame.height = 14;
+  frame.x = arduboy.width() - frame.width - 4;
+  frame.y = 10;
+
+  // dialog loop
+  while (true) {
+
+    // wait for next frame
+    if(!arduboy.nextFrame()) continue;
+
+    // Get input
+    arduboy.pollButtons();
+
+    // Exit on button press
+    if (arduboy.justPressed(A_BUTTON)){
+      return false;
+    }  // Exit on button press
+    if (arduboy.justPressed(B_BUTTON)){
+      return true;
+    }
+
+    // Drawing
+    // Infobox
+    arduboy.fillRoundRect(frame.x-1, frame.y-1, frame.width+2, frame.height+2, 5, WHITE);
+    arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
+    arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
+
+    // OK Button
+    tinyfont.setCursor(frame.x + 4, frame.y + 5);
+    tinyfont.print(buttonTitle);
+
+    arduboy.display();
+  }
+}
+
+void AWGame::drawHudForPlayer(Player *aPlayer){
+  // Draw player, day and funds
+  arduboy.fillRect(0, 0, 128, 7, BLACK);
+  arduboy.fillRect(0, 0, 128, 6, WHITE);
+  tinyfont.setCursor(1, 1);
+  tinyfont.print(aPlayer->name);
+
+  tinyfont.setCursor(46, 1);
+  tinyfont.print(F("DAY:"));
+  tinyfont.setCursor(66, 1);
+  tinyfont.print(daysPlayed);
+  tinyfont.setCursor(86, 1);
+  tinyfont.print(F("$:"));
+  tinyfont.setCursor(100, 1);
+  tinyfont.print(aPlayer->money*100);
+}
+
+Point AWGame::calculateCameraPosition(Point forCursorPosition){
+  Point cameraPosition;
+
+  // Calculate camera offset
+  cameraPosition.x = forCursorPosition.x - (arduboy.width()-32)/2;
+  cameraPosition.y = forCursorPosition.y - (arduboy.height()-32)/2;
+
+  // Check for bounds
+  if(cameraPosition.x < 0) cameraPosition.x = 0;
+  if(cameraPosition.y < 1) cameraPosition.y = 1;
+  if(cameraPosition.x > mapSizeInPixel.x-arduboy.width()) cameraPosition.x = mapSizeInPixel.x-arduboy.width();
+  if(cameraPosition.y > mapSizeInPixel.y-arduboy.height()+mapOffsetY) cameraPosition.y = mapSizeInPixel.y-arduboy.height()+mapOffsetY;
+
+  return cameraPosition;
 }

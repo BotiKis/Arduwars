@@ -96,7 +96,22 @@ private:
     void doRoundOfPlayer(Player *currentPlayer);
 
     // Game Helper
-    void drawMapAtPosition(Point pos);
+    void drawMapAtPosition(Point pos); // Draws the map at the given position
+
+    // Shows a dialog with a text at the center of the Screen.
+    // closes if B is pressed
+    void showDialog(const char *titleText);
+
+    // Shows a option dialog with a text at the top right.
+    // Used as contextmenu in-game
+    // Returns false of B is pressed, true if A is pressed
+    bool showOption(const char *buttonTitle);
+
+    // Shows a HUD with name, Days and Funds
+    void drawHudForPlayer(Player *aPlayer);
+
+    // Helper to calculate the camera
+    Point calculateCameraPosition(Point forCursorPosition);
 
     // ======================
     // Data
@@ -132,11 +147,9 @@ private:
 
     // Map data
     const unsigned char *mapData = nullptr;
-    Point cursorPosition = {0, 0};
-    Point cameraPosition = {0, 0};
-    Point currentIndex = {0, 0};
 
     Point mapSize = {0, 0};
     Point mapSizeInPixel = {0, 0};
+    static constexpr uint8_t mapOffsetY = 8;
 };
 #endif
