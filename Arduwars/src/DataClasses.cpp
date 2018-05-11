@@ -1,4 +1,5 @@
 #include "DataClasses.h"
+#include <string.h>
 
 GameUnit::GameUnit(){
   // Save the provided Type
@@ -225,6 +226,12 @@ GameBuilding::GameBuilding(BuildingType type){
 
 // reset the data of this class
 void Player::reset(){
+  // default 20 money
   money = 20;
+
+  // reset name
+  strcpy(name, "");
+
+  // clear units
   units.clear();
 }

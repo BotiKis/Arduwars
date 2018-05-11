@@ -98,7 +98,8 @@ public:
   uint8_t attackRange :3; // Can attack in a radius of max 7 tiles.
   uint8_t mapPosX     :5; // X Position on the map - max 32.
   uint8_t mapPosY     :5; // Y Position on the map - max 32.
-  uint8_t others      :3; // reserved for future use.
+  uint8_t activated   :1; // 1 if unit has took its action.
+  uint8_t others      :2; // reserved for future use.
   // 4 Bytes in total.
 
   // Constructor
@@ -135,6 +136,7 @@ public:
 class Player{
 public:
   uint8_t money;
+  char name[8];
   List<GameUnit, 24> units;          // 24 Units make approximately 72 Bytes.
   // Approximately 73 bytes in total.
 
