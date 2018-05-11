@@ -4,6 +4,7 @@
 #include <Arduboy2.h>
 #include <Tinyfont.h>
 #include <Sprites.h>
+#include <Array.h>
 
 #include "DataClasses.h"
 
@@ -114,6 +115,9 @@ private:
     // There are always two players where the first one is the actual player and the second the AI.
     Player player1;
     Player player2;
+
+    // In this attribute we store the buildings on the map - max 16.
+    Array<GameBuilding, 24> gameBuildings;
 
     // Map data
     const unsigned char *mapData = nullptr;
