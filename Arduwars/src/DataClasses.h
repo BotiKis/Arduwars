@@ -2,7 +2,7 @@
 #define DATA_H
 
 #include <stdint.h>
-#include <Array.h>
+#include <List.h>
 
 // Documentation:
 // This File holds all relevant data classes of this game.
@@ -42,6 +42,9 @@ enum class UnitType : uint8_t {
 // There are only 16 in total.
 enum class BuildingType : uint8_t {
   None = 0,
+  Hill,
+  Mountain,
+  Forest,
   City,
   Factory,
   Airport,
@@ -132,11 +135,11 @@ public:
 class Player{
 public:
   uint8_t money;
-  Array<Unit, 24> units;          // 24 Units make approximately 72 Bytes.
+  List<GameUnit, 24> units;          // 24 Units make approximately 72 Bytes.
   // Approximately 73 bytes in total.
 
-  // Constructor is used to initialize with default content. See DataClass.cpp for the implementation.
-  Player();
+  // reset the data of this class
+  void reset();
 };
 
 #endif

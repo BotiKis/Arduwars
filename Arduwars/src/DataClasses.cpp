@@ -223,6 +223,8 @@ GameBuilding::GameBuilding(BuildingType type){
   }
 }
 
-Player::Player(){
+// reset the data of this class
+void Player::reset(){
   money = 20;
+  units.clear();
 }
