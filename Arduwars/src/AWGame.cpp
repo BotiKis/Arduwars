@@ -7,6 +7,7 @@
 
 #include <UtilityFunctions.h>
 #include "PointMath.h"
+#include "UnitSprites.h"
 
 #include <MemoryFree.h>
 
@@ -216,6 +217,12 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
       // Populate array from map data
       for (uint16_t i = 0; i < mapLenght; i++) {
         mapTileData[i].tileID = pgm_read_byte(mapData+2+i);
+
+        if (mapTileData[i].tileID == 26) {
+          mapTileData[i].buildingBelongsTo = MapTile::mapTilePlayer1;
+          mapTileData[i].unitBelongsTo = MapTile::mapTilePlayer1;
+          mapTileData[i].others = 0;
+        }
       }
 
       return nextState;
@@ -473,6 +480,28 @@ void AWGame::drawMapAtPosition(Point pos){
         sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 33);
       }
       sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
+
+      if(tile.unitBelongsTo != MapTile::mapTileNone){
+        // get sprite Index
+        uint8_t unitSpriteIDX = tile.others;
+
+        // unitSprite
+        const unsigned char *unitSprite = nullptr;
+
+        // get correct sprite
+        if(tile.unitBelongsTo == MapTile::mapTilePlayer1)
+          unitSprite = unitsA_plus_mask;
+        else if(tile.unitBelongsTo == MapTile::mapTilePlayer2)
+          unitSprite = unitsB_plus_mask;
+
+        // Draw sprite
+        if(unitSprite != nullptr){
+            // Draw unit
+            sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, unitSpriteIDX);
+        }
+
+      }
+
     }
   }
 }
