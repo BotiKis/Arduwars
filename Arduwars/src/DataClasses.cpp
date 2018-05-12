@@ -1,6 +1,9 @@
 #include "DataClasses.h"
 #include <string.h>
 
+// ====================================================
+// GameUnit
+
 GameUnit::GameUnit(){
   // Save the provided Type
   unitType = static_cast<uint8_t>(UnitType::Soldier);
@@ -145,86 +148,106 @@ GameUnit::GameUnit(UnitType type){
   }
 }
 
+
+// ====================================================
+// EnviromentEffects
+
+const EnviromentEffects EnviromentEffects::effectForType(EnviromentType type){
+  EnviromentEffects effects;
+
+  // Switch through types
+  switch (type) {
+    default:
+    case EnviromentType::Ground:
+    case EnviromentType::Water:{
+      effects.moveBonus     = 0;
+      effects.defenseBonus  = 0;
+      break;
+    };
+    case EnviromentType::Street:{
+      effects.moveBonus     = 1;
+      effects.defenseBonus  = 0;
+      break;
+    };
+    case EnviromentType::Hill:{
+      effects.moveBonus     = -1;
+      effects.defenseBonus  = 2;
+      break;
+    };
+    case EnviromentType::Mountain:{
+      effects.moveBonus     = -3;
+      effects.defenseBonus  = 2;
+      break;
+    };
+    case EnviromentType::Building: // Building is same as a forest
+    case EnviromentType::Forest:{
+      effects.moveBonus     = -1;
+      effects.defenseBonus  = 1;
+      break;
+    };
+    case EnviromentType::Reef:{
+      effects.moveBonus     = -3;
+      effects.defenseBonus  = 1;
+      break;
+    };
+  }
+
+  return effects;
+}
+
+
+const bool EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType){
+
+  //Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
+  static const uint8_t moveTable[16] =
+  {
+    0b10111101,  // Soldier
+    0b10111101, // Mech
+    0b10111101, // SpecOps
+    0b10110101, // Recon
+    0b10110101, // Assist,
+    0b10110101, // Tank
+    0b10110101, // BigTank
+    0b10110101, // Artillery
+    0b10110101, // Rocket,
+    0b10110101, // Missiles,
+    0b11111111, // Heli,
+    0b11111111, // Fighter
+    0b11111111, // Bomber,
+    0b01000000, // Cruiser,
+    0b01000000, // Battleship,
+    0b01000000 // Transportship
+  };
+
+ uint8_t moveMask = moveTable[static_cast<uint8_t>(unitType)];
+ uint8_t value = (moveMask >> (7-static_cast<uint8_t>(enviromentType))) & 0b00000001;
+
+ return (value == 1);
+}
+
+
+// ====================================================
+// GameBuilding
+
 GameBuilding::GameBuilding(){
   // Save the provided Type
   buildingType = static_cast<uint8_t>(BuildingType::None);
 
-    // By default set every attribute to 0
+  // By default set every attribute to 0
   healthPoints = 0;
-  movePenalty = 0;
-  defenseBonus = 0;
-  others = 0;
+  mapPosX = mapPosY = 0;
 }
 
 GameBuilding::GameBuilding(BuildingType type){
   // Save the provided Type
   buildingType = static_cast<uint8_t>(type);
 
-  // Every Building has default 10 HP
-  healthPoints = 10;
-
-  // set unused stuff to 0
-  others = 0;
-
-  // Switch through types
-  switch (type) {
-    default:
-    case BuildingType::Hill:{
-      movePenalty   = 1;  // MAX 3
-      defenseBonus  = 2;  // MAX 3
-      break;
-    };
-    case BuildingType::Mountain:{
-      movePenalty   = 3;  // MAX 3
-      defenseBonus  = 2;  // MAX 3
-      break;
-    };
-    case BuildingType::Forest:{
-      movePenalty   = 1;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      break;
-    };
-    case BuildingType::City:{
-      movePenalty   = 1;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      break;
-    };
-    case BuildingType::Factory:{
-      movePenalty   = 0;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      break;
-    };
-    case BuildingType::Airport:{
-      movePenalty   = 0;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      break;
-    };
-    case BuildingType::Shipyard:{
-      movePenalty   = 0;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      break;
-    };
-    case BuildingType::ScienceFacility:{
-      movePenalty   = 0;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      break;
-    };
-    case BuildingType::HQPlayer1:{
-      movePenalty   = 0;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      healthPoints  = 15; // HQ is only building with 15 HP
-      break;
-    };
-    case BuildingType::HQPlayer2:{
-      movePenalty   = 0;  // MAX 3
-      defenseBonus  = 1;  // MAX 3
-      healthPoints  = 15; // HQ is only building with 15 HP
-      break;
-    };
-  }
+  // Every Building has default 5 HP
+  healthPoints = 5;
 }
 
-// reset the data of this class
+// ====================================================
+// Player
 void Player::reset(){
   // default 20 money
   money = 20;

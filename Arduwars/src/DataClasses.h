@@ -37,32 +37,6 @@ enum class UnitType : uint8_t {
   Transportship // Can transport Infantry
 };
 
-// This enum defines the possible buildings.
-// A Building can be the HQ, a city or even a Mountain or Forests.
-// There are only 16 in total.
-enum class BuildingType : uint8_t {
-  None = 0,
-  Hill,
-  Mountain,
-  Forest,
-  City,
-  Factory,
-  Airport,
-  Shipyard,
-  ScienceFacility,
-  HQPlayer1,
-  HQPlayer2
-};
-
-// This enum defines the possible obstacles on the map.
-enum class ObstacleType : uint8_t {
-  None = 0,
-  Hill,     // Can only be moved to by Infantry
-  Mountain, // Can only be moved to by Infantry
-  Forest,
-  Shores
-};
-
 // This class defines a Unit like Soldiers or Tanks
 class GameUnit{
 public:
@@ -109,21 +83,56 @@ public:
   GameUnit(UnitType atype);
 };
 
+// This enum defines the possible Enviroments.
+enum class EnviromentType : uint8_t {
+  Ground = 0,
+  Water,
+  Street,
+  Hill,
+  Mountain,
+  Forest,
+  Reef,
+  Building
+};
+
+// Certain enviroments interact with units by giving or taking away certain traits.
+class EnviromentEffects{
+public:
+
+  int8_t moveBonus     :4; // -4 to 3
+  int8_t defenseBonus  :4; // -4 to 3
+
+  // Returns an effect for a given type.
+  static const EnviromentEffects effectForType(EnviromentType type);
+  static const bool canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType);
+};
+
+// This enum defines the possible buildings.
+// A Building can be the HQ, a city or even a Mountain or Forests.
+// There are only 16 in total.
+enum class BuildingType : uint8_t {
+  None = 0,
+  City,
+  Factory,
+  Airport,
+  Shipyard,
+  ScienceFacility,
+  HQPlayer1,
+  HQPlayer2
+};
+
 // This class defines a Building like the HQ or Cities.
 // Mountains, Forests and other things on the Map also count as buildings.
 class GameBuilding{
 public:
-  uint8_t buildingType  :4; // We can have 16 different buildings
+  uint8_t buildingType  :3; // We can have 8 different buildings
                             // Also we store it as a uint8_t instead of a BuildingType,
                             // because we save some valuable ram if we use a Bitfield.
                             // Later we typecast safely between these two types.
-  uint8_t healthPoints  :4; // A building can have max 15 health.
-  uint8_t movePenalty   :2; // A building can give a moving Unit a movement penalty up to 3.
-  uint8_t defenseBonus  :2; // A building can give a stationed Unit a defense bonus up to 3.
+  uint8_t healthPoints  :3; // A building can have max 8 health.
   uint8_t mapPosX       :5; // X Position on the map - max 32.
   uint8_t mapPosY       :5; // Y Position on the map - max 32.
-  uint8_t others        :2; // reserved for future use.
-  // 3 Bytes in total.
+  // 2 Bytes in total.
 
   // Constructor
   // Default constructor initializes an all 0 filled BuildingType::None Building.
@@ -153,6 +162,28 @@ public:
 
   // reset the data of this class
   void reset();
+};
+
+// This class is used to tell the map drawing method what to draw.
+// An 2D array with instances of this class is populated at the start of every round
+// of a player.
+
+class MapTile {
+public:
+
+  using mapTileOwnership = uint8_t;
+  constexpr static const mapTileOwnership mapTileNone = 0;
+  constexpr static const mapTileOwnership mapTilePlayer1 = 1;
+  constexpr static const mapTileOwnership mapTilePlayer2 = 2;
+
+  uint8_t tileID:5;                     // Holds the ID of the Tile in the Tilesheet
+  mapTileOwnership buildingBelongsTo:2; // Tells to whom the building belongs (if it's a building).
+  mapTileOwnership unitBelongsTo:2;     // Tells, if there is a unit and to which player it belongs.
+  uint8_t showSelection:1;              // When 1, it displays the selection Animation
+  uint8_t showsFog:1;                   // When 1, it shows fog.
+  uint8_t others:5;                     // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
+
+  // 2 bytes in total
 };
 
 #endif
