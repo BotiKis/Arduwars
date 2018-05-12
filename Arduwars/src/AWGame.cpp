@@ -595,6 +595,7 @@ Point AWGame::calculateCameraPosition(Point forCursorPosition){
 
 void AWGame::printFreeMemory(){
 
+  #warning Remove Memory free when done.
   arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
   arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
 
