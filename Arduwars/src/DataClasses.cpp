@@ -246,8 +246,10 @@ GameBuilding::GameBuilding(BuildingType type){
   healthPoints = 5;
 }
 
+
 // ====================================================
 // Player
+
 void Player::reset(){
   // default 20 money
   money = 20;
@@ -257,4 +259,16 @@ void Player::reset(){
 
   // clear units
   units.clear();
+}
+
+// ====================================================
+// MapTile
+
+MapTile::MapTile(void){
+  tileID = 0;
+  buildingBelongsTo = 0;
+  unitBelongsTo = mapTileNone;
+  showSelection = mapTileNone;
+  showsFog = 0;
+  others = 0;
 }

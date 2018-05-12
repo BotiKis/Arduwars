@@ -176,6 +176,8 @@ public:
   constexpr static const mapTileOwnership mapTilePlayer1 = 1;
   constexpr static const mapTileOwnership mapTilePlayer2 = 2;
 
+  MapTile(void);
+
   uint8_t tileID:5;                     // Holds the ID of the Tile in the Tilesheet
   mapTileOwnership buildingBelongsTo:2; // Tells to whom the building belongs (if it's a building).
   mapTileOwnership unitBelongsTo:2;     // Tells, if there is a unit and to which player it belongs.
