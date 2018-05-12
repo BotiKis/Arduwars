@@ -8,6 +8,8 @@
 #include <UtilityFunctions.h>
 #include "PointMath.h"
 
+#include <MemoryFree.h>
+
 // -------------------------------------------------------
 // Constructor sets up basic stuff for the game
 AWGame::AWGame(){
@@ -130,16 +132,19 @@ AWGameState AWGame::showMenu(){
     // Here we draw the menu text
     // The text is wrapped in a F() function which tells the compiler to
     // Store the text in PROGMEM instead of RAM which saves us some valuable RAM.
-    tinyfont.setCursor(2, 47);
+    tinyfont.setCursor(2, 7);
     tinyfont.print(F("SINGLE PLAYER"));
-    tinyfont.setCursor(2, 53);
+    tinyfont.setCursor(2, 13);
     tinyfont.print(F("TWO PLAYER"));
-    tinyfont.setCursor(2, 59);
+    tinyfont.setCursor(2, 19);
     tinyfont.print(F("OPTIONS"));
 
     // depending on the cursor index, we draw the cursor
-    tinyfont.setCursor(75, 47 + cursorIdx*6);
+    tinyfont.setCursor(75, 7 + cursorIdx*6);
     tinyfont.print("<");
+
+    // print free memory
+    printFreeMemory();
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
@@ -231,19 +236,22 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
     arduboy.fillScreen(WHITE);
 
     // Draw the menu
-    tinyfont.setCursor(2, 38);
+    tinyfont.setCursor(2, 8);
     tinyfont.print(F("< BACK WITH A"));
 
-    tinyfont.setCursor(2, 47);
+    tinyfont.setCursor(2, 17);
     tinyfont.print(F("SKIRMISH"));
-    tinyfont.setCursor(2, 53);
+    tinyfont.setCursor(2, 23);
     tinyfont.print(F("BATTLE"));
-    tinyfont.setCursor(2, 59);
+    tinyfont.setCursor(2, 29);
     tinyfont.print(F("ARDUWARS"));
 
     // depending on the cursor index, we draw the cursor
-    tinyfont.setCursor(64, 47 + cursorIdx*6);
+    tinyfont.setCursor(64, 17 + cursorIdx*6);
     tinyfont.print("<");
+
+    // print free memory
+    printFreeMemory();
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
@@ -427,6 +435,9 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         // tinyfont.setCursor(1, 64 - 5);
         // tinyfont.print(currentIndex.y);
 
+        // print free memory
+        printFreeMemory();
+
         arduboy.display();
 
         // Check if menu was pressed
@@ -580,4 +591,15 @@ Point AWGame::calculateCameraPosition(Point forCursorPosition){
   if(cameraPosition.y > mapSizeInPixel.y-arduboy.height()+mapOffsetY) cameraPosition.y = mapSizeInPixel.y-arduboy.height()+mapOffsetY;
 
   return cameraPosition;
+}
+
+void AWGame::printFreeMemory(){
+
+  arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
+  arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
+
+  tinyfont.setCursor(1, arduboy.height()-5);
+  tinyfont.print(F("MEM FREE:"));
+  tinyfont.setCursor(48, arduboy.height()-5);
+  tinyfont.print(freeMemory());
 }

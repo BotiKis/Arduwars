@@ -113,6 +113,9 @@ private:
     // Helper to calculate the camera
     Point calculateCameraPosition(Point forCursorPosition);
 
+    // print free memory // debug Only
+    void printFreeMemory();
+
     // ======================
     // Data
     // This is our instance of the Arduboy2 class. It is the foundation for
