@@ -146,7 +146,7 @@ private:
     List<GameBuilding, 24> gameBuildings;
 
     // Map data
-    const unsigned char *mapData = nullptr;
+    MapTile *mapTileData = nullptr;
 
     Point mapSize = {0, 0};
     Point mapSizeInPixel = {0, 0};

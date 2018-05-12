@@ -154,6 +154,7 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
+  unsigned const char *mapData;
 
   // Again a Game loop
   while(true){
@@ -189,10 +190,28 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
         default: return AWGameState::showMenu;
       }
 
+      // clear old map Data
+      if (mapTileData != nullptr) {
+        delete [] mapTileData;
+        mapTileData = nullptr;
+      }
+
       // handle map data
       mapSize.x  = pgm_read_byte(mapData);
       mapSize.y  = pgm_read_byte(mapData+1);
       mapSizeInPixel = mapSize*TILE_SIZE;
+
+      //// Load map data
+      // Calculate map lenght
+      uint16_t mapLenght = mapSize.x*mapSize.y;
+
+      // create new array of maptiles
+      mapTileData = new MapTile[mapLenght];
+
+      // Populate array from map data
+      for (uint16_t i = 0; i < mapLenght; i++) {
+        mapTileData[i].tileID = pgm_read_byte(mapData+2+i);
+      }
 
       return nextState;
     }
@@ -433,16 +452,16 @@ void AWGame::drawMapAtPosition(Point pos){
       // ignore if out of bounds
       if (drawPos.x <= -TILE_SIZE || drawPos.x >= arduboy.width() || drawPos.y <= -TILE_SIZE || drawPos.y >= (arduboy.height()+TILE_SIZE)) continue;
 
-      // +2 because the first two bytes are the width and height.
-      uint8_t spriteIDX = pgm_read_byte(mapData+2+y*mapSize.x+x);
+      // get the tile
+      MapTile tile = mapTileData[y*mapSize.x+x];
 
-      if (spriteIDX == 30) {
+      if (tile.tileID == 30) {
         sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 32);
       }
-      if (spriteIDX == 31) {
+      if (tile.tileID == 31) {
         sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 33);
       }
-      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, spriteIDX);
+      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
     }
   }
 }
