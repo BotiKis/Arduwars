@@ -7,7 +7,13 @@
 // Documentation:
 // This File holds all relevant data classes of this game.
 // Data Classes are a place where only Information is stored.
-// There will be no visual nor game logic elements of the game.
+// Here will be no visual nor game logic elements of the game.
+
+
+using GameObjectOwnership = uint8_t;
+constexpr static const GameObjectOwnership OwnerShipNone    = 0;
+constexpr static const GameObjectOwnership OwnerShipPlayer1 = 1;
+constexpr static const GameObjectOwnership OwnerShipPlayer2 = 2;
 
 // This enum defines the possible Units
 // There are only 16 in total.
@@ -36,6 +42,35 @@ enum class UnitType : uint8_t {
   Battleship,
   Transportship // Can transport Infantry
 };
+
+// This enum defines the possible Map Tiles
+// There are only 32 in total.
+enum class MapTileType:uint8_t{
+  Water = 0,
+  Reef,
+  Coast1,
+  // coast stuff from 2-13
+  Coast12,
+  Plains = 14,
+  Grass,
+  Street1,
+  // street stuff from 16-21
+  Street6 = 21,
+  Hill = 22,
+  Mountain,
+  Forest,
+  City,
+  Workshop,
+  Airport,
+  Shipyard,
+  ScienceLab,
+  P1HQ,
+  P2HQ
+};
+
+static inline bool mapTileIndexIsBuilding(MapTileType mapTileidx){
+  return (mapTileidx >= MapTileType::City && mapTileidx <= MapTileType::P2HQ);
+}
 
 // This class defines a Unit like Soldiers or Tanks
 class GameUnit{
@@ -107,38 +142,25 @@ public:
   static const bool canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType);
 };
 
-// This enum defines the possible buildings.
-// A Building can be the HQ, a city or even a Mountain or Forests.
-// There are only 16 in total.
-enum class BuildingType : uint8_t {
-  None = 0,
-  City,
-  Factory,
-  Airport,
-  Shipyard,
-  ScienceFacility,
-  HQPlayer1,
-  HQPlayer2
-};
-
 // This class defines a Building like the HQ or Cities.
 // Mountains, Forests and other things on the Map also count as buildings.
 class GameBuilding{
 public:
-  uint8_t buildingType  :3; // We can have 8 different buildings
-                            // Also we store it as a uint8_t instead of a BuildingType,
-                            // because we save some valuable ram if we use a Bitfield.
-                            // Later we typecast safely between these two types.
-  uint8_t healthPoints  :3; // A building can have max 8 health.
-  uint8_t mapPosX       :5; // X Position on the map - max 32.
-  uint8_t mapPosY       :5; // Y Position on the map - max 32.
-  // 2 Bytes in total.
+  uint8_t buildingType                :5; // We store it as a uint8_t instead of a BuildingType,
+                                          // because we save some valuable ram if we use a Bitfield.
+                                          // Later we typecast safely between these two types.
+  uint8_t healthPoints                :5; // A building can have max 32 health.
+  GameObjectOwnership belongsToPlayer :2; // Tells to which player the Building belongs
+  uint8_t mapPosX                     :5; // X Position on the map - max 32.
+  uint8_t mapPosY                     :5; // Y Position on the map - max 32.
+  // 3 Bytes in total.
 
   // Constructor
   // Default constructor initializes an all 0 filled BuildingType::None Building.
   GameBuilding();
-  // Custom Constructor is used to initialize with default content. See DataClass.cpp for the implementation.
-  GameBuilding(BuildingType type);
+
+  // initializes with corresponding data
+  GameBuilding(MapTileType type);
 };
 
 // This class defines a Player which has Units, Buildings, Money and other Information.
@@ -165,25 +187,21 @@ public:
 };
 
 // This class is used to tell the map drawing method what to draw.
+// It is NOT a Datastorage and should only be used to tell the drawing method what to draw.
 // An 2D array with instances of this class is populated at the start of every round
 // of a player.
 
 class MapTile {
-public:
-
-  using mapTileOwnership = uint8_t;
-  constexpr static const mapTileOwnership mapTileNone = 0;
-  constexpr static const mapTileOwnership mapTilePlayer1 = 1;
-  constexpr static const mapTileOwnership mapTilePlayer2 = 2;
+public://MapTileIndex
 
   MapTile(void);
 
-  uint8_t tileID:5;                     // Holds the ID of the Tile in the Tilesheet
-  mapTileOwnership buildingBelongsTo:2; // Tells to whom the building belongs (if it's a building).
-  mapTileOwnership unitBelongsTo:2;     // Tells, if there is a unit and to which player it belongs.
-  uint8_t showSelection:1;              // When 1, it displays the selection Animation
-  uint8_t showsFog:1;                   // When 1, it shows fog.
-  uint8_t others:5;                     // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
+  uint8_t tileID:5;                        // Holds the ID of the Tile in the Tilesheet
+  GameObjectOwnership buildingBelongsTo:2; // Tells to whom the building belongs (if it's a building).
+  GameObjectOwnership unitBelongsTo:2;     // Tells, if there is a unit and to which player it belongs.
+  uint8_t showSelection:1;                 // When 1, it displays the selection Animation
+  uint8_t showsFog:1;                      // When 1, it shows fog.
+  uint8_t others:5;                        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
 
   // 2 bytes in total
 };

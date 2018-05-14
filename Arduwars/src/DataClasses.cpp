@@ -230,20 +230,27 @@ const bool EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentType envir
 // GameBuilding
 
 GameBuilding::GameBuilding(){
-  // Save the provided Type
-  buildingType = static_cast<uint8_t>(BuildingType::None);
+  // By default it's plains
+  buildingType = static_cast<uint8_t>(MapTileType::Plains);
 
-  // By default set every attribute to 0
-  healthPoints = 0;
+  // Every Building has default 10 HP
+  healthPoints = 10;
+
+  // Set the coordinates to 0
   mapPosX = mapPosY = 0;
+  belongsToPlayer = OwnerShipNone;
 }
 
-GameBuilding::GameBuilding(BuildingType type){
+GameBuilding::GameBuilding(MapTileType type){
   // Save the provided Type
   buildingType = static_cast<uint8_t>(type);
 
-  // Every Building has default 5 HP
-  healthPoints = 5;
+  // Every Building has default 10 HP
+  healthPoints = 10;
+
+  // Set the coordinates to 0
+  mapPosX = mapPosY = 0;
+  belongsToPlayer = OwnerShipNone;
 }
 
 
@@ -267,8 +274,8 @@ void Player::reset(){
 MapTile::MapTile(void){
   tileID = 0;
   buildingBelongsTo = 0;
-  unitBelongsTo = mapTileNone;
-  showSelection = mapTileNone;
+  unitBelongsTo = OwnerShipNone;
+  showSelection = OwnerShipNone;
   showsFog = 0;
   others = 0;
 }
