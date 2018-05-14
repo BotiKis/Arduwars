@@ -39,7 +39,7 @@
 // tricks but it vastly improve readability with some additional type safety so
 // it is recommended to use them.
 enum class AWGameState : uint8_t {
-  showMenu,
+  showMainMenu,
   showMapSelection,
   playSinglePlayer,
   playMultiPlayer,
@@ -84,8 +84,13 @@ private:
     // Methods
 
     // Game methods
-    AWGameState showMenu();           // Displays the menu
-    AWGameState showMapSelection(AWGameState nextState);  // Displays map selection, the argument is the next planned state
+    AWGameState showMainMenu();  // Displays the menu
+
+    // Displays map selection, the argument is the next planned state
+    // If the player selects a map, this method returns the same state as passed as the parameter.
+    // We do it this way because the player can decide to cancel and if he does,
+    // this method returns AWGameState::showMainMenu
+    AWGameState showMapSelection(AWGameState nextState);
 
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
     void runSinglePlayerGame();       // Place where the singleplayer game runs
@@ -112,6 +117,15 @@ private:
 
     // Helper to calculate the camera
     Point calculateCameraPosition(Point forCursorPosition);
+
+    // Loads the map from progmem to memory
+    void loadMap(unsigned const char *mapData);
+
+    // updates the gamemap for the player
+    void updateMapForPlayer(Player *aPlayer);
+
+    // fills the gamemap with fog
+    void updateMapWithFog();
 
     // print free memory // debug Only
     void printFreeMemory();

@@ -33,7 +33,7 @@ AWGame::AWGame(){
   strcpy(player2->name, "PLAYER 2");
 
   // Now we set our Gamestate to showMenu since we want to start there.
-  gameState = AWGameState::showMenu;
+  gameState = AWGameState::showMainMenu;
 }
 
 // This method starts the actual game and is called in the Arduwars.ino file.
@@ -52,31 +52,36 @@ void AWGame::run(void){
         case AWGameState::playSinglePlayer:{
           // start game
           startNewSinglePlayerGame();
-          this->gameState = AWGameState::showMenu;
+
+          // If played, return to main menu
+          this->gameState = AWGameState::showMainMenu;
           break;
         }
         case AWGameState::playMultiPlayer:{
           // start game
           startNewMultiplayerPlayerGame();
-          this->gameState = AWGameState::showMenu;
+
+          // If played, return to main menu
+          this->gameState = AWGameState::showMainMenu;
           break;
         }
         case AWGameState::showOptions:{
-          this->gameState = AWGameState::showMenu;
+          // Return to main menu
+          this->gameState = AWGameState::showMainMenu;
           break;
         }
-        case AWGameState::showMenu:
+        case AWGameState::showMainMenu:
         default:
           // When showMenu is the current state, we will call the showMenu() method.
           // Take a look at the method now!
-          this->gameState = showMenu();
+          this->gameState = showMainMenu();
       }
   }
 }
 
 
 // This method displays the Main menu to the player.
-AWGameState AWGame::showMenu(){
+AWGameState AWGame::showMainMenu(){
 
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
@@ -114,7 +119,7 @@ AWGameState AWGame::showMenu(){
           return showMapSelection(AWGameState::playMultiPlayer);
         }
         case 2: return AWGameState::showOptions;
-        default: return AWGameState::showMenu; // this default is not needed but it's safe to do this.
+        default: return AWGameState::showMainMenu; // this default is not needed but it's safe to do this.
       }
     }
 
@@ -193,43 +198,17 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
           mapData = mapData_1;
           break;
         }
-        default: return AWGameState::showMenu;
+        default: return AWGameState::showMainMenu;
       }
 
-      // clear old map Data
-      if (mapTileData != nullptr) {
-        delete [] mapTileData;
-        mapTileData = nullptr;
-      }
-
-      // handle map data
-      mapSize.x  = pgm_read_byte(mapData);
-      mapSize.y  = pgm_read_byte(mapData+1);
-      mapSizeInPixel = mapSize*TILE_SIZE;
-
-      //// Load map data
-      // Calculate map lenght
-      uint16_t mapLenght = mapSize.x*mapSize.y;
-
-      // create new array of maptiles
-      mapTileData = new MapTile[mapLenght];
-
-      // Populate array from map data
-      for (uint16_t i = 0; i < mapLenght; i++) {
-        mapTileData[i].tileID = pgm_read_byte(mapData+2+i);
-
-        if (mapTileData[i].tileID == 26) {
-          mapTileData[i].buildingBelongsTo = MapTile::mapTilePlayer1;
-          mapTileData[i].unitBelongsTo = MapTile::mapTilePlayer1;
-          mapTileData[i].others = 0;
-        }
-      }
+      // Load map Data
+      loadMap(mapData);
 
       return nextState;
     }
     if (arduboy.justPressed(A_BUTTON)) {
       // When the A Button is pressed we go back to the menu.
-      return AWGameState::showMenu;
+      return AWGameState::showMainMenu;
     }
 
     // Limit and wrap the index
@@ -457,55 +436,6 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
     }
 }
 
-void AWGame::drawMapAtPosition(Point pos){
-  Point drawPos;
-
-  // draw the map
-  for (int8_t y = 0; y < mapSize.y; y++) {
-    for (int8_t x = 0; x < mapSize.x; x++) {
-
-      drawPos.x = pos.x+x*TILE_SIZE;
-      drawPos.y = pos.y+y*TILE_SIZE;
-
-      // ignore if out of bounds
-      if (drawPos.x <= -TILE_SIZE || drawPos.x >= arduboy.width() || drawPos.y <= -TILE_SIZE || drawPos.y >= (arduboy.height()+TILE_SIZE)) continue;
-
-      // get the tile
-      MapTile tile = mapTileData[y*mapSize.x+x];
-
-      if (tile.tileID == 30) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 32);
-      }
-      if (tile.tileID == 31) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 33);
-      }
-      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
-
-      if(tile.unitBelongsTo != MapTile::mapTileNone){
-        // get sprite Index
-        uint8_t unitSpriteIDX = tile.others;
-
-        // unitSprite
-        const unsigned char *unitSprite = nullptr;
-
-        // get correct sprite
-        if(tile.unitBelongsTo == MapTile::mapTilePlayer1)
-          unitSprite = unitsA_plus_mask;
-        else if(tile.unitBelongsTo == MapTile::mapTilePlayer2)
-          unitSprite = unitsB_plus_mask;
-
-        // Draw sprite
-        if(unitSprite != nullptr){
-            // Draw unit
-            sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, unitSpriteIDX);
-        }
-
-      }
-
-    }
-  }
-}
-
 void AWGame::showDialog(const char *titleText){
 
   // frame for the dialog
@@ -620,6 +550,175 @@ Point AWGame::calculateCameraPosition(Point forCursorPosition){
   if(cameraPosition.y > mapSizeInPixel.y-arduboy.height()+mapOffsetY) cameraPosition.y = mapSizeInPixel.y-arduboy.height()+mapOffsetY;
 
   return cameraPosition;
+}
+
+void AWGame::loadMap(unsigned const char *mapData){
+
+  // clear old map Data
+  if (mapTileData != nullptr) {
+    delete [] mapTileData;
+    mapTileData = nullptr;
+  }
+
+  // Reset Buildings
+  gameBuildings.clear();
+
+  // handle map meta info
+  // get size
+  mapSize.x  = pgm_read_byte(mapData+MAPDATAOFFSET_Size);
+  mapSize.y  = pgm_read_byte(mapData+MAPDATAOFFSET_Size+1);
+  mapSizeInPixel = mapSize*TILE_SIZE;
+
+  // p1 meta Data
+  Point player1StartCityCoords;
+  player1StartCityCoords.x = pgm_read_byte(mapData+MAPDATAOFFSET_Player1City);
+  player1StartCityCoords.y = pgm_read_byte(mapData+MAPDATAOFFSET_Player1City+1);
+
+  Point player1StartWorkshopCoords;
+  player1StartWorkshopCoords.x = pgm_read_byte(mapData+MAPDATAOFFSET_Player1Workshop);
+  player1StartWorkshopCoords.y = pgm_read_byte(mapData+MAPDATAOFFSET_Player1Workshop+1);
+
+  // p2 meta Data
+  Point player2StartCityCoords;
+  player2StartCityCoords.x = pgm_read_byte(mapData+MAPDATAOFFSET_Player2City);
+  player2StartCityCoords.y = pgm_read_byte(mapData+MAPDATAOFFSET_Player2City+1);
+
+  Point player2StartWorkshopCoords;
+  player2StartWorkshopCoords.x = pgm_read_byte(mapData+MAPDATAOFFSET_Player2Workshop);
+  player2StartWorkshopCoords.y = pgm_read_byte(mapData+MAPDATAOFFSET_Player2Workshop+1);
+
+  //// Load map data
+  // Calculate map lenght
+  uint16_t mapLenght = mapSize.x*mapSize.y;
+
+  // create new array of maptiles
+  mapTileData = new MapTile[mapLenght];
+
+  // The index in the loop will be stored here
+  Point currentIndex;
+
+  // Populate array from map data
+  for (uint16_t i = 0; i < mapLenght; i++) {
+
+    // get Tile Data
+    mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
+    MapTileType tileType = static_cast<MapTileType>(mapTileData[i].tileID);
+
+    // calc index
+    currentIndex.x = i % mapSize.x;
+    currentIndex.y = i / mapSize.x;
+
+    // Check if it's a building
+    if (mapTileIndexIsBuilding(tileType)) {
+      GameBuilding building = GameBuilding();
+
+      // Check for city
+      if (tileType == MapTileType::City) {
+        // check for ownership
+        if (currentIndex == player1StartCityCoords) {
+          building.belongsToPlayer = OwnerShipPlayer1;
+        }
+        else if (currentIndex == player2StartCityCoords) {
+          building.belongsToPlayer = OwnerShipPlayer2;
+        }
+      }
+
+      // Check for Workshop
+      if (tileType == MapTileType::Workshop) {
+        // check for ownership
+        if (currentIndex == player1StartWorkshopCoords) {
+          building.belongsToPlayer = OwnerShipPlayer1;
+        }
+        else if (currentIndex == player2StartWorkshopCoords) {
+          building.belongsToPlayer = OwnerShipPlayer2;
+        }
+      }
+
+      // Check for Headquarters
+      if (tileType == MapTileType::P1HQ){
+        building.belongsToPlayer = OwnerShipPlayer1;
+      }
+      else if (tileType == MapTileType::P2HQ){
+        building.belongsToPlayer = OwnerShipPlayer2;
+      }
+
+      gameBuildings.add(building);
+    }
+
+  }
+}
+
+void AWGame::updateMapForPlayer(Player *aPlayer){
+
+  // update buildings
+  // update Units
+}
+
+void AWGame::updateMapWithFog(){
+  // draw fog
+  for (int8_t y = 0; y < mapSize.y; y++) {
+    for (int8_t x = 0; x < mapSize.x; x++) {
+
+        // get the tile
+        MapTile tile = mapTileData[y*mapSize.x+x];
+
+        // turn fog on
+        tile.showsFog = true;
+
+        //update tile
+         mapTileData[y*mapSize.x+x] = tile;
+    }
+  }
+}
+
+void AWGame::drawMapAtPosition(Point pos){
+  Point drawPos;
+
+  // draw the map
+  for (int8_t y = 0; y < mapSize.y; y++) {
+    for (int8_t x = 0; x < mapSize.x; x++) {
+
+      drawPos.x = pos.x+x*TILE_SIZE;
+      drawPos.y = pos.y+y*TILE_SIZE;
+
+      // ignore if out of bounds
+      if (drawPos.x <= -TILE_SIZE || drawPos.x >= arduboy.width() || drawPos.y <= -TILE_SIZE || drawPos.y >= (arduboy.height()+TILE_SIZE)) continue;
+
+      // get the tile
+      MapTile tile = mapTileData[y*mapSize.x+x];
+
+      if (tile.tileID == 30) {
+        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 32);
+      }
+      if (tile.tileID == 31) {
+        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 33);
+      }
+      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
+
+      // Draw Unit
+      if(tile.unitBelongsTo != OwnerShipNone){
+        // get sprite Index
+        uint8_t unitSpriteIDX = tile.others;
+
+        // unitSprite
+        const unsigned char *unitSprite = nullptr;
+
+        // get correct sprite
+        if(tile.unitBelongsTo == OwnerShipPlayer1)
+          unitSprite = unitsA_plus_mask;
+        else if(tile.unitBelongsTo == OwnerShipPlayer1)
+          unitSprite = unitsB_plus_mask;
+
+        // Draw sprite
+        if(unitSprite != nullptr){
+            // Draw unit
+            sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, unitSpriteIDX);
+        }
+
+      }
+
+    }
+  }
 }
 
 void AWGame::printFreeMemory(){
