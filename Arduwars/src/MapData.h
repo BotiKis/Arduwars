@@ -3,6 +3,13 @@
 
 #include <avr/pgmspace.h>
 
+#define MAPDATAOFFSET_Size 0
+#define MAPDATAOFFSET_Player1City 2
+#define MAPDATAOFFSET_Player1Workshop 4
+#define MAPDATAOFFSET_Player2City 6
+#define MAPDATAOFFSET_Player2Workshop 8
+#define MAPDATAOFFSET_Main 10
+
 // In this file we store our maps.
 // You can create your custom maps with tiled:The Map editor https://www.mapeditor.org/
 //
@@ -26,7 +33,17 @@ const unsigned char PROGMEM mapData_1[] =
   // Map size
   24, 16,
 
-  // actual data
+  // Player 1 City
+  1,3,
+  // Player 1 Workshop
+  2,1,
+
+  // Player 2 City
+  22,12,
+  // Player 2 Workshop
+  21,14,
+
+  // Map Data
   24,24,24,24,24,24,23,23,23,23,23,23,23,23,23,23,23,23,23,22,24,22,23,23,
   24,24,26,24,24,25,24,23,22,24,24,22,25,22,24,24,24,23,25,24,24,24,22,23,
   24,24,14,14,14,14,24,14,14,14,24,24,14,14,14,14,14,14,14,14,26,24,24,22,
@@ -50,6 +67,17 @@ const unsigned char PROGMEM mapData_2[] =
   // Map size
   20, 12,
 
+  // Player 1 City
+  2,8,
+  // Player 1 Workshop
+  0,10,
+
+  // Player 2 City
+  17,8,
+  // Player 2 Workshop
+  19,10,
+
+  // Map Data
   23,22,24,25,24,24,24,24,22,23,18,22,24,24,24,24,25,24,22,23,
   24,14,14,14,14,14,14,14,14,14,18,14,14,14,14,14,14,14,14,24,
   24,14,22,24,2,6,6,7,24,14,18,24,2,6,6,7,24,22,14,24,
@@ -69,6 +97,17 @@ const unsigned char PROGMEM mapData_3[] =
   // Map size
   12, 12,
 
+  // Player 1 City
+  3,0,
+  // Player 1 Workshop
+  2,1,
+
+  // Player 2 City
+  8,11,
+  // Player 2 Workshop
+  9,10,
+
+  // Map Data
   24,14,24,25,3,0,1,8,23,23,23,23,
   24,30,26,24,4,11,12,9,22,22,26,23,
   24,14,14,24,23,4,9,24,24,24,22,23,
