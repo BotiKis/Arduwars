@@ -3,6 +3,7 @@
 
 #include <Arduboy2.h>
 #include <List.h>
+#include "Localization.h"
 
 // Documentation:
 // This File holds all relevant data classes of this game.
@@ -68,6 +69,7 @@ enum class MapTileType:uint8_t{
   P2HQ
 };
 
+// Helper function returns true if the given Index is a Building
 static inline bool mapTileIndexIsBuilding(MapTileType mapTileidx){
   return (mapTileidx >= MapTileType::City && mapTileidx <= MapTileType::P2HQ);
 }
@@ -110,6 +112,9 @@ public:
   // Constructor
   // Default constructor initializes an all 0 filled UnitType::Soldier Unit.
   GameUnit();
+
+  // returns the name of a certain UnitType
+  static char_P* nameForUnitType(UnitType unitType);
 };
 
 class UnitTraits{
