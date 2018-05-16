@@ -351,6 +351,9 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
   Point cameraPosition = {0, 0};
   Point currentIndex = {0, 0};
 
+  // calculate mapsize in pixels, needed for camera stuff
+  Point mapSizeInPixel = mapSize*TILE_SIZE;
+
     // Game loop
     while(true){
 
@@ -543,6 +546,9 @@ Point AWGame::calculateCameraPosition(Point forCursorPosition){
   cameraPosition.x = forCursorPosition.x - (arduboy.width()-32)/2;
   cameraPosition.y = forCursorPosition.y - (arduboy.height()-32)/2;
 
+  // calculate mapsize in pixels
+  Point mapSizeInPixel = mapSize*TILE_SIZE;
+
   // Check for bounds
   if(cameraPosition.x < 0) cameraPosition.x = 0;
   if(cameraPosition.y < 1) cameraPosition.y = 1;
@@ -567,7 +573,6 @@ void AWGame::loadMap(unsigned const char *mapData){
   // get size
   mapSize.x  = pgm_read_byte(mapData+MAPDATAOFFSET_Size);
   mapSize.y  = pgm_read_byte(mapData+MAPDATAOFFSET_Size+1);
-  mapSizeInPixel = mapSize*TILE_SIZE;
 
   // p1 meta Data
   Point player1StartCityCoords;

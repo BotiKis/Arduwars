@@ -166,7 +166,6 @@ private:
     MapTile *mapTileData = nullptr;
 
     Point mapSize = {0, 0};
-    Point mapSizeInPixel = {0, 0};
     static constexpr uint8_t mapOffsetY = 8;
 };
 #endif
