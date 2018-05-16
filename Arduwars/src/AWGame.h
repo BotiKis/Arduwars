@@ -7,6 +7,7 @@
 #include <List.h>
 
 #include "DataClasses.h"
+#include "Localization.h"
 
 // Documentation
 // This files contains our Main game class which defines the base of the game
@@ -105,12 +106,12 @@ private:
 
     // Shows a dialog with a text at the center of the Screen.
     // closes if B is pressed
-    void showDialog(const char *titleText);
+    void showDialog(char_P *titleText);
 
     // Shows a option dialog with a text at the top right.
     // Used as contextmenu in-game
     // Returns false of B is pressed, true if A is pressed
-    bool showOption(const char *buttonTitle);
+    bool showOption(char_P *buttonTitle);
 
     // Shows a HUD with name, Days and Funds
     void drawHudForPlayer(Player *aPlayer);

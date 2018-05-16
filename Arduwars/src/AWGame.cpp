@@ -6,6 +6,7 @@
 #include "MapData.h"
 
 #include <UtilityFunctions.h>
+#include <FlashString.h>
 #include "PointMath.h"
 #include "UnitSprites.h"
 
@@ -27,10 +28,7 @@ AWGame::AWGame(){
 
   // Initialize players
   player1 = new Player();
-  strcpy(player1->name, "PLAYER 1");
-
   player2 = new Player();
-  strcpy(player2->name, "PLAYER 2");
 
   // Now we set our Gamestate to showMenu since we want to start there.
   gameState = AWGameState::showMainMenu;
@@ -139,11 +137,11 @@ AWGameState AWGame::showMainMenu(){
     // The text is wrapped in a F() function which tells the compiler to
     // Store the text in PROGMEM instead of RAM which saves us some valuable RAM.
     tinyfont.setCursor(2, 7);
-    tinyfont.print(F("SINGLE PLAYER"));
+    tinyfont.print(AsFlashString(LOCA_SinglePlayer));
     tinyfont.setCursor(2, 13);
-    tinyfont.print(F("TWO PLAYER"));
+    tinyfont.print(AsFlashString(LOCA_MultiPlayer));
     tinyfont.setCursor(2, 19);
-    tinyfont.print(F("OPTIONS"));
+    tinyfont.print(AsFlashString(LOCA_Options));
 
     // depending on the cursor index, we draw the cursor
     tinyfont.setCursor(75, 7 + cursorIdx*6);
@@ -223,14 +221,14 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
 
     // Draw the menu
     tinyfont.setCursor(2, 8);
-    tinyfont.print(F("< BACK WITH A"));
+    tinyfont.print(AsFlashString(LOCA_BackWithA));
 
     tinyfont.setCursor(2, 17);
-    tinyfont.print(F("SKIRMISH"));
+    tinyfont.print(AsFlashString(LOCA_mapSmall));
     tinyfont.setCursor(2, 23);
-    tinyfont.print(F("BATTLE"));
+    tinyfont.print(AsFlashString(LOCA_mapMedium));
     tinyfont.setCursor(2, 29);
-    tinyfont.print(F("ARDUWARS"));
+    tinyfont.print(AsFlashString(LOCA_mapBig));
 
     // depending on the cursor index, we draw the cursor
     tinyfont.setCursor(64, 17 + cursorIdx*6);
@@ -336,7 +334,7 @@ void AWGame::runMultiPlayerGame(){
 
     arduboy.display();
 
-    showDialog(currentPlayer->name);
+    showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
   }
 }
 
@@ -431,7 +429,7 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
         // Check if menu was pressed
         if (arduboy.justPressed(B_BUTTON)) {
-          if(showOption("END TURN")){
+          if(showOption(LOCA_endTurn)){
             currentPlayer->cursorIndex = currentIndex;
             return;
           }
@@ -439,18 +437,19 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
     }
 }
 
-void AWGame::showDialog(const char *titleText){
+void AWGame::showDialog(char_P *titleText){
+
 
   // frame for the dialog
   static Rect frame;
 
-  frame.width = strlen(titleText)*5+8;
+  frame.width = strlen_P(titleText)*5+8;
   frame.height = 16;
   frame.x = (arduboy.width() - frame.width)/2;
   frame.y = 24;
 
   Point textPos;
-  textPos.x = (arduboy.width() - strlen(titleText)*5)/2;
+  textPos.x = (arduboy.width() - strlen_P(titleText)*5)/2;
   textPos.y = frame.y+6;
 
   // dialog loop
@@ -475,13 +474,13 @@ void AWGame::showDialog(const char *titleText){
 
     // OK Button
     tinyfont.setCursor(textPos.x, textPos.y);
-    tinyfont.print(titleText);
+    tinyfont.print(AsFlashString(titleText));
 
     arduboy.display();
   }
 }
 
-bool AWGame::showOption(const char *buttonTitle){
+bool AWGame::showOption(char_P *buttonTitle){
 
   // frame for the dialog
   static Rect frame;
@@ -516,7 +515,7 @@ bool AWGame::showOption(const char *buttonTitle){
 
     // OK Button
     tinyfont.setCursor(frame.x + 4, frame.y + 5);
-    tinyfont.print(buttonTitle);
+    tinyfont.print(AsFlashString(buttonTitle));
 
     arduboy.display();
   }
@@ -527,14 +526,14 @@ void AWGame::drawHudForPlayer(Player *aPlayer){
   arduboy.fillRect(0, 0, 128, 7, BLACK);
   arduboy.fillRect(0, 0, 128, 6, WHITE);
   tinyfont.setCursor(1, 1);
-  tinyfont.print(aPlayer->name);
+  tinyfont.print((aPlayer == player1)?AsFlashString(LOCA_player1):AsFlashString(LOCA_player2));
 
   tinyfont.setCursor(46, 1);
-  tinyfont.print(F("DAY:"));
+  tinyfont.print(AsFlashString(LOCA_day));
   tinyfont.setCursor(66, 1);
   tinyfont.print(daysPlayed);
   tinyfont.setCursor(86, 1);
-  tinyfont.print(F("$:"));
+  tinyfont.print(AsFlashString(LOCA_funds));
   tinyfont.setCursor(100, 1);
   tinyfont.print(aPlayer->money*100);
 }
