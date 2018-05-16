@@ -19,6 +19,32 @@ char_P* GameUnit::nameForUnitType(UnitType unitType){
   return LOCA_Unit_Names[static_cast<uint8_t>(unitType)];
 }
 
+const uint8_t unitPrices[] PROGMEM = {
+  10,
+  30,
+  50,
+
+  40,
+  50,
+  70,
+  160,
+  60,
+  150,
+  120,
+
+  90,
+  200,
+  220,
+
+  180,
+  255,
+  120
+};
+
+uint8_t GameUnit::costsOfUnit(UnitType unitType){
+  return pgm_read_byte(unitPrices + static_cast<uint8_t>(unitType));
+}
+
 const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   UnitTraits traits;
 

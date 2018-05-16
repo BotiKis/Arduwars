@@ -115,6 +115,9 @@ public:
 
   // returns the name of a certain UnitType
   static char_P* nameForUnitType(UnitType unitType);
+
+  // returns the costs of a certain UnitType
+  static uint8_t costsOfUnit(UnitType unitType);
 };
 
 class UnitTraits{
