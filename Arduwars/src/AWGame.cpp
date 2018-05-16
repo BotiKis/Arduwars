@@ -4,6 +4,7 @@
 #include "SpriteAnimations.h"
 #include "SpriteAssets.h"
 #include "MapData.h"
+#include "ShopData.h"
 
 #include <UtilityFunctions.h>
 #include <FlashString.h>
@@ -427,11 +428,36 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         arduboy.display();
 
         // Check if menu was pressed
-        if (arduboy.justPressed(B_BUTTON)) {
+        if (arduboy.justPressed(B_BUTTON)){
+
+          // check for tile
+          MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+          MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
+
+          // // check first for Unit
+          // if (currentMapTile.unitBelongsTo != OwnerShipNone) {
+          //   // Do something
+          // }
+          // // Second check for shop that belongs to user
+          // else
+          if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == (currentPlayer == player1)?OwnerShipPlayer1:OwnerShipPlayer2) {
+            showShopForBuilding(currentTileType);
+            arduboy.print("TRUE");
+                    arduboy.display();
+          }
+
+          // last show end turn option
+          // else {
+          //   if(showOption(LOCA_endTurn)){
+          //     currentPlayer->cursorIndex = currentIndex;
+          //     return;
+          //   }
+          // }
           if(showOption(LOCA_endTurn)){
             currentPlayer->cursorIndex = currentIndex;
             return;
           }
+
         }
     }
 }
@@ -520,6 +546,88 @@ bool AWGame::showOption(char_P *buttonTitle){
   }
 }
 
+
+UnitType AWGame::showShopForBuilding(MapTileType building){
+  // store the bought unit
+  UnitType boughtUnit = UnitType::None;
+
+  // data for the shop
+  int8_t menuCursorIDX = 0;
+  uint8_t numberOfUnits;
+  const UnitType *buyableUnits; // array is stored in progmem!
+
+  // check building type
+  switch (building) {
+    case MapTileType::Factory:{
+      numberOfUnits = NumberOfBuyableUnitsAtFactory;
+      buyableUnits = buyableUnitsAtFactory;
+      break;
+    }
+    case MapTileType::Airport:{
+      numberOfUnits = NumberOfBuyableUnitsAtAirport;
+      buyableUnits = buyableUnitsAtAirPort;
+      break;
+    }
+    case MapTileType::Shipyard:{
+      numberOfUnits = NumberOfBuyableUnitsAtShipyard;
+      buyableUnits = buyableUnitsAtShipyard;
+      break;
+    }
+    default: return UnitType::None;
+  }
+
+  // game Loop
+  while (true) {
+    // wait for next frame
+    if(!arduboy.nextFrame()) continue;
+
+    // Get input
+    arduboy.pollButtons();
+
+    if (arduboy.justPressed(DOWN_BUTTON)){
+      menuCursorIDX++;
+    }
+    if (arduboy.justPressed(UP_BUTTON)){
+      menuCursorIDX--;
+    }
+    // Exit on A button press
+    if (arduboy.justPressed(A_BUTTON)){
+      return UnitType::None;
+    }
+    // Buy Unit on button press
+    if (arduboy.justPressed(B_BUTTON)){
+      return static_cast<UnitType>(pgm_read_byte(buyableUnits+menuCursorIDX));
+    }
+
+    // limit and wrap the cursor
+    menuCursorIDX = (menuCursorIDX<0)?numberOfUnits-1:menuCursorIDX;
+    menuCursorIDX = menuCursorIDX%numberOfUnits;
+
+    // Drawing
+    // Infobox
+    arduboy.fillRoundRect(2, 8, arduboy.width()-4, arduboy.width()-12, 7, WHITE);
+    arduboy.fillRoundRect(3, 9, arduboy.width()-6, arduboy.width()-14, 6, BLACK);
+    arduboy.fillRoundRect(4, 10, arduboy.width()-8, arduboy.width()-16, 5, WHITE);
+
+    // draw Units to buy
+    for (uint8_t i = 0; i < numberOfUnits; i++) {
+      UnitType unitType = static_cast<UnitType>(pgm_read_byte(buyableUnits+i));
+
+      tinyfont.setCursor(24, 16 + i*5);
+      #warning Explain this typecast
+      tinyfont.print(AsFlashString(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitType)]))));
+    }
+
+    // draw cursor
+    tinyfont.setCursor(79, 16 + menuCursorIDX*5);
+    tinyfont.print(F("<"));
+
+    arduboy.display();
+  }
+
+  return boughtUnit;
+}
+
 void AWGame::drawHudForPlayer(Player *aPlayer){
   // Draw player, day and funds
   arduboy.fillRect(0, 0, 128, 7, BLACK);
@@ -605,6 +713,9 @@ void AWGame::loadMap(unsigned const char *mapData){
 
     // get Tile Data
     mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
+    mapTileData[i].buildingBelongsTo = OwnerShipNone;
+    mapTileData[i].unitBelongsTo = OwnerShipNone;
+
     MapTileType tileType = static_cast<MapTileType>(mapTileData[i].tileID);
 
     // calc index

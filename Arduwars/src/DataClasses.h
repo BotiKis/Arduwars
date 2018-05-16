@@ -18,7 +18,7 @@ constexpr static const GameObjectOwnership OwnerShipPlayer2 = 2;
 
 // This enum defines the possible Units
 // There are only 16 in total.
-enum class UnitType : uint8_t {
+enum class UnitType : int8_t {
   // Infantry
   Soldier = 0,
   Mech,
@@ -41,7 +41,10 @@ enum class UnitType : uint8_t {
   // Ships    // Can only go over water
   Cruiser,    // Can only fight Ships
   Battleship,
-  Transportship // Can transport Infantry
+  Transportship, // Can transport Infantry
+
+  // Needed for the shopsystem
+  None = -1
 };
 
 // This enum defines the possible Map Tiles
@@ -72,6 +75,11 @@ enum class MapTileType:uint8_t{
 // Helper function returns true if the given Index is a Building
 static inline bool mapTileIndexIsBuilding(MapTileType mapTileidx){
   return (mapTileidx >= MapTileType::City && mapTileidx <= MapTileType::P2HQ);
+}
+
+// Helper function returns true if the given Index is a Building with a shop
+static inline bool mapTileIndexIsShop(MapTileType mapTileidx){
+  return (mapTileidx == MapTileType::Factory || mapTileidx == MapTileType::Airport || mapTileidx == MapTileType::Shipyard);
 }
 
 // This class defines a Unit like Soldiers or Tanks

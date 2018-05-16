@@ -113,6 +113,12 @@ private:
     // Returns false of B is pressed, true if A is pressed
     bool showOption(char_P *buttonTitle);
 
+    // shows the shop UI for the given Building.
+    // Will isntantly return UnitType::None if the building
+    // is not the Factory, Airport or the Shipyard.
+    // Also returns UnitType::None if the PLayer doesn't buy anything.
+    UnitType showShopForBuilding(MapTileType building);
+
     // Shows a HUD with name, Days and Funds
     void drawHudForPlayer(Player *aPlayer);
 
