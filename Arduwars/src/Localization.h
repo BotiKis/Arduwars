@@ -46,7 +46,7 @@ char_P LOCA_Unit_Bomber[] PROGMEM         = "Bomber";
 
 char_P LOCA_Unit_Cruiser[] PROGMEM        = "Cruiser";
 char_P LOCA_Unit_Battleship[] PROGMEM     = "Battleship";
-char_P LOCA_Unit_Transportships[] PROGMEM = "Transportships";
+char_P LOCA_Unit_Transportships[] PROGMEM = "Transport";
 
 // all units toghether
 char_P* const LOCA_Unit_Names[] PROGMEM = {
