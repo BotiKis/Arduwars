@@ -626,8 +626,8 @@ void AWGame::loadMap(unsigned const char *mapData){
         }
       }
 
-      // Check for Workshop
-      if (tileType == MapTileType::Workshop) {
+      // Check for Factory
+      if (tileType == MapTileType::Factory) {
         // check for ownership
         if (currentIndex == player1StartWorkshopCoords) {
           building.belongsToPlayer = OwnerShipPlayer1;

@@ -61,7 +61,7 @@ enum class MapTileType:uint8_t{
   Mountain,
   Forest,
   City,
-  Workshop,
+  Factory,
   Airport,
   Shipyard,
   ScienceLab,
