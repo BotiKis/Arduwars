@@ -165,7 +165,6 @@ private:
 
     // Map data
     MapTile *mapTileData = nullptr;
-
     Point mapSize = {0, 0};
     static constexpr uint8_t mapOffsetY = 8;
 };

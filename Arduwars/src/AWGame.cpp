@@ -273,7 +273,6 @@ void AWGame::runSinglePlayerGame(){
     arduboy.fillScreen(WHITE);
 
     tinyfont.setCursor(1,1);
-    tinyfont.print("Singleplayer...");
 
     arduboy.display();
   }
