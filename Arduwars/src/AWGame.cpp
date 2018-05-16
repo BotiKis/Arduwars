@@ -701,7 +701,7 @@ void AWGame::drawMapAtPosition(Point pos){
       // Draw Unit
       if(tile.unitBelongsTo != OwnerShipNone){
         // get sprite Index
-        uint8_t unitSpriteIDX = tile.others;
+        uint8_t unitSpriteIDX = tile.unitSpriteID;
 
         // unitSprite
         const unsigned char *unitSprite = nullptr;

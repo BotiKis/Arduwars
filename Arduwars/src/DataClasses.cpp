@@ -8,144 +8,138 @@ GameUnit::GameUnit(){
   // Save the provided Type
   unitType = static_cast<uint8_t>(UnitType::Soldier);
 
-  // By default set every attribute to 0
-  healthPoints = 0;
-  attackPower = 0;
-  moveDistance = 0;
-  attackRange = 0;
-}
-
-GameUnit::GameUnit(UnitType type){
-  // Save the provided Type
-  unitType = static_cast<uint8_t>(type);
-
   // Every unit has default 10 HP
   healthPoints = 10;
 
   // set unused stuff to 0
   others = 0;
+}
+
+const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
+  UnitTraits traits;
 
   // Switch through types
-  switch (type) {
+  switch (unitType) {
     default:
     // Infantry
     case UnitType::Soldier:{
-      attackPower  = 1; // MAX 7
-      defense      = 0; // MAX 3
-      moveDistance = 3; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 1; // MAX 7
+      traits.defense      = 0; // MAX 3
+      traits.moveDistance = 3; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::Mech:{
-      attackPower  = 3; // MAX 7
-      defense      = 0; // MAX 3
-      moveDistance = 2; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 3; // MAX 7
+      traits.defense      = 0; // MAX 3
+      traits.moveDistance = 2; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::SpecOps:{
-      attackPower  = 3; // MAX 7
-      defense      = 0; // MAX 3
-      moveDistance = 5; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 3; // MAX 7
+      traits.defense      = 0; // MAX 3
+      traits.moveDistance = 5; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     // Vehicles
     case UnitType::Recon:{
-      attackPower  = 3; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 6; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 3; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 6; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::Assist:{
-      attackPower  = 0; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 7; // MAX 7
-      attackRange  = 0; // MAX 7
+      traits.attackPower  = 0; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 7; // MAX 7
+      traits.attackRange  = 0; // MAX 7
       break;
     };
     case UnitType::Tank:{
-      attackPower  = 5; // MAX 7
-      defense      = 2; // MAX 3
-      moveDistance = 4; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 5; // MAX 7
+      traits.defense      = 2; // MAX 3
+      traits.moveDistance = 4; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::BigTank:{
-      attackPower  = 7; // MAX 7
-      defense      = 3; // MAX 3
-      moveDistance = 2; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 7; // MAX 7
+      traits.defense      = 3; // MAX 3
+      traits.moveDistance = 2; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::Artillery:{
-      attackPower  = 4; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 3; // MAX 7
-      attackRange  = 5; // MAX 7
+      traits.attackPower  = 4; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 3; // MAX 7
+      traits.attackRange  = 5; // MAX 7
       break;
     };
     case UnitType::Rocket:{
-      attackPower  = 5; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 3; // MAX 7
-      attackRange  = 4; // MAX 7
+      traits.attackPower  = 5; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 3; // MAX 7
+      traits.attackRange  = 4; // MAX 7
       break;
     };
     case UnitType::Missiles:{
-      attackPower  = 6; // MAX 7
-      defense      = 0; // MAX 3
-      moveDistance = 4; // MAX 7
-      attackRange  = 6; // MAX 7
+      traits.attackPower  = 6; // MAX 7
+      traits.defense      = 0; // MAX 3
+      traits.moveDistance = 4; // MAX 7
+      traits.attackRange  = 6; // MAX 7
       break;
     };
     // Planes
     case UnitType::Heli:{
-      attackPower  = 3; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 5; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 3; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 5; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::Fighter:{
-      attackPower  = 4; // MAX 7
-      defense      = 2; // MAX 3
-      moveDistance = 7; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 4; // MAX 7
+      traits.defense      = 2; // MAX 3
+      traits.moveDistance = 7; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::Bomber:{
-      attackPower  = 7; // MAX 7
-      defense      = 3; // MAX 3
-      moveDistance = 3; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 7; // MAX 7
+      traits.defense      = 3; // MAX 3
+      traits.moveDistance = 3; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     // Ships
     case UnitType::Cruiser:{
-      attackPower  = 3; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 4; // MAX 7
-      attackRange  = 1; // MAX 7
+      traits.attackPower  = 3; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 4; // MAX 7
+      traits.attackRange  = 1; // MAX 7
       break;
     };
     case UnitType::Battleship:{
-      attackPower  = 5; // MAX 7
-      defense      = 3; // MAX 3
-      moveDistance = 5; // MAX 7
-      attackRange  = 4; // MAX 7
+      traits.attackPower  = 5; // MAX 7
+      traits.defense      = 3; // MAX 3
+      traits.moveDistance = 5; // MAX 7
+      traits.attackRange  = 4; // MAX 7
       break;
     };
     case UnitType::Transportship:{
-      attackPower  = 0; // MAX 7
-      defense      = 1; // MAX 3
-      moveDistance = 7; // MAX 7
-      attackRange  = 0; // MAX 7
+      traits.attackPower  = 0; // MAX 7
+      traits.defense      = 1; // MAX 3
+      traits.moveDistance = 7; // MAX 7
+      traits.attackRange  = 0; // MAX 7
       break;
     };
-
   }
+
+  return traits;
 }
 
 
@@ -277,5 +271,5 @@ MapTile::MapTile(void){
   unitBelongsTo = OwnerShipNone;
   showSelection = OwnerShipNone;
   showsFog = 0;
-  others = 0;
+  unitSpriteID = 0;
 }

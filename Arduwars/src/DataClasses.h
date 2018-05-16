@@ -88,7 +88,7 @@ public:
   // And since the compiler is smart enough it will combine those bits into
   // one single byte.
   //
-  // So by doing this we use 24 Bits in total which only need 3 Bytes instead
+  // So by doing this we use 19 Bits in total which only need 3 Bytes instead
   // of the original 8.
   //
   // Note:
@@ -101,21 +101,28 @@ public:
                           // because we save some valuable ram if we use a Bitfield.
                           // Later we typecast safely between these two types.
   uint8_t healthPoints:4; // A unit can have max 15 health.
-  uint8_t attackPower :3; // Can have max 7 attackPower.
-  uint8_t defense     :2; // Can have max 3 defense.
-  uint8_t moveDistance:3; // Can move in a radius of max 7 tiles.
-  uint8_t attackRange :3; // Can attack in a radius of max 7 tiles.
   uint8_t mapPosX     :5; // X Position on the map - max 32.
   uint8_t mapPosY     :5; // Y Position on the map - max 32.
   uint8_t activated   :1; // 1 if unit has took its action.
-  uint8_t others      :2; // reserved for future use.
-  // 4 Bytes in total.
+  uint8_t others      :5; // reserved for future use.
+  // 3 Bytes in total.
 
   // Constructor
   // Default constructor initializes an all 0 filled UnitType::Soldier Unit.
   GameUnit();
-  // Custom Constructor is used to initialize with default content. See DataClass.cpp for the implementation.
-  GameUnit(UnitType atype);
+};
+
+class UnitTraits{
+public:
+  uint8_t attackPower :5; // Unit have max 31 attackPower.
+  uint8_t defense     :5; // Unit have max 31 defense.
+  uint8_t moveDistance:3; // Unit can move in a radius of max 7 tiles.
+  uint8_t attackRange :3; // Unit can attack in a radius of max 7 tiles.
+
+  // 2 Bytes in total
+
+  // Function returns the traits for a certain unit type
+  static const UnitTraits traitsForUnitType(UnitType unitType);
 };
 
 // This enum defines the possible Enviroments.
@@ -153,6 +160,7 @@ public:
   GameObjectOwnership belongsToPlayer :2; // Tells to which player the Building belongs
   uint8_t mapPosX                     :5; // X Position on the map - max 32.
   uint8_t mapPosY                     :5; // Y Position on the map - max 32.
+  uint8_t others                      :2; // reserved for future use
   // 3 Bytes in total.
 
   // Constructor
@@ -194,10 +202,10 @@ public://MapTileIndex
 
   uint8_t tileID:5;                        // Holds the ID of the Tile in the Tilesheet
   GameObjectOwnership buildingBelongsTo:2; // Tells to whom the building belongs (if it's a building).
-  GameObjectOwnership unitBelongsTo:2;     // Tells, if there is a unit and to which player it belongs.
+  GameObjectOwnership unitBelongsTo:2;     // Tells, if there is a unit and to which player it belongs. OwnerShipNone if there is no unit
   uint8_t showSelection:1;                 // When 1, it displays the selection Animation
   uint8_t showsFog:1;                      // When 1, it shows fog.
-  uint8_t others:5;                        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
+  uint8_t unitSpriteID:5;                  // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
 
   // 2 bytes in total
 };
