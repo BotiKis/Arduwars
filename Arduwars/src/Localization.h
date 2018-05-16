@@ -71,5 +71,4 @@ char_P* const LOCA_Unit_Names[] PROGMEM = {
   LOCA_Unit_Transportships
 };
 
-
 #endif
