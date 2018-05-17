@@ -596,8 +596,8 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
     }
 
     // limit and wrap the cursor
-    menuCursorIDX = (menuCursorIDX<0)?numberOfUnits-1:menuCursorIDX;
-    menuCursorIDX = menuCursorIDX%numberOfUnits;
+    menuCursorIDX = max(menuCursorIDX, 0);
+    menuCursorIDX = min(menuCursorIDX, numberOfUnits-1);
     yOffset = (4-menuCursorIDX)*textPadding;
     yOffset = min(yOffset, 0);
 
@@ -671,29 +671,24 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
     // draw Unit specs
     UnitTraits traits = UnitTraits::traitsForUnitType(unitToDraw);
 
-    // Attack
+    // Costs
+    uint8_t unitPrice = GameUnit::costsOfUnit(unitToDraw);
     tinyfont.setCursor(76, 34);
+    tinyfont.print(AsFlashString(LOCA_funds));
+    tinyfont.setCursor(100 - ((unitPrice>100)?5:0), 34);
+    tinyfont.print(unitPrice*100);
+
+    // Attack
+    tinyfont.setCursor(76, 42);
     tinyfont.print(AsFlashString(LOCA_Trait_attack));
-    tinyfont.setCursor(106, 34);
+    tinyfont.setCursor(115, 42);
     tinyfont.print(traits.attackPower);
 
-    // Defense
-    tinyfont.setCursor(76, 40);
-    tinyfont.print(AsFlashString(LOCA_Trait_defense));
-    tinyfont.setCursor(106, 40);
-    tinyfont.print(traits.defense);
-
-    // Move
-    tinyfont.setCursor(76, 46);
+    // Speed
+    tinyfont.setCursor(76, 50);
     tinyfont.print(AsFlashString(LOCA_Trait_speed));
-    tinyfont.setCursor(106, 46);
+    tinyfont.setCursor(115, 50);
     tinyfont.print(traits.moveDistance);
-
-    // Range
-    tinyfont.setCursor(76, 52);
-    tinyfont.print(AsFlashString(LOCA_Trait_range));
-    tinyfont.setCursor(106, 52);
-    tinyfont.print(traits.attackRange);
 
     arduboy.display();
   }
@@ -842,8 +837,9 @@ void AWGame::loadMap(unsigned const char *mapData){
 
 void AWGame::updateMapForPlayer(Player *aPlayer){
 
-  // update buildings
-  // update Units
+  for (int8_t y = 0; y < aPlayer->units.getCount(); y++) {
+  }
+
 }
 
 void AWGame::updateMapWithFog(){
