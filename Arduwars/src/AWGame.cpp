@@ -435,27 +435,17 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
           MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
 
           // // check first for Unit
-          // if (currentMapTile.unitBelongsTo != OwnerShipNone) {
-          //   // Do something
-          // }
-          // // Second check for shop that belongs to user
-          // else
-          if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == (currentPlayer == player1)?OwnerShipPlayer1:OwnerShipPlayer2) {
-            showShopForBuilding(currentTileType);
-            arduboy.print("TRUE");
-                    arduboy.display();
+          if (currentMapTile.unitBelongsTo != OwnerShipNone) {
+            // Do something
           }
-
+          // Second check for shop that belongs to user
+          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == ((currentPlayer == player1)?OwnerShipPlayer1:OwnerShipPlayer2)) {
+            showShopForBuildingAndPlayer(currentTileType, currentPlayer);
+          }
           // last show end turn option
-          // else {
-          //   if(showOption(LOCA_endTurn)){
-          //     currentPlayer->cursorIndex = currentIndex;
-          //     return;
-          //   }
-          // }
-          if(showOption(LOCA_endTurn)){
-            currentPlayer->cursorIndex = currentIndex;
-            return;
+          else if(showOption(LOCA_endTurn)){
+              currentPlayer->cursorIndex = currentIndex;
+              return;
           }
 
         }
@@ -463,7 +453,6 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 }
 
 void AWGame::showDialog(char_P *titleText){
-
 
   // frame for the dialog
   static Rect frame;
@@ -493,7 +482,6 @@ void AWGame::showDialog(char_P *titleText){
 
     // Drawing
     // Infobox
-    arduboy.fillRoundRect(frame.x-1, frame.y-1, frame.width+2, frame.height+2, 5, WHITE);
     arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
     arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
 
@@ -534,7 +522,6 @@ bool AWGame::showOption(char_P *buttonTitle){
 
     // Drawing
     // Infobox
-    arduboy.fillRoundRect(frame.x-1, frame.y-1, frame.width+2, frame.height+2, 5, WHITE);
     arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
     arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
 
@@ -546,15 +533,17 @@ bool AWGame::showOption(char_P *buttonTitle){
   }
 }
 
-
-UnitType AWGame::showShopForBuilding(MapTileType building){
-  // store the bought unit
-  UnitType boughtUnit = UnitType::None;
+UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPlayer){
 
   // data for the shop
   int8_t menuCursorIDX = 0;
   uint8_t numberOfUnits;
   const UnitType *buyableUnits; // array is stored in progmem!
+
+  // helper for drawing
+  UnitType unitToDraw;
+  int8_t yOffset = 0;
+  static const uint8_t textPadding = 8;
 
   // check building type
   switch (building) {
@@ -602,30 +591,107 @@ UnitType AWGame::showShopForBuilding(MapTileType building){
     // limit and wrap the cursor
     menuCursorIDX = (menuCursorIDX<0)?numberOfUnits-1:menuCursorIDX;
     menuCursorIDX = menuCursorIDX%numberOfUnits;
+    yOffset = (4-menuCursorIDX)*textPadding;
+    yOffset = min(yOffset, 0);
 
     // Drawing
     // Infobox
-    arduboy.fillRoundRect(2, 8, arduboy.width()-4, arduboy.width()-12, 7, WHITE);
-    arduboy.fillRoundRect(3, 9, arduboy.width()-6, arduboy.width()-14, 6, BLACK);
-    arduboy.fillRoundRect(4, 10, arduboy.width()-8, arduboy.width()-16, 5, WHITE);
+    arduboy.fillRoundRect(3, 9, arduboy.width()-6, arduboy.height()-10, 5, BLACK);
+    arduboy.fillRoundRect(4, 10, arduboy.width()-8, arduboy.height()-13, 3, WHITE);
 
     // draw Units to buy
     for (uint8_t i = 0; i < numberOfUnits; i++) {
-      UnitType unitType = static_cast<UnitType>(pgm_read_byte(buyableUnits+i));
+      // get unit
+      unitToDraw = static_cast<UnitType>(pgm_read_byte(buyableUnits+i));
 
-      tinyfont.setCursor(24, 16 + i*5);
-      #warning Explain this typecast
-      tinyfont.print(AsFlashString(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitType)]))));
+      // get unit costs
+      uint8_t unitCosts = GameUnit::costsOfUnit(unitToDraw);
+      bool canAffordUnit = (unitCosts <= aPlayer->money);
+
+      // calc draw position
+      int8_t yPos = 14 + i*textPadding + yOffset;
+
+      // check if out of bounds
+      if (yPos < 10 || yPos > arduboy.height()-8) continue;
+
+      // set cursor
+      // Intend the text if unit is buyable and selected
+      tinyfont.setCursor(12 + (((menuCursorIDX == i) && canAffordUnit)?4:0), yPos);
+
+      // The unitnames are stored in progmem inside an array wich is also in progmem.
+      // This means we have to do two special things.
+      // first get the element out of the array and the read the string from the array.
+      // For that we cast the unittype to an int, since by design it is the index of
+      // the string in the array.
+      // Next we get the element out of the array. Remember that a c string is a pointer
+      // to the first character and not the whole string. A pointer takes up 2 bytes which
+      // is called a word and that's why we use pgm_read_word() to read it from there.
+      // Now that we have the string we can pass it as a FlashString.
+      tinyfont.print(AsFlashString(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitToDraw)]))));
+
+      // if unit is not affordable draw a x as a hint
+      if (!canAffordUnit) {
+          tinyfont.setCursor(66, yPos);
+          tinyfont.print(F("x"));
+      }
     }
 
     // draw cursor
-    tinyfont.setCursor(79, 16 + menuCursorIDX*5);
-    tinyfont.print(F("<"));
+    tinyfont.setCursor(6, 14 + menuCursorIDX*textPadding + yOffset);
+    tinyfont.print(F(">"));
+
+    // draw the sprite of the selected unit
+
+    // get the unit
+    unitToDraw = static_cast<UnitType>(pgm_read_byte(buyableUnits+menuCursorIDX));
+
+    // unitSprite
+    const unsigned char *unitSprite = nullptr;
+
+    // get correct sprite
+    if(aPlayer == player1)
+      unitSprite = unitsA_plus_mask;
+    else
+      unitSprite = unitsB_plus_mask;
+
+    // Draw sprite
+    if(unitSprite != nullptr){
+        // Draw unit
+        // we can safely cast the unittype since by design it is the index in the spritesheet
+        sprites.drawPlusMask(90, 12, unitSprite, static_cast<uint8_t>(unitToDraw));
+    }
+
+    // draw Unit specs
+    UnitTraits traits = UnitTraits::traitsForUnitType(unitToDraw);
+
+    // Attack
+    tinyfont.setCursor(76, 34);
+    tinyfont.print(AsFlashString(LOCA_Trait_attack));
+    tinyfont.setCursor(106, 34);
+    tinyfont.print(traits.attackPower);
+
+    // Defense
+    tinyfont.setCursor(76, 40);
+    tinyfont.print(AsFlashString(LOCA_Trait_defense));
+    tinyfont.setCursor(106, 40);
+    tinyfont.print(traits.defense);
+
+    // Move
+    tinyfont.setCursor(76, 46);
+    tinyfont.print(AsFlashString(LOCA_Trait_speed));
+    tinyfont.setCursor(106, 46);
+    tinyfont.print(traits.moveDistance);
+
+    // Range
+    tinyfont.setCursor(76, 52);
+    tinyfont.print(AsFlashString(LOCA_Trait_range));
+    tinyfont.setCursor(106, 52);
+    tinyfont.print(traits.attackRange);
 
     arduboy.display();
   }
 
-  return boughtUnit;
+  return UnitType::None;
 }
 
 void AWGame::drawHudForPlayer(Player *aPlayer){
@@ -756,6 +822,9 @@ void AWGame::loadMap(unsigned const char *mapData){
         building.belongsToPlayer = OwnerShipPlayer2;
       }
 
+      // udpate tile
+      mapTileData[i].buildingBelongsTo = building.belongsToPlayer;
+
       gameBuildings.add(building);
     }
 
@@ -811,22 +880,19 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // Draw Unit
       if(tile.unitBelongsTo != OwnerShipNone){
-        // get sprite Index
-        uint8_t unitSpriteIDX = tile.unitSpriteID;
-
         // unitSprite
         const unsigned char *unitSprite = nullptr;
 
         // get correct sprite
         if(tile.unitBelongsTo == OwnerShipPlayer1)
           unitSprite = unitsA_plus_mask;
-        else if(tile.unitBelongsTo == OwnerShipPlayer1)
+        else if(tile.unitBelongsTo == OwnerShipPlayer2)
           unitSprite = unitsB_plus_mask;
 
         // Draw sprite
         if(unitSprite != nullptr){
             // Draw unit
-            sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, unitSpriteIDX);
+            sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID);
         }
 
       }
