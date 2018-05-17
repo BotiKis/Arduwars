@@ -17,7 +17,7 @@
 // Constructor sets up basic stuff for the game
 AWGame::AWGame(){
 
-  // Second we need to initialize our Arduboy instance by called the usual methods.
+  // First we need to initialize our Arduboy instance by calling the usual methods.
   arduboy.begin();
   arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
@@ -110,12 +110,8 @@ AWGameState AWGame::showMainMenu(){
 
       // React to users choice
       switch (cursorIdx) {
-        case 0:{
-          return showMapSelection(AWGameState::playSinglePlayer);
-        }
-        case 1: {
-          return showMapSelection(AWGameState::playMultiPlayer);
-        }
+        case 0: return AWGameState::playSinglePlayer;
+        case 1: return AWGameState::playMultiPlayer;
         case 2: return AWGameState::showOptions;
         default: return AWGameState::showMainMenu; // this default is not needed but it's safe to do this.
       }
@@ -145,7 +141,7 @@ AWGameState AWGame::showMainMenu(){
 
     // depending on the cursor index, we draw the cursor
     tinyfont.setCursor(75, 7 + cursorIdx*6);
-    tinyfont.print("<");
+    tinyfont.print(F("<"));
 
     // print free memory
     printFreeMemory();
@@ -159,11 +155,10 @@ AWGameState AWGame::showMainMenu(){
 }
 
 // This method displays the map selection menu to the player.
-AWGameState AWGame::showMapSelection(AWGameState nextState){
+unsigned const char * AWGame::showMapSelection(){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
-  unsigned const char *mapData;
 
   // Again a Game loop
   while(true){
@@ -185,28 +180,23 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
       // select map to users choice
       switch (cursorIdx) {
         case 0:{
-          mapData = mapData_3;
+          return mapData_3;
           break;
         }
         case 1:{
-          mapData = mapData_2;
+          return mapData_2;
           break;
         }
         case 2:{
-          mapData = mapData_1;
+          return mapData_1;
           break;
         }
-        default: return AWGameState::showMainMenu;
+        default: return nullptr;
       }
-
-      // Load map Data
-      loadMap(mapData);
-
-      return nextState;
     }
     if (arduboy.justPressed(A_BUTTON)) {
-      // When the A Button is pressed we go back to the menu.
-      return AWGameState::showMainMenu;
+      // When the A Button is pressed return nothing.
+      return nullptr;
     }
 
     // Limit and wrap the index
@@ -232,7 +222,7 @@ AWGameState AWGame::showMapSelection(AWGameState nextState){
 
     // depending on the cursor index, we draw the cursor
     tinyfont.setCursor(64, 17 + cursorIdx*6);
-    tinyfont.print("<");
+    tinyfont.print(F("<"));
 
     // print free memory
     printFreeMemory();
@@ -249,6 +239,15 @@ void AWGame::startNewSinglePlayerGame(){
   // reset players
   player1->reset();
   player2->reset();
+
+  // shop map selection
+  unsigned const char *mapData = showMapSelection();
+
+  // return if no map has been selected
+  if (mapData == nullptr) return;
+
+  // load map
+  loadMap(mapData);
 
   // run game
   runSinglePlayerGame();
@@ -285,6 +284,15 @@ void AWGame::startNewMultiplayerPlayerGame(){
   // reset players
   player1->reset();
   player2->reset();
+
+  // shop map selection
+  unsigned const char *mapData = showMapSelection();
+
+  // return if no map has been selected
+  if (mapData == nullptr) return;
+
+  // load map
+  loadMap(mapData);
 
   runMultiPlayerGame();
 }
@@ -904,12 +912,12 @@ void AWGame::drawMapAtPosition(Point pos){
 
 void AWGame::printFreeMemory(){
 
-  // #warning Remove Memory free when done.
-  // arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
-  // arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
-  //
-  // tinyfont.setCursor(1, arduboy.height()-5);
-  // tinyfont.print(F("MEM FREE:"));
-  // tinyfont.setCursor(48, arduboy.height()-5);
-  // tinyfont.print(freeMemory());
+  #warning Remove Memory free when done.
+  arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
+  arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
+
+  tinyfont.setCursor(1, arduboy.height()-5);
+  tinyfont.print(F("MEM FREE:"));
+  tinyfont.setCursor(48, arduboy.height()-5);
+  tinyfont.print(freeMemory());
 }

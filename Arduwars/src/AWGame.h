@@ -87,11 +87,9 @@ private:
     // Game methods
     AWGameState showMainMenu();  // Displays the menu
 
-    // Displays map selection, the argument is the next planned state
-    // If the player selects a map, this method returns the same state as passed as the parameter.
-    // We do it this way because the player can decide to cancel and if he does,
-    // this method returns AWGameState::showMainMenu
-    AWGameState showMapSelection(AWGameState nextState);
+    // Displays map selection
+    // It returns a pointer to the selected map in progmem. nullptr if none was selected
+    unsigned const char * showMapSelection();
 
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
     void runSinglePlayerGame();       // Place where the singleplayer game runs
