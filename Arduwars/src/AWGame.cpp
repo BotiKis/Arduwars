@@ -868,7 +868,7 @@ void AWGame::drawMapAtPosition(Point pos){
 
   // draw the map
   for (int8_t y = 0; y < mapSize.y; y++) {
-    for (int8_t x = mapSize.x-1; x >= 0; x--) {
+    for (int8_t x = mapSize.x-1; x >= 0; x--) { // draw the map from right to left helps with the markers
 
       drawPos.x = pos.x+x*TILE_SIZE;
       drawPos.y = pos.y+y*TILE_SIZE;
