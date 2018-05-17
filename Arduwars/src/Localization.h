@@ -28,25 +28,25 @@ char_P LOCA_day[] PROGMEM            = "DAY:";
 char_P LOCA_funds[] PROGMEM          = "M:";
 
 // Unit names
-char_P LOCA_Unit_Soldier[] PROGMEM        = "Soldier";
-char_P LOCA_Unit_Mech[] PROGMEM           = "Mech";
-char_P LOCA_Unit_SpecOps[] PROGMEM        = "SpecOps";
+char_P LOCA_Unit_Soldier[] PROGMEM        = "SOLDIER";
+char_P LOCA_Unit_Mech[] PROGMEM           = "MECH";
+char_P LOCA_Unit_SpecOps[] PROGMEM        = "SPECOPS";
 
-char_P LOCA_Unit_Recon[] PROGMEM          = "Recon";
-char_P LOCA_Unit_Assist[] PROGMEM         = "Assist";
-char_P LOCA_Unit_Tank[] PROGMEM           = "Tank";
-char_P LOCA_Unit_BigTank[] PROGMEM        = "BigTank";
-char_P LOCA_Unit_Artillery[] PROGMEM      = "Artillery";
-char_P LOCA_Unit_Rocket[] PROGMEM         = "Rocket";
-char_P LOCA_Unit_Missiles[] PROGMEM       = "Missiles";
+char_P LOCA_Unit_Recon[] PROGMEM          = "RECON";
+char_P LOCA_Unit_Assist[] PROGMEM         = "ASSIST";
+char_P LOCA_Unit_Tank[] PROGMEM           = "TANK";
+char_P LOCA_Unit_BigTank[] PROGMEM        = "BIGTANK";
+char_P LOCA_Unit_Artillery[] PROGMEM      = "ARTILLERY";
+char_P LOCA_Unit_Rocket[] PROGMEM         = "ROCKET";
+char_P LOCA_Unit_Missiles[] PROGMEM       = "MISSILES";
 
-char_P LOCA_Unit_Heli[] PROGMEM           = "Heli";
-char_P LOCA_Unit_Fighter[] PROGMEM        = "Fighter";
-char_P LOCA_Unit_Bomber[] PROGMEM         = "Bomber";
+char_P LOCA_Unit_Heli[] PROGMEM           = "HELI";
+char_P LOCA_Unit_Fighter[] PROGMEM        = "FIGHTER";
+char_P LOCA_Unit_Bomber[] PROGMEM         = "BOMBER";
 
-char_P LOCA_Unit_Cruiser[] PROGMEM        = "Cruiser";
-char_P LOCA_Unit_Battleship[] PROGMEM     = "Battleship";
-char_P LOCA_Unit_Transportships[] PROGMEM = "Transport";
+char_P LOCA_Unit_Cruiser[] PROGMEM        = "CRUISER";
+char_P LOCA_Unit_Battleship[] PROGMEM     = "BATTLESHIP";
+char_P LOCA_Unit_Transportships[] PROGMEM = "TRANSPORT";
 
 // all units toghether
 char_P* const LOCA_Unit_Names[] PROGMEM = {
