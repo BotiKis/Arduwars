@@ -12,9 +12,11 @@
 
 
 using GameObjectOwnership = uint8_t;
-constexpr static const GameObjectOwnership OwnerShipNone    = 0;
-constexpr static const GameObjectOwnership OwnerShipPlayer1 = 1;
-constexpr static const GameObjectOwnership OwnerShipPlayer2 = 2;
+constexpr static const GameObjectOwnership OwnershipNone    = 0;
+constexpr static const GameObjectOwnership OwnershipPlayer1 = 1;
+constexpr static const GameObjectOwnership OwnershipPlayer2 = 2;
+constexpr static const GameObjectOwnership OwnershipPlayer  = 1;
+constexpr static const GameObjectOwnership OwnershipEnemy   = 2;
 
 // This enum defines the possible Units
 // There are only 16 in total.

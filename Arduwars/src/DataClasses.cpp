@@ -240,7 +240,7 @@ GameBuilding::GameBuilding(){
 
   // Set the coordinates to 0
   mapPosX = mapPosY = 0;
-  belongsToPlayer = OwnerShipNone;
+  belongsToPlayer = OwnershipNone;
 }
 
 GameBuilding::GameBuilding(MapTileType type){
@@ -252,7 +252,7 @@ GameBuilding::GameBuilding(MapTileType type){
 
   // Set the coordinates to 0
   mapPosX = mapPosY = 0;
-  belongsToPlayer = OwnerShipNone;
+  belongsToPlayer = OwnershipNone;
 }
 
 
@@ -276,8 +276,8 @@ void Player::reset(){
 MapTile::MapTile(void){
   tileID = 0;
   buildingBelongsTo = 0;
-  unitBelongsTo = OwnerShipNone;
-  showSelection = OwnerShipNone;
+  unitBelongsTo = OwnershipNone;
+  showSelection = OwnershipNone;
   showsFog = 0;
   unitSpriteID = 0;
 }
