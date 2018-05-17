@@ -260,8 +260,8 @@ GameBuilding::GameBuilding(MapTileType type){
 // Player
 
 void Player::reset(){
-  // default 20 money
-  money = 20;
+  // default 40 money
+  money = 40;
 
   // Set cursor
   cursorIndex = {0,0};
