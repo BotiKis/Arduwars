@@ -139,9 +139,10 @@ private:
 
     // ======================
     // Data
-    // This is our instance of the Arduboy2 class. It is the foundation for
-    // every Arduboy project.44
-    Arduboy2 arduboy;
+    // This is our instance of the Arduboy2Base class. It is the foundation for
+    // every Arduboy project. We use Arduboy2Base instead of Arduboy2 since we
+    // wont use the print functions.
+    Arduboy2Base arduboy;
 
     // This is our instance of the Sprites class.
     // We need this to draw tilesets and animations which Arduboy2 can not do.
