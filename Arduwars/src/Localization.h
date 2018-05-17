@@ -27,6 +27,12 @@ char_P LOCA_endTurn[] PROGMEM        = "END TURN";
 char_P LOCA_day[] PROGMEM            = "DAY:";
 char_P LOCA_funds[] PROGMEM          = "M:";
 
+// Unit Traits
+char_P LOCA_Trait_attack[] PROGMEM   = "ATK";
+char_P LOCA_Trait_defense[] PROGMEM  = "DEF";
+char_P LOCA_Trait_speed[] PROGMEM    = "SPEED";
+char_P LOCA_Trait_range[] PROGMEM    = "RANGE";
+
 // Unit names
 char_P LOCA_Unit_Soldier[] PROGMEM        = "SOLDIER";
 char_P LOCA_Unit_Mech[] PROGMEM           = "MECH";
