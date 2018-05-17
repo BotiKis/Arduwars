@@ -17,9 +17,8 @@
 // Constructor sets up basic stuff for the game
 AWGame::AWGame(){
 
-  // First we need to initialize our Arduboy instance by called the usual methods.
-  arduboy.boot(); //arduboy.begin(); <- I will forget this.
-  #warning switch to .begin()
+  // Second we need to initialize our Arduboy instance by called the usual methods.
+  arduboy.begin();
   arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
   arduboy.audio.on();
@@ -817,9 +816,11 @@ void AWGame::loadMap(unsigned const char *mapData){
       // Check for Headquarters
       if (tileType == MapTileType::P1HQ){
         building.belongsToPlayer = OwnerShipPlayer1;
+        player1->cursorIndex = currentIndex;
       }
       else if (tileType == MapTileType::P2HQ){
         building.belongsToPlayer = OwnerShipPlayer2;
+        player2->cursorIndex = currentIndex;
       }
 
       // udpate tile
@@ -903,12 +904,12 @@ void AWGame::drawMapAtPosition(Point pos){
 
 void AWGame::printFreeMemory(){
 
-  #warning Remove Memory free when done.
-  arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
-  arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
-
-  tinyfont.setCursor(1, arduboy.height()-5);
-  tinyfont.print(F("MEM FREE:"));
-  tinyfont.setCursor(48, arduboy.height()-5);
-  tinyfont.print(freeMemory());
+  // #warning Remove Memory free when done.
+  // arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
+  // arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
+  //
+  // tinyfont.setCursor(1, arduboy.height()-5);
+  // tinyfont.print(F("MEM FREE:"));
+  // tinyfont.setCursor(48, arduboy.height()-5);
+  // tinyfont.print(freeMemory());
 }
