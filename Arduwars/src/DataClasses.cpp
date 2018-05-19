@@ -52,7 +52,7 @@ const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
       break;
     };
     // Vehicles
-    case UnitType::Recon:{
+    case UnitType::Scout:{
       traits.attackPower  = 3; // MAX 31
       traits.defense      = 1; // MAX 31
       traits.moveDistance = 6; // MAX 7

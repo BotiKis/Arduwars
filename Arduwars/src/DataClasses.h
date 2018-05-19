@@ -27,7 +27,7 @@ enum class UnitType : int8_t {
   SpecOps,
 
   // Vehicles
-  Recon,
+  Scout,
   Assist,      // Heals all adjacent Units at the start of the turn and can carry Infantry
   Tank,
   BigTank,

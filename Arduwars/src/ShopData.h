@@ -38,7 +38,7 @@ const UnitType buyableUnitsAtFactory[NumberOfBuyableUnitsAtFactory] PROGMEM = {
   UnitType::SpecOps,
 
   // Vehicles
-  UnitType::Recon,
+  UnitType::Scout,
   UnitType::Assist,
   UnitType::Tank,
   UnitType::BigTank,

@@ -38,7 +38,7 @@ char_P LOCA_Unit_Soldier[] PROGMEM        = "SOLDIER";
 char_P LOCA_Unit_Mech[] PROGMEM           = "MECH";
 char_P LOCA_Unit_SpecOps[] PROGMEM        = "SPECOPS";
 
-char_P LOCA_Unit_Recon[] PROGMEM          = "RECON";
+char_P LOCA_Unit_scout[] PROGMEM          = "SCOUT";
 char_P LOCA_Unit_Assist[] PROGMEM         = "ASSIST";
 char_P LOCA_Unit_Tank[] PROGMEM           = "TANK";
 char_P LOCA_Unit_BigTank[] PROGMEM        = "BIGTANK";
@@ -60,7 +60,7 @@ char_P* const LOCA_Unit_Names[] PROGMEM = {
   LOCA_Unit_Mech,
   LOCA_Unit_SpecOps,
 
-  LOCA_Unit_Recon,
+  LOCA_Unit_scout,
   LOCA_Unit_Assist,
   LOCA_Unit_Tank,
   LOCA_Unit_BigTank,
