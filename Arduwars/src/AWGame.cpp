@@ -665,7 +665,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
     if(unitSprite != nullptr){
         // Draw unit
         // we can safely cast the unittype since by design it is the index in the spritesheet
-        sprites.drawPlusMask(90, 12, unitSprite, static_cast<uint8_t>(unitToDraw));
+        sprites.drawPlusMask(90, 12, unitSprite, static_cast<uint8_t>(unitToDraw)*2+(arduboy.frameCount/10)%2);
     }
 
     // draw Unit specs
@@ -922,12 +922,12 @@ void AWGame::drawMapAtPosition(Point pos){
 
 void AWGame::printFreeMemory(){
 
-  #warning Remove Memory free when done.
-  arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
-  arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
-
-  tinyfont.setCursor(1, arduboy.height()-5);
-  tinyfont.print(F("MEM FREE:"));
-  tinyfont.setCursor(48, arduboy.height()-5);
-  tinyfont.print(freeMemory());
+  // #warning Remove Memory free when done.
+  // arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
+  // arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
+  //
+  // tinyfont.setCursor(1, arduboy.height()-5);
+  // tinyfont.print(F("MEM FREE:"));
+  // tinyfont.setCursor(48, arduboy.height()-5);
+  // tinyfont.print(freeMemory());
 }
