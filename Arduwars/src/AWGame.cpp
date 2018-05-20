@@ -363,6 +363,9 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
   // calculate mapsize in pixels, needed for camera stuff
   Point mapSizeInPixel = mapSize*TILE_SIZE;
 
+  // update map for player
+  updateMapForPlayer(currentPlayer);
+
     // Game loop
     while(true){
 
@@ -446,11 +449,11 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
           MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
 
           // // check first for Unit
-          if (currentMapTile.unitBelongsTo != OwnershipNone) {
+          if (currentMapTile.hasUnit == 1) {
             // Do something
           }
           // Second check for shop that belongs to user
-          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == ((currentPlayer == player1)?OwnershipPlayer1:OwnershipPlayer2)) {
+          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == ((currentPlayer == player1)?0:1)) {
             showShopForBuildingAndPlayer(currentTileType, currentPlayer);
           }
           // last show end turn option
@@ -785,8 +788,9 @@ void AWGame::loadMap(unsigned const char *mapData){
 
     // get Tile Data
     mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
-    mapTileData[i].buildingBelongsTo = OwnershipNone;
-    mapTileData[i].unitBelongsTo = OwnershipNone;
+    mapTileData[i].buildingBelongsTo = 0;
+    mapTileData[i].hasUnit = 0;
+    mapTileData[i].unitBelongsTo = 0;
 
     MapTileType tileType = static_cast<MapTileType>(mapTileData[i].tileID);
 
@@ -802,10 +806,10 @@ void AWGame::loadMap(unsigned const char *mapData){
       if (tileType == MapTileType::City) {
         // check for ownership
         if (currentIndex == player1StartCityCoords) {
-          building.belongsToPlayer = OwnershipPlayer1;
+          building.belongsToPlayer = MapTile::Player1;
         }
         else if (currentIndex == player2StartCityCoords) {
-          building.belongsToPlayer = OwnershipPlayer2;
+          building.belongsToPlayer = MapTile::Player2;
         }
       }
 
@@ -813,20 +817,20 @@ void AWGame::loadMap(unsigned const char *mapData){
       if (tileType == MapTileType::Factory) {
         // check for ownership
         if (currentIndex == player1StartWorkshopCoords) {
-          building.belongsToPlayer = OwnershipPlayer1;
+          building.belongsToPlayer = MapTile::Player1;
         }
         else if (currentIndex == player2StartWorkshopCoords) {
-          building.belongsToPlayer = OwnershipPlayer2;
+          building.belongsToPlayer = MapTile::Player2;
         }
       }
 
       // Check for Headquarters
       if (tileType == MapTileType::P1HQ){
-        building.belongsToPlayer = OwnershipPlayer1;
+        building.belongsToPlayer = MapTile::Player1;
         player1->cursorIndex = currentIndex;
       }
       else if (tileType == MapTileType::P2HQ){
-        building.belongsToPlayer = OwnershipPlayer2;
+        building.belongsToPlayer = MapTile::Player2;
         player2->cursorIndex = currentIndex;
       }
 
@@ -841,12 +845,16 @@ void AWGame::loadMap(unsigned const char *mapData){
 
 void AWGame::updateMapForPlayer(Player *aPlayer){
 
+  // fill map with fog
+  clearMap(true);
+
+  // udpate the player units
   for (int8_t y = 0; y < aPlayer->units.getCount(); y++) {
   }
 
 }
 
-void AWGame::updateMapWithFog(){
+void AWGame::clearMap(bool withFog){
   // draw fog
   for (int8_t y = 0; y < mapSize.y; y++) {
     for (int8_t x = 0; x < mapSize.x; x++) {
@@ -856,6 +864,11 @@ void AWGame::updateMapWithFog(){
 
         // turn fog on
         tile.showsFog = true;
+
+        // remove unit
+        tile.hasUnit = 0;
+        tile.unitBelongsTo = 0;
+        tile.unitSpriteID = 0;
 
         //update tile
          mapTileData[y*mapSize.x+x] = tile;
@@ -893,23 +906,23 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // Draw marker
       if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
-        if(tile.buildingBelongsTo == OwnershipPlayer){
+        if(tile.buildingBelongsTo == MapTile::Player){
           sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 0);
         }
-        else if(tile.buildingBelongsTo == OwnershipEnemy){
+        else if(tile.buildingBelongsTo == MapTile::Enemy){
           sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 1);
         }
       }
 
       // Draw Unit
-      if(tile.unitBelongsTo != OwnershipNone){
+      if(tile.hasUnit == 1){
         // unitSprite
         const unsigned char *unitSprite = nullptr;
 
         // get correct sprite
-        if(tile.unitBelongsTo == OwnershipPlayer1)
+        if(tile.unitBelongsTo == MapTile::Player1)
           unitSprite = unitsA_plus_mask;
-        else if(tile.unitBelongsTo == OwnershipPlayer2)
+        else if(tile.unitBelongsTo == MapTile::Player2)
           unitSprite = unitsB_plus_mask;
 
         // Draw sprite

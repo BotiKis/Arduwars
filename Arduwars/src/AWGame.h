@@ -129,8 +129,9 @@ private:
     // updates the gamemap for the player
     void updateMapForPlayer(Player *aPlayer);
 
-    // fills the gamemap with fog
-    void updateMapWithFog();
+    // removes all units from the map
+    // withFog == true fills the gamemap with fog
+    void clearMap(bool withFog);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();

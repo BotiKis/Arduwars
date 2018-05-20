@@ -240,7 +240,8 @@ GameBuilding::GameBuilding(){
 
   // Set the coordinates to 0
   mapPosX = mapPosY = 0;
-  belongsToPlayer = OwnershipNone;
+  isOccupied = 0;
+  belongsToPlayer = 0;
 }
 
 GameBuilding::GameBuilding(MapTileType type){
@@ -252,7 +253,8 @@ GameBuilding::GameBuilding(MapTileType type){
 
   // Set the coordinates to 0
   mapPosX = mapPosY = 0;
-  belongsToPlayer = OwnershipNone;
+  isOccupied = 0;
+  belongsToPlayer = 0;
 }
 
 
@@ -275,9 +277,14 @@ void Player::reset(){
 
 MapTile::MapTile(void){
   tileID = 0;
+
   buildingBelongsTo = 0;
-  unitBelongsTo = OwnershipNone;
-  showSelection = OwnershipNone;
+
+  hasUnit = 0;
+  unitBelongsTo = 0;
+
+  showSelection = 0;
+
   showsFog = 0;
   unitSpriteID = 0;
 }
