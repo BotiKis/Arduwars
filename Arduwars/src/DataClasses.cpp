@@ -278,6 +278,7 @@ void Player::reset(){
 MapTile::MapTile(void){
   tileID = 0;
 
+  buildingIsOccupied = 0;
   buildingBelongsTo = 0;
 
   hasUnit = 0;

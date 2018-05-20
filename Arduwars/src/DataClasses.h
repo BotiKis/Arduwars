@@ -163,9 +163,9 @@ public:
 // Mountains, Forests and other things on the Map also count as buildings.
 class GameBuilding{
 public:
-  uint8_t buildingType                :5; // We store it as a uint8_t instead of a BuildingType,
-                                          // because we save some valuable ram if we use a Bitfield.
-                                          // Later we typecast safely between these two types.
+  uint8_t buildingType    :5; // We store it as a uint8_t instead of a BuildingType,
+                              // because we save some valuable ram if we use a Bitfield.
+                              // Later we typecast safely between these two types.
   uint8_t healthPoints    :5; // A building can have max 32 health.
   uint8_t isOccupied      :1; // If the Building is occupied or not
   uint8_t belongsToPlayer :1; // Tells to which player the Building belongs
@@ -180,6 +180,9 @@ public:
 
   // initializes with corresponding data
   GameBuilding(MapTileType type);
+
+  // attribute is the global viewdistance for all buildings
+  static constexpr uint8_t buildingViewDistance = 3;
 };
 
 // This class defines a Player which has Units, Buildings, Money and other Information.
@@ -217,12 +220,12 @@ public:
   MapTile(void);
 
   uint8_t tileID:5;              // Holds the ID of the Tile in the Tilesheet
+  uint8_t buildingIsOccupied:1;  // 0 if building is not occupied
   uint8_t buildingBelongsTo:1;   // Tells to whom the building belongs (if it's a building).
   uint8_t hasUnit:1;             // 0... No unit, 1... Contains a unit
   uint8_t unitBelongsTo:1;       // Tells, if there is a unit and to which player it belongs.
   uint8_t showSelection:1;       // When 1, it displays the selection Animation
   uint8_t showsFog:1;            // When 1, it shows fog.
-  uint8_t unused:1;              // reserved for future
   uint8_t unitSpriteID:5;        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
   // 2 bytes in total
 };
