@@ -132,6 +132,9 @@ private:
     // fills the gamemap with fog
     void updateMapWithFog();
 
+    // neat effect directly on the display buffer
+    void makeScreenTransition();
+
     // print free memory // debug Only
     void printFreeMemory();
 

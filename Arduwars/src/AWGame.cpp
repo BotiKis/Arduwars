@@ -304,22 +304,11 @@ void AWGame::runMultiPlayerGame(){
   // Game Loops
   while (true) {
 
-    // show player round
-    doRoundOfPlayer(currentPlayer);
+    // show transition effect
+    makeScreenTransition();
 
-    // check for win condition
-    if (daysPlayed == 255) {
-      #warning implement win condition
-      return;
-    }
-
-    // switch players
-    if (currentPlayer == player1)
-      currentPlayer = player2;
-    else{
-      currentPlayer = player1;
-      daysPlayed++;
-    }
+    // show dialog for player
+    showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
 
     // Draw map and HUD for new player
     arduboy.clear();
@@ -341,7 +330,22 @@ void AWGame::runMultiPlayerGame(){
 
     arduboy.display();
 
-    showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
+    // show player round
+    doRoundOfPlayer(currentPlayer);
+
+    // check for win condition
+    if (daysPlayed == 255) {
+      #warning implement win condition
+      return;
+    }
+
+    // switch players
+    if (currentPlayer == player1)
+      currentPlayer = player2;
+    else{
+      currentPlayer = player1;
+      daysPlayed++;
+    }
   }
 }
 
@@ -920,14 +924,41 @@ void AWGame::drawMapAtPosition(Point pos){
   }
 }
 
+void AWGame::makeScreenTransition(){
+  uint8_t *dbuff = arduboy.getBuffer();
+
+  for (uint8_t i = 0; i < 128; i++) {
+      for (uint8_t x = 0; x < 128; x++) {
+        for (uint8_t y = 0; y < 8; y++) {
+          if (y%2==0) {
+            if (x == 127)
+              dbuff[x+y*128] = 0;
+            else
+              dbuff[x+y*128] = dbuff[x+y*128+1];
+          }
+          else{
+            uint8_t helperX = 127-x;
+            if (helperX == 0)
+              dbuff[helperX+y*128] = 0;
+            else
+              dbuff[helperX+y*128] = dbuff[helperX+y*128-1];
+          }
+        }
+      }
+
+      arduboy.display();
+      delay(1);
+  }
+}
+
 void AWGame::printFreeMemory(){
 
-  // #warning Remove Memory free when done.
-  // arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
-  // arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
-  //
-  // tinyfont.setCursor(1, arduboy.height()-5);
-  // tinyfont.print(F("MEM FREE:"));
-  // tinyfont.setCursor(48, arduboy.height()-5);
-  // tinyfont.print(freeMemory());
+  #warning Remove Memory free when done.
+  arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
+  arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
+
+  tinyfont.setCursor(1, arduboy.height()-5);
+  tinyfont.print(F("MEM FREE:"));
+  tinyfont.setCursor(48, arduboy.height()-5);
+  tinyfont.print(freeMemory());
 }
