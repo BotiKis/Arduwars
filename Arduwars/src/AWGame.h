@@ -174,7 +174,7 @@ private:
 
     // Map data
     MapTile *mapTileData = nullptr;
-    Point mapSize = {0, 0};
+    Point mapSize = {0, 0}; // Mapsize is in Maptile coordinates and not in screen coordinates.
     static constexpr uint8_t mapOffsetY = 8;
 };
 #endif

@@ -307,6 +307,9 @@ void AWGame::runMultiPlayerGame(){
     // show transition effect
     makeScreenTransition();
 
+    // update player map
+    updateMapForPlayer(currentPlayer);
+
     // show dialog for player
     showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
 
@@ -788,6 +791,7 @@ void AWGame::loadMap(unsigned const char *mapData){
 
     // get Tile Data
     mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
+    mapTileData[i].buildingIsOccupied = 0;
     mapTileData[i].buildingBelongsTo = 0;
     mapTileData[i].hasUnit = 0;
     mapTileData[i].unitBelongsTo = 0;
@@ -802,13 +806,21 @@ void AWGame::loadMap(unsigned const char *mapData){
     if (mapTileIndexIsBuilding(tileType)) {
       GameBuilding building = GameBuilding();
 
+      // set upd building
+      building.mapPosX = currentIndex.x;
+      building.mapPosY = currentIndex.y;
+      building.isOccupied = 0;
+      building.buildingType = mapTileData[i].tileID;
+
       // Check for city
       if (tileType == MapTileType::City) {
         // check for ownership
         if (currentIndex == player1StartCityCoords) {
+          building.isOccupied = 1;
           building.belongsToPlayer = MapTile::Player1;
         }
         else if (currentIndex == player2StartCityCoords) {
+          building.isOccupied = 1;
           building.belongsToPlayer = MapTile::Player2;
         }
       }
@@ -817,27 +829,33 @@ void AWGame::loadMap(unsigned const char *mapData){
       if (tileType == MapTileType::Factory) {
         // check for ownership
         if (currentIndex == player1StartWorkshopCoords) {
+          building.isOccupied = 1;
           building.belongsToPlayer = MapTile::Player1;
         }
         else if (currentIndex == player2StartWorkshopCoords) {
+          building.isOccupied = 1;
           building.belongsToPlayer = MapTile::Player2;
         }
       }
 
       // Check for Headquarters
       if (tileType == MapTileType::P1HQ){
+        building.isOccupied = 1;
         building.belongsToPlayer = MapTile::Player1;
         player1->cursorIndex = currentIndex;
       }
       else if (tileType == MapTileType::P2HQ){
+        building.isOccupied = 1;
         building.belongsToPlayer = MapTile::Player2;
         player2->cursorIndex = currentIndex;
       }
 
-      // udpate tile
-      mapTileData[i].buildingBelongsTo = building.belongsToPlayer;
-
+      // add building to our global buildings
       gameBuildings.add(building);
+
+      // udpate tile
+      mapTileData[i].buildingIsOccupied = building.isOccupied;
+      mapTileData[i].buildingBelongsTo = building.belongsToPlayer;
     }
 
   }
@@ -849,7 +867,129 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
   clearMap(true);
 
   // udpate the player units
-  for (int8_t y = 0; y < aPlayer->units.getCount(); y++) {
+  // for (uint8_t i = 0; i < aPlayer->units.getCount(); i++) {
+  //   GameUnit unit = aPlayer->units[i];
+  //
+  //   // get the corresponding map tile
+  //   MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
+  //   tile.hasUnit = 1;
+  //   tile.unitBelongsTo = (aPlayer == player1)?MapTile::Player1:MapTile::Player2;
+  //   tile.unitSpriteID = unit.unitType;
+  //   mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
+  //
+  //   // undo fog for units
+  //   // Units can see same far as they can move.
+  //   // get the traits of the unit
+  //   UnitType unitType = static_cast<UnitType>(unit.unitType);
+  //   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+  //   uint8_t sightRadius = traits.moveDistance;
+  //
+  //   // calc the viewport
+  //   Rect unitViewPort;
+  //   unitViewPort.x = unit.mapPosX-sightRadius;
+  //   unitViewPort.y = unit.mapPosY-sightRadius;
+  //   unitViewPort.width  = sightRadius*2+1;
+  //   unitViewPort.height = sightRadius*2+1;
+  //
+  //   // iterate the viewport
+  //   for (int8_t y = unitViewPort.y; y < (unitViewPort.height+unitViewPort.y); y++) {
+  //     // check for vertical bounds
+  //     if (y < 0 || y >= mapSize.y) continue;
+  //
+  //     for (int8_t x = unitViewPort.x; x < (unitViewPort.width+unitViewPort.x); x++) {
+  //       // check for horizontal bounds
+  //       if (x < 0 || x >= mapSize.x) continue;
+  //
+  //       // check if inside sightRadius
+  //       uint8_t deltaX = unit.mapPosX - x;
+  //       uint8_t deltaY = unit.mapPosY - y;
+  //
+  //       // because the docs says so, we calc the abs afterwards
+  //       // https://www.arduino.cc/reference/en/language/functions/math/abs/
+  //       deltaX = abs(deltaX);
+  //       deltaY = abs(deltaY);
+  //
+  //       // aproxximate the distance
+  //       // correct would be euclidean distance, but for us this is sufficient.
+  //       uint8_t distance = deltaX+deltaY;
+  //
+  //       // check if out of sight.
+  //       if (distance > sightRadius) continue;
+  //
+  //       // get maptile to remove fog
+  //       tile = mapTileData[x+y*mapSize.x];
+  //       tile.showsFog = 0;
+  //       tile = tile;
+  //     }
+  //   }
+  // }
+
+  // udpate the  buildings
+  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+    GameBuilding building = gameBuildings[i];
+    uint8_t thisPlayer = (aPlayer == player1)?MapTile::Player1:MapTile::Player2;
+
+    // get the corresponding map tile
+    MapTile tile = mapTileData[building.mapPosX+building.mapPosY*mapSize.x];
+
+    // check if building belongs to current player
+    if (building.isOccupied) {
+      tile.buildingIsOccupied = 1;
+      tile.buildingBelongsTo = (building.belongsToPlayer == thisPlayer)?MapTile::Player:MapTile::Enemy;
+    }
+    else{
+      // not occupied
+      tile.buildingIsOccupied = 0;
+      tile.buildingBelongsTo = 0;
+    }
+
+    // udpate maptile
+    mapTileData[building.mapPosX+building.mapPosY*mapSize.x] = tile;
+
+    // check if building belongs to player, because now we remove the fog of war calculations
+    if (!(tile.buildingIsOccupied == 1 && tile.buildingBelongsTo == thisPlayer)) continue;
+
+    // calc the viewport
+    Rect buildingViewPort;
+    buildingViewPort.x = building.mapPosX-GameBuilding::buildingViewDistance;
+    buildingViewPort.y = building.mapPosY-GameBuilding::buildingViewDistance;
+    buildingViewPort.width  = GameBuilding::buildingViewDistance*2+1;
+    buildingViewPort.height = GameBuilding::buildingViewDistance*2+1;
+
+    // iterate the viewport
+    for (int8_t y = buildingViewPort.y; y < (buildingViewPort.height+buildingViewPort.y); y++) {
+      // check for vertical bounds
+      if (y < 0 || y >= mapSize.y) continue;
+
+      for (int8_t x = buildingViewPort.x; x < (buildingViewPort.width+buildingViewPort.x); x++) {
+        // check for horizontal bounds
+        if (x < 0 || x >= mapSize.x) continue;
+
+        // check if inside sightRadius
+        uint8_t deltaX = building.mapPosX - x;
+        uint8_t deltaY = building.mapPosY - y;
+
+        // because the docs says so, we calc the abs afterwards
+        // https://www.arduino.cc/reference/en/language/functions/math/abs/
+        deltaX = abs(deltaX);
+        deltaY = abs(deltaY);
+
+        // aproxximate the distance
+        // correct would be euclidean distance, but for us this is sufficient.
+        uint8_t distance = deltaX+deltaY;
+
+        // check if out of sight.
+        if (distance <= GameBuilding::buildingViewDistance){
+          // get maptile to remove fog
+          mapTileData[x+y*mapSize.x].showsFog = 0;
+        }
+        else{
+          // get maptile to remove fog
+          mapTileData[x+y*mapSize.x].showsFog = 1;
+        }
+        
+      }
+    }
   }
 
 }
@@ -863,7 +1003,7 @@ void AWGame::clearMap(bool withFog){
         MapTile tile = mapTileData[y*mapSize.x+x];
 
         // turn fog on
-        tile.showsFog = true;
+        tile.showsFog = withFog?1:0;
 
         // remove unit
         tile.hasUnit = 0;
@@ -906,11 +1046,13 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // Draw marker
       if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
-        if(tile.buildingBelongsTo == MapTile::Player){
-          sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 0);
-        }
-        else if(tile.buildingBelongsTo == MapTile::Enemy){
-          sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 1);
+        if (tile.buildingIsOccupied == 1){
+          if(tile.buildingBelongsTo == MapTile::Player){
+            sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 0);
+          }
+          else if(tile.buildingBelongsTo == MapTile::Enemy){
+            sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 1);
+          }
         }
       }
 
@@ -930,7 +1072,12 @@ void AWGame::drawMapAtPosition(Point pos){
             // Draw unit
             sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID);
         }
+      }
 
+      // draw fog
+      if (tile.showsFog == 1) {
+          // Draw unit
+          sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
       }
 
     }
