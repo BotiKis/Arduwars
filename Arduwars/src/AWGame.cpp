@@ -865,62 +865,63 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
   clearMap(true);
 
   // udpate the player units
-  // for (uint8_t i = 0; i < aPlayer->units.getCount(); i++) {
-  //   GameUnit unit = aPlayer->units[i];
-  //
-  //   // get the corresponding map tile
-  //   MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
-  //   tile.hasUnit = 1;
-  //   tile.unitBelongsTo = (aPlayer == player1)?MapTile::Player1:MapTile::Player2;
-  //   tile.unitSpriteID = unit.unitType;
-  //   mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
-  //
-  //   // undo fog for units
-  //   // Units can see same far as they can move.
-  //   // get the traits of the unit
-  //   UnitType unitType = static_cast<UnitType>(unit.unitType);
-  //   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-  //   uint8_t sightRadius = traits.moveDistance;
-  //
-  //   // calc the viewport
-  //   Rect unitViewPort;
-  //   unitViewPort.x = unit.mapPosX-sightRadius;
-  //   unitViewPort.y = unit.mapPosY-sightRadius;
-  //   unitViewPort.width  = sightRadius*2+1;
-  //   unitViewPort.height = sightRadius*2+1;
-  //
-  //   // iterate the viewport
-  //   for (int8_t y = unitViewPort.y; y < (unitViewPort.height+unitViewPort.y); y++) {
-  //     // check for vertical bounds
-  //     if (y < 0 || y >= mapSize.y) continue;
-  //
-  //     for (int8_t x = unitViewPort.x; x < (unitViewPort.width+unitViewPort.x); x++) {
-  //       // check for horizontal bounds
-  //       if (x < 0 || x >= mapSize.x) continue;
-  //
-  //       // check if inside sightRadius
-  //       uint8_t deltaX = unit.mapPosX - x;
-  //       uint8_t deltaY = unit.mapPosY - y;
-  //
-  //       // because the docs says so, we calc the abs afterwards
-  //       // https://www.arduino.cc/reference/en/language/functions/math/abs/
-  //       deltaX = abs(deltaX);
-  //       deltaY = abs(deltaY);
-  //
-  //       // aproxximate the distance
-  //       // correct would be euclidean distance, but for us this is sufficient.
-  //       uint8_t distance = deltaX+deltaY;
-  //
-  //       // check if out of sight.
-  //       if (distance > sightRadius) continue;
-  //
-  //       // get maptile to remove fog
-  //       tile = mapTileData[x+y*mapSize.x];
-  //       tile.showsFog = 0;
-  //       tile = tile;
-  //     }
-  //   }
-  // }
+  for (uint8_t i = 0; i < aPlayer->units.getCount(); i++) {
+    GameUnit unit = aPlayer->units[i];
+
+    // get the corresponding map tile
+    MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
+    tile.hasUnit = 1;
+    tile.unitBelongsTo = (aPlayer == player1)?MapTile::Player1:MapTile::Player2;
+    tile.unitSpriteID = unit.unitType;
+    mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
+
+    // undo fog for units
+    // Units can see same far as they can move.
+    // get the traits of the unit
+    UnitType unitType = static_cast<UnitType>(unit.unitType);
+    UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+    uint8_t sightRadius = traits.moveDistance;
+
+    // calc the viewport
+    Rect unitViewPort;
+    unitViewPort.x = unit.mapPosX-sightRadius;
+    unitViewPort.y = unit.mapPosY-sightRadius;
+    unitViewPort.width  = sightRadius*2+1;
+    unitViewPort.height = sightRadius*2+1;
+
+    // iterate the viewport
+    for (int8_t y = unitViewPort.y; y < (unitViewPort.height+unitViewPort.y); y++) {
+      // check for vertical bounds
+      if (y < 0 || y >= mapSize.y) continue;
+
+      for (int8_t x = unitViewPort.x; x < (unitViewPort.width+unitViewPort.x); x++) {
+        // check for horizontal bounds
+        if (x < 0 || x >= mapSize.x) continue;
+
+        // check if inside sightRadius
+        int8_t deltaX = unit.mapPosX - x;
+        int8_t deltaY = unit.mapPosY - y;
+
+        // because the documentation says no functions inside the abs functions parameter
+        // https://www.arduino.cc/reference/en/language/functions/math/abs/
+        // this should be ok, but we stay on the safe side
+        deltaX = abs(deltaX);
+        deltaY = abs(deltaY);
+
+        // aproxximate the distance
+        // correct would be euclidean distance, but for us this is sufficient.
+        uint8_t distance = deltaX+deltaY;
+
+        // check if out of sight.
+        if (distance > sightRadius) continue;
+
+        // get maptile to remove fog
+        tile = mapTileData[x+y*mapSize.x];
+        tile.showsFog = 0;
+        mapTileData[x+y*mapSize.x] = tile;
+      }
+    }
+  }
 
   // udpate the  buildings
   for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
@@ -967,8 +968,9 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
         int8_t deltaX = building.mapPosX - x;
         int8_t deltaY = building.mapPosY - y;
 
-        // because the docs says so, we calc the abs afterwards
+        // because the documentation says no functions inside the abs functions parameter
         // https://www.arduino.cc/reference/en/language/functions/math/abs/
+        // this should be ok, but we stay on the safe side
         deltaX = abs(deltaX);
         deltaY = abs(deltaY);
 
@@ -989,7 +991,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
 }
 
 void AWGame::clearMap(bool withFog){
-  // draw fog
+  // go trough the whole map
   for (int8_t y = 0; y < mapSize.y; y++) {
     for (int8_t x = 0; x < mapSize.x; x++) {
 
@@ -999,18 +1001,20 @@ void AWGame::clearMap(bool withFog){
         // turn fog on
         tile.showsFog = withFog?1:0;
 
-        // remove unit
+        // remove unit info
         tile.hasUnit = 0;
         tile.unitBelongsTo = 0;
         tile.unitSpriteID = 0;
 
-        //update tile
+        // update tile
          mapTileData[y*mapSize.x+x] = tile;
     }
   }
 }
 
 void AWGame::drawMapAtPosition(Point pos){
+
+  // In this variable we store the
   Point drawPos;
 
   // draw the map
@@ -1031,13 +1035,11 @@ void AWGame::drawMapAtPosition(Point pos){
       if (tileType == MapTileType::P1HQ || tileType == MapTileType::P2HQ) {
         sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, (tileType == MapTileType::P1HQ)?32:33);
 
-        // get tile above for fog
+        // get tile above for fog info
         const MapTile tileAbove = mapTileData[((y-1)*mapSize.x)+x];
         // draw fog
-        if (tileAbove.showsFog == 1) {
-            // Draw unit
+        if (tileAbove.showsFog == 1)
             sprites.drawErase(drawPos.x, drawPos.y-TILE_SIZE, mapFOG_16x16, 0);
-        }
       }
 
       // draw maptile
@@ -1045,14 +1047,15 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // draw fog
       if (tile.showsFog == 1) {
-          // Draw unit
           sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
-
-          // don't draw more if there is fog.
+          // don't need to draw more if there is fog.
           continue;
       }
 
-      // Draw marker
+      // Draw marker for buildings
+      // we need to identify visually to whom the buiding belongs.
+      // Since we have no colors to indicate this, we draw small markers at
+      // the top right corner of a building.
       if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
         if (tile.buildingIsOccupied == 1){
           if(tile.buildingBelongsTo == MapTile::Player){
@@ -1076,10 +1079,7 @@ void AWGame::drawMapAtPosition(Point pos){
           unitSprite = unitsB_plus_mask;
 
         // Draw sprite
-        if(unitSprite != nullptr){
-            // Draw unit
-            sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID);
-        }
+        sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID);
       }
 
     }
