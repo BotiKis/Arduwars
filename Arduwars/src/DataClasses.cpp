@@ -348,7 +348,8 @@ MapTile::MapTile(void){
   unitBelongsTo = 0;
 
   showSelection = 0;
-
   showsFog = 0;
+
+  unitIsActive = GameUnit::UnitStateActive;
   unitSpriteID = 0;
 }

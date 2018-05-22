@@ -137,8 +137,8 @@ public:
   static constexpr uint8_t PayloadNone = 31;
 
   // Helper for units active state
-  static constexpr uint8_t UnitStateActive    = 0;
-  static constexpr uint8_t UnitStateDisabled  = 1;
+  static constexpr uint8_t UnitStateActive    = 1;
+  static constexpr uint8_t UnitStateDisabled  = 0;
 
   // Default health for units
   static constexpr uint8_t UnitDefaultHealth  = 10;
@@ -271,7 +271,8 @@ public:
   uint8_t unitBelongsTo:1;       // Tells, if there is a unit and to which player it belongs.
   uint8_t showSelection:1;       // When 1, it displays the selection Animation
   uint8_t showsFog:1;            // When 1, it shows fog.
-  uint8_t unitSpriteID:5;        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
+  uint8_t unitIsActive:1;        // Default GameUnit::UnitStateActive.
+  uint8_t unitSpriteID:4;        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
   // 2 bytes in total
 };
 
