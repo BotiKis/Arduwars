@@ -301,7 +301,7 @@ void AWGame::runMultiPlayerGame(){
 
   Player *currentPlayer = player1;
 
-  // Game Loops
+  // Game Loop
   while (true) {
 
     // show transition effect
@@ -309,6 +309,20 @@ void AWGame::runMultiPlayerGame(){
 
     // show dialog for player
     showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
+
+    // activate all units
+    for (uint8_t i = 0; i < currentPlayer->units.getCount(); i++) {
+      currentPlayer->units[i].activated = GameUnit::UnitStateActive;
+    }
+
+    // Calculate Income for every City
+    for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+      if(gameBuildings[i].buildingType == static_cast<uint8_t>(MapTileType::City) &&
+      gameBuildings[i].isOccupied == 1 &&
+      gameBuildings[i].belongsToPlayer == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2)){
+        currentPlayer->money += Player::BaseIncome;
+      }
+    }
 
     // update player map
     updateMapForPlayer(currentPlayer);
