@@ -224,10 +224,10 @@ public:
 class MapTile {
 public:
 
-  static constexpr uint8_t Player1 = 0;
-  static constexpr uint8_t Player2 = 1;
-  static constexpr uint8_t Player  = 0;
-  static constexpr uint8_t Enemy   = 1;
+  static constexpr uint8_t BelongsToPlayer1 = 0;
+  static constexpr uint8_t BelongsToPlayer2 = 1;
+  static constexpr uint8_t BelongsToPlayer  = 0;
+  static constexpr uint8_t BelongsToEnemy   = 1;
 
   MapTile(void);
 
