@@ -44,26 +44,29 @@ enum class UnitType : int8_t {
 // This enum defines the possible Map Tiles
 // There are only 32 in total.
 enum class MapTileType:uint8_t{
-  Water = 0,
-  Reef,
-  Coast1,
+  Water       = 0,
+  Reef        = 1,
+  Coast1      = 2,
   // coast stuff from 2-13
-  Coast12,
-  Plains = 14,
-  Grass,
-  Street1,
-  // street stuff from 16-21
-  Street6 = 21,
-  Hill = 22,
-  Mountain,
-  Forest,
-  City,
-  Factory,
-  Airport,
-  Shipyard,
-  ScienceLab,
-  P1HQ,
-  P2HQ
+  Coast12     = 13,
+  Plains      = 14,
+  Grass       = 15,
+  Street1     = 16,
+  Street2     = 17,
+  Street3     = 18,
+  Street4     = 19,
+  Street5     = 20,
+  Street6     = 21,
+  Hill        = 22,
+  Mountain    = 23,
+  Forest      = 24,
+  City        = 25,
+  Factory     = 26,
+  Airport     = 27,
+  Shipyard    = 28,
+  ScienceLab  = 29,
+  P1HQ        = 30,
+  P2HQ        = 31
 };
 
 // Helper function returns true if the given Index is a Building
@@ -169,6 +172,9 @@ public:
   // Returns an effect for a given type.
   static const EnviromentEffects effectForType(EnviromentType type);
   static const bool canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType);
+
+  static const EnviromentType enviromentTypeForMapTileType(MapTileType mapTileType);
+  static const bool canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType);
 };
 
 // This class defines a Building like the HQ or Cities.

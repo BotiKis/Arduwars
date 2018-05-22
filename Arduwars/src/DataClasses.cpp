@@ -203,9 +203,9 @@ const EnviromentEffects EnviromentEffects::effectForType(EnviromentType type){
 
 const bool EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType){
 
-  //Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
-  static const uint8_t moveTable[16] =
+  static constexpr uint8_t PROGMEM moveTable[16] =
   {
+    //Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
     0b10111101,  // Soldier
     0b10111101, // Mech
     0b10111101, // SpecOps
@@ -224,10 +224,58 @@ const bool EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentType envir
     0b01000000 // Transportship
   };
 
- uint8_t moveMask = moveTable[static_cast<uint8_t>(unitType)];
- uint8_t value = (moveMask >> (7-static_cast<uint8_t>(enviromentType))) & 0b00000001;
+ const uint8_t moveMask = pgm_read_byte(moveTable+static_cast<uint8_t>(unitType));
+ const uint8_t value = (moveMask >> (7-static_cast<uint8_t>(enviromentType))) & 0b00000001;
 
  return (value == 1);
+}
+
+const EnviromentType EnviromentEffects::enviromentTypeForMapTileType(MapTileType mapTileType){
+  switch (mapTileType) {
+
+    // Water fields
+    case MapTileType::Water:
+    case MapTileType::Coast1:
+    case MapTileType::Coast12:
+    default: return EnviromentType::Water;
+
+    // Reef
+    case MapTileType::Reef: return EnviromentType::Reef;
+
+    // Street
+    case MapTileType::Street1:
+    case MapTileType::Street2:
+    case MapTileType::Street3:
+    case MapTileType::Street4:
+    case MapTileType::Street5:
+    case MapTileType::Street6: return EnviromentType::Street;
+
+    // Hill
+    case MapTileType::Hill: return EnviromentType::Hill;
+
+    // Mountain
+    case MapTileType::Mountain: return EnviromentType::Mountain;
+
+    // Forest
+    case MapTileType::Forest: return EnviromentType::Forest;
+
+    // Ground
+    case MapTileType::Plains:
+    case MapTileType::Grass: return EnviromentType::Ground;
+
+    // Street
+    case MapTileType::City:
+    case MapTileType::Factory:
+    case MapTileType::Airport:
+    case MapTileType::Shipyard:
+    case MapTileType::ScienceLab:
+    case MapTileType::P1HQ:
+    case MapTileType::P2HQ: return EnviromentType::Building;
+  }
+}
+
+const bool EnviromentEffects::canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType){
+  return EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentEffects::enviromentTypeForMapTileType(mapTileType),unitType);
 }
 
 
