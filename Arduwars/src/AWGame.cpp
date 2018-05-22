@@ -1116,6 +1116,18 @@ void AWGame::makeScreenTransition(){
   }
 }
 
+const GameBuilding * AWGame::getBuildingAtPosition(Point position){
+
+  // go through all buildings
+  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+    // when building is found return it
+    if (gameBuildings[i].mapPosX == position.x && gameBuildings[i].mapPosY == position.y)
+      return &gameBuildings[i];
+  }
+
+  return nullptr;
+}
+
 void AWGame::printFreeMemory(){
 
   #warning Remove Memory free when done.
