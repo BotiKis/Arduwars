@@ -449,11 +449,11 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
           MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
 
           // // check first for Unit
-          if (currentMapTile.hasUnit == 1) {
+          if (currentMapTile.hasUnit == 1 && currentMapTile.unitBelongsTo == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2) && currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
             // Do something
           }
           // Second check for shop that belongs to user
-          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer) {
+          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer && currentMapTile.hasUnit == 0) {
 
             // check if there is space for a new unit
             if (currentPlayer->units.isFull()) {
@@ -904,6 +904,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     tile.hasUnit = 1;
     tile.unitBelongsTo = (aPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
     tile.unitSpriteID = unit.unitType;
+    tile.unitIsActive = unit.activated;
     mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
 
     // undo fog for units
@@ -1109,11 +1110,21 @@ void AWGame::drawMapAtPosition(Point pos){
         else if(tile.unitBelongsTo == MapTile::BelongsToPlayer2)
           unitSprite = unitsB_plus_mask;
 
-        // Draw sprite
-        // The *2 is because every unit in the spritesheet has two frames
-        // The +(arduboy.frameCount/10)%2 part switches between these two frames
-        // based on the current framecount.
-        sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID*2+(arduboy.frameCount/10)%2);
+        // Check if unit is active
+        if (tile.unitIsActive == GameUnit::UnitStateActive) {
+          // Draw sprite
+          // The *2 is because every unit in the spritesheet has two frames
+          // The +(arduboy.frameCount/10)%2 part switches between these two frames
+          // based on the current framecount.
+          sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID*2+(arduboy.frameCount/10)%2);
+        }
+        else{
+          // Don't animate if not active and draw a badge to top right.
+          // The *2 is because every unit in the spritesheet has two frames
+          sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID*2);
+          sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 2);
+        }
+
       }
 
     }
