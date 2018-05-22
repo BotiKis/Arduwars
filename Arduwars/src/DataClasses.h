@@ -79,6 +79,10 @@ static inline bool mapTileIndexIsShop(MapTileType mapTileidx){
   return (mapTileidx == MapTileType::Factory || mapTileidx == MapTileType::Airport || mapTileidx == MapTileType::Shipyard);
 }
 
+
+// ====================================================
+// GameUnit
+
 // This class defines a Unit like Soldiers or Tanks
 class GameUnit{
 public:
@@ -135,6 +139,9 @@ public:
   // Helper for units active state
   static constexpr uint8_t UnitStateActive    = 0;
   static constexpr uint8_t UnitStateDisabled  = 1;
+
+  // Default health for units
+  static constexpr uint8_t UnitDefaultHealth  = 10;
 };
 
 class UnitTraits{
@@ -149,6 +156,10 @@ public:
   // Function returns the traits for a certain unit type
   static const UnitTraits traitsForUnitType(UnitType unitType);
 };
+
+
+// ====================================================
+// EnviromentEffects
 
 // This enum defines the possible Enviroments.
 enum class EnviromentType : uint8_t {
@@ -177,6 +188,10 @@ public:
   static const bool canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType);
 };
 
+
+// ====================================================
+// GameBuilding
+
 // This class defines a Building like the HQ or Cities.
 // Mountains, Forests and other things on the Map also count as buildings.
 class GameBuilding{
@@ -202,6 +217,10 @@ public:
   // attribute is the global viewdistance for all buildings
   static constexpr uint8_t buildingViewDistance = 3;
 };
+
+
+// ====================================================
+// Player
 
 // This class defines a Player which has Units, Buildings, Money and other Information.
 class Player{
@@ -230,6 +249,10 @@ public:
 // It is NOT a Datastorage and should only be used to tell the drawing method what to draw.
 // An 2D array with instances of this class is populated at the start of every round
 // of a player.
+
+
+// ====================================================
+// MapTile
 
 class MapTile {
 public:

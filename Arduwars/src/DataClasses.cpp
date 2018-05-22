@@ -9,7 +9,7 @@ GameUnit::GameUnit(){
   unitType = static_cast<uint8_t>(UnitType::Soldier);
 
   // Every unit has default 10 HP
-  healthPoints = 10;
+  healthPoints = GameUnit::UnitDefaultHealth;
 
   // set active
   activated = GameUnit::UnitStateActive;
