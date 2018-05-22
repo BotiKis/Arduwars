@@ -323,6 +323,18 @@ void Player::reset(){
   units.clear();
 }
 
+const GameUnit * Player::unitForMapCoordinates(Point coordinates){
+
+  // go through all units
+  for (uint8_t i = 0; i < units.getCount(); i++) {
+    // when units is found return it
+    if (units[i].mapPosX == coordinates.x && units[i].mapPosY == coordinates.y)
+      return &units[i];
+  }
+
+  return nullptr;
+}
+
 // ====================================================
 // MapTile
 

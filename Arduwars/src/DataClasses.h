@@ -220,6 +220,10 @@ public:
 
   // reset the data of this class
   void reset();
+
+  // return a unit for give coordinates on the map.
+  // nullptr if no unit found.
+  const GameUnit * unitForMapCoordinates(Point coordinates);
 };
 
 // This class is used to tell the map drawing method what to draw.
