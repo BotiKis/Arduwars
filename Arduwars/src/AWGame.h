@@ -139,7 +139,7 @@ private:
     // Helper method to get a Pointer to the Gamebuilding for a certain location on the map
     // The parameter position is in map coordinates.
     // returns nullptr if there is no building at the Location
-    const GameBuilding * getBuildingAtPosition(Point position);
+    const GameBuilding * getBuildingAtCoordinate(Point coordinate);
 
     // print free memory // debug Only
     void printFreeMemory();

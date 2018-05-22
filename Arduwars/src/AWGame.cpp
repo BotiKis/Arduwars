@@ -1140,12 +1140,12 @@ void AWGame::makeScreenTransition(){
   }
 }
 
-const GameBuilding * AWGame::getBuildingAtPosition(Point position){
+const GameBuilding * AWGame::getBuildingAtCoordinate(Point coordinate){
 
   // go through all buildings
   for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
     // when building is found return it
-    if (gameBuildings[i].mapPosX == position.x && gameBuildings[i].mapPosY == position.y)
+    if (gameBuildings[i].mapPosX == coordinate.x && gameBuildings[i].mapPosY == coordinate.y)
       return &gameBuildings[i];
   }
 
