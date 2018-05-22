@@ -24,9 +24,10 @@ char_P LOCA_player1[] PROGMEM        = "PLAYER 1";
 char_P LOCA_player2[] PROGMEM        = "PLAYER 2";
 
 // Game
-char_P LOCA_endTurn[] PROGMEM        = "END TURN";
-char_P LOCA_day[] PROGMEM            = "DAY:";
-char_P LOCA_funds[] PROGMEM          = "M:";
+char_P LOCA_endTurn[] PROGMEM             = "END TURN";
+char_P LOCA_day[] PROGMEM                 = "DAY:";
+char_P LOCA_funds[] PROGMEM               = "M:";
+char_P LOCA_Unit_limit_reached[] PROGMEM  = "UNIT LIMIT REACHED";
 
 // Unit Traits
 char_P LOCA_Trait_attack[] PROGMEM   = "ATK";

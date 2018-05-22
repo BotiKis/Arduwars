@@ -454,6 +454,13 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
           }
           // Second check for shop that belongs to user
           else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer) {
+
+            // check if there is space for a new unit
+            if (currentPlayer->units.isFull()) {
+              showDialog(LOCA_Unit_limit_reached);
+              continue;
+            }
+
             // Show shop window
             UnitType selectedUnit = showShopForBuildingAndPlayer(currentTileType, currentPlayer);
 
