@@ -307,11 +307,11 @@ void AWGame::runMultiPlayerGame(){
     // show transition effect
     makeScreenTransition();
 
-    // update player map
-    updateMapForPlayer(currentPlayer);
-
     // show dialog for player
     showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
+
+    // update player map
+    updateMapForPlayer(currentPlayer);
 
     // Draw map and HUD for new player
     arduboy.clear();
@@ -365,9 +365,6 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
   // calculate mapsize in pixels, needed for camera stuff
   Point mapSizeInPixel = mapSize*TILE_SIZE;
-
-  // update map for player
-  updateMapForPlayer(currentPlayer);
 
     // Game loop
     while(true){
@@ -810,6 +807,7 @@ void AWGame::loadMap(unsigned const char *mapData){
       building.mapPosX = currentIndex.x;
       building.mapPosY = currentIndex.y;
       building.isOccupied = 0;
+      building.belongsToPlayer = 0;
       building.buildingType = mapTileData[i].tileID;
 
       // Check for city
@@ -947,7 +945,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     mapTileData[building.mapPosX+building.mapPosY*mapSize.x] = tile;
 
     // check if building belongs to player, because now we remove the fog of war calculations
-    if (!(tile.buildingIsOccupied == 1 && tile.buildingBelongsTo == thisPlayer)) continue;
+    if (!(building.isOccupied == 1 && building.belongsToPlayer == thisPlayer)) continue;
 
     // calc the viewport
     Rect buildingViewPort;
@@ -966,8 +964,8 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
         if (x < 0 || x >= mapSize.x) continue;
 
         // check if inside sightRadius
-        uint8_t deltaX = building.mapPosX - x;
-        uint8_t deltaY = building.mapPosY - y;
+        int8_t deltaX = building.mapPosX - x;
+        int8_t deltaY = building.mapPosY - y;
 
         // because the docs says so, we calc the abs afterwards
         // https://www.arduino.cc/reference/en/language/functions/math/abs/
@@ -978,16 +976,12 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
         // correct would be euclidean distance, but for us this is sufficient.
         uint8_t distance = deltaX+deltaY;
 
-        // check if out of sight.
+        // check if tile out of sight.
         if (distance <= GameBuilding::buildingViewDistance){
           // get maptile to remove fog
           mapTileData[x+y*mapSize.x].showsFog = 0;
         }
-        else{
-          // get maptile to remove fog
-          mapTileData[x+y*mapSize.x].showsFog = 1;
-        }
-        
+
       }
     }
   }
@@ -1034,15 +1028,29 @@ void AWGame::drawMapAtPosition(Point pos){
       const MapTileType tileType = static_cast<MapTileType>(tile.tileID);
 
       // If it's a headquarter draw upper half at the position above
-      if (tileType == MapTileType::P1HQ) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 32);
-      }
-      if (tileType == MapTileType::P2HQ) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, 33);
+      if (tileType == MapTileType::P1HQ || tileType == MapTileType::P2HQ) {
+        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, (tileType == MapTileType::P1HQ)?32:33);
+
+        // get tile above for fog
+        const MapTile tileAbove = mapTileData[((y-1)*mapSize.x)+x];
+        // draw fog
+        if (tileAbove.showsFog == 1) {
+            // Draw unit
+            sprites.drawErase(drawPos.x, drawPos.y-TILE_SIZE, mapFOG_16x16, 0);
+        }
       }
 
       // draw maptile
       sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
+
+      // draw fog
+      if (tile.showsFog == 1) {
+          // Draw unit
+          sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
+
+          // don't draw more if there is fog.
+          continue;
+      }
 
       // Draw marker
       if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
@@ -1072,12 +1080,6 @@ void AWGame::drawMapAtPosition(Point pos){
             // Draw unit
             sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID);
         }
-      }
-
-      // draw fog
-      if (tile.showsFog == 1) {
-          // Draw unit
-          sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
       }
 
     }
