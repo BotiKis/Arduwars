@@ -453,8 +453,23 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
             // Do something
           }
           // Second check for shop that belongs to user
-          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == ((currentPlayer == player1)?0:1)) {
-            showShopForBuildingAndPlayer(currentTileType, currentPlayer);
+          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::Player) {
+            // Show shop window
+            UnitType selectedUnit = showShopForBuildingAndPlayer(currentTileType, currentPlayer);
+
+            // react to the users choice if he buys a unit
+            if(selectedUnit != UnitType::None){
+              GameUnit newUnit = GameUnit();
+
+              // init unit
+              newUnit.unitType = static_cast<uint8_t>(selectedUnit);
+              newUnit.mapPosX = currentIndex.x;
+              newUnit.mapPosY = currentIndex.y;
+              newUnit.activated = GameUnit::UnitStateDisabled;
+
+              currentPlayer->units.add(newUnit);
+              updateMapForPlayer(currentPlayer);
+            }
           }
           // last show end turn option
           else if(showOption(LOCA_endTurn)){
@@ -599,7 +614,19 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
     }
     // Buy Unit on button press
     if (arduboy.justPressed(B_BUTTON)){
-      return static_cast<UnitType>(pgm_read_byte(buyableUnits+menuCursorIDX));
+      // get selected unit
+      UnitType unitToBuy = static_cast<UnitType>(pgm_read_byte(buyableUnits+menuCursorIDX));
+      uint8_t unitCosts = GameUnit::costsOfUnit(unitToBuy);
+
+      // check if user has enough money to buy
+      if (unitCosts <= aPlayer->money) {
+
+        // substract the amount from the players funds
+        aPlayer->money -= unitCosts;
+
+        // return the unit
+        return unitToBuy;
+      }
     }
 
     // limit and wrap the cursor
@@ -668,12 +695,9 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
     else
       unitSprite = unitsB_plus_mask;
 
-    // Draw sprite
-    if(unitSprite != nullptr){
-        // Draw unit
-        // we can safely cast the unittype since by design it is the index in the spritesheet
-        sprites.drawPlusMask(90, 12, unitSprite, static_cast<uint8_t>(unitToDraw)*2+(arduboy.frameCount/10)%2);
-    }
+    // Draw unit
+    // we can safely cast the unittype since by design it is the index in the spritesheet
+    sprites.drawPlusMask(90, 12, unitSprite, static_cast<uint8_t>(unitToDraw)*2+(arduboy.frameCount/10)%2);
 
     // draw Unit specs
     UnitTraits traits = UnitTraits::traitsForUnitType(unitToDraw);
@@ -683,7 +707,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
     tinyfont.setCursor(76, 34);
     tinyfont.print(AsFlashString(LOCA_funds));
     tinyfont.setCursor(100 - ((unitPrice>100)?5:0), 34);
-    tinyfont.print(unitPrice*100);
+    tinyfont.print(unitPrice*100); // Times 100 makes the value look larger but we still can store it in a byte :)
 
     // Attack
     tinyfont.setCursor(76, 42);
