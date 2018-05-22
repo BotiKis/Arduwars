@@ -5,6 +5,7 @@
 // This file contains all text used by the game
 // Can be localized
 
+// used to indicate that the string is store in PROGMEM
 using char_P = const char;
 
 // MENU
