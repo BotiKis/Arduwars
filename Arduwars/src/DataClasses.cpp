@@ -11,8 +11,11 @@ GameUnit::GameUnit(){
   // Every unit has default 10 HP
   healthPoints = 10;
 
-  // set unused stuff to 0
-  others = 0;
+  // set active
+  activated = GameUnit::UnitStateActive;
+
+  // set the payload
+  payload = GameUnit::PayloadNone;
 }
 
 char_P* GameUnit::nameForUnitType(UnitType unitType){

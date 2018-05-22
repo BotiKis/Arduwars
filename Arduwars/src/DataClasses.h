@@ -107,8 +107,11 @@ public:
   uint8_t healthPoints:4; // A unit can have max 15 health.
   uint8_t mapPosX     :5; // X Position on the map - max 32.
   uint8_t mapPosY     :5; // Y Position on the map - max 32.
-  uint8_t activated   :1; // 1 if unit has took its action.
-  uint8_t others      :5; // reserved for future use.
+  uint8_t activated   :1; // GameUnit::UnitStateDisabled if unit has took its action. Default... GameUnit::UnitStateActive
+  // If it's a transport unit we store here the index of the unit in
+  // the players Units which is transported.
+  // Default... GameUnit::PayloadNone if there is no unit
+  uint8_t payload     :5;
   // 3 Bytes in total.
 
   // Constructor
@@ -120,6 +123,15 @@ public:
 
   // returns the costs of a certain UnitType
   static uint8_t costsOfUnit(UnitType unitType);
+
+  // Helper for the payload attribute
+  // since a player can have max 24 Units we can use every value above as a helper.
+  // we use 31 to indicate, that there is no payload.
+  static constexpr uint8_t PayloadNone = 31;
+
+  // Helper for units active state
+  static constexpr uint8_t UnitStateActive    = 0;
+  static constexpr uint8_t UnitStateDisabled  = 1;
 };
 
 class UnitTraits{
