@@ -243,6 +243,9 @@ public:
   // return a unit for give coordinates on the map.
   // nullptr if no unit found.
   const GameUnit * unitForMapCoordinates(Point coordinates);
+
+  // Default income for one building
+  static constexpr uint8_t BaseIncome = 10;
 };
 
 // This class is used to tell the map drawing method what to draw.
