@@ -1079,7 +1079,10 @@ void AWGame::drawMapAtPosition(Point pos){
           unitSprite = unitsB_plus_mask;
 
         // Draw sprite
-        sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID);
+        // The *2 is because every unit in the spritesheet has two frames
+        // The +(arduboy.frameCount/10)%2 part switches between these two frames
+        // based on the current framecount.
+        sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID*2+(arduboy.frameCount/10)%2);
       }
 
     }
