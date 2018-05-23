@@ -9,9 +9,10 @@
 using char_P = const char;
 
 // MENU
-char_P LOCA_SinglePlayer[] PROGMEM    = "SINGLE PLAYER";
-char_P LOCA_MultiPlayer[] PROGMEM     = "TWO PLAYER";
-char_P LOCA_Options[] PROGMEM         = "OPTIONS";
+char_P LOCA_SinglePlayer[] PROGMEM    = "NEW GAME";
+char_P LOCA_MultiPlayer[] PROGMEM     = "MULTIPLAYER";
+char_P LOCA_Sound_on[] PROGMEM        = "SOUND ON";
+char_P LOCA_Sound_off[] PROGMEM       = "SOUND OFF";
 char_P LOCA_BackWithA[] PROGMEM       = "< BACK WITH A";
 
 // Map selection
