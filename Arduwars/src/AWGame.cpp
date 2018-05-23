@@ -944,7 +944,14 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     // get the traits of the unit
     UnitType unitType = static_cast<UnitType>(unit.unitType);
     UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-    uint8_t sightRadius = traits.moveDistance;
+    uint8_t sightRadius = (traits.moveDistance-1)/2;
+
+    // add sight to unit if its on a hill or mountain
+    // Only infantry units can be on ills and mountains and they get a sight boost.
+    if (tile.tileID == static_cast<uint8_t>(MapTileType::Hill))
+      sightRadius +=1;
+    else if (tile.tileID == static_cast<uint8_t>(MapTileType::Mountain))
+      sightRadius +=2;
 
     // calc the viewport
     Rect unitViewPort;
