@@ -63,11 +63,6 @@ void AWGame::run(void){
           this->gameState = AWGameState::showMainMenu;
           break;
         }
-        case AWGameState::showOptions:{
-          // Return to main menu
-          this->gameState = AWGameState::showMainMenu;
-          break;
-        }
         case AWGameState::showMainMenu:
         default:
           // When showMenu is the current state, we will call the showMenu() method.
@@ -84,6 +79,7 @@ AWGameState AWGame::showMainMenu(){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
+  static constexpr uint8_t yOffset = 24;
 
   // Again a Game loop
   while(true){
@@ -96,10 +92,10 @@ AWGameState AWGame::showMainMenu(){
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
-    if (arduboy.justPressed(DOWN_BUTTON)){
+    if (arduboy.justPressed(RIGHT_BUTTON)){
       cursorIdx++;
     }
-    if (arduboy.justPressed(UP_BUTTON)){
+    if (arduboy.justPressed(LEFT_BUTTON)){
       cursorIdx--;
     }
     if (arduboy.justPressed(B_BUTTON)){
@@ -112,7 +108,11 @@ AWGameState AWGame::showMainMenu(){
       switch (cursorIdx) {
         case 0: return AWGameState::playSinglePlayer;
         case 1: return AWGameState::playMultiPlayer;
-        case 2: return AWGameState::showOptions;
+        case 2: {
+          // toggle sound
+          arduboy.audio.toggle();
+          break;
+        }
         default: return AWGameState::showMainMenu; // this default is not needed but it's safe to do this.
       }
     }
@@ -127,24 +127,31 @@ AWGameState AWGame::showMainMenu(){
     arduboy.clear();
 
     // fill the screen white
-    arduboy.fillScreen(WHITE);
+    arduboy.fillScreen(BLACK);
+
+    // draw title logo
+    sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
+
+    // draw extras
+    sprites.drawSelfMasked(0, 32, menuArtwork, 0);
+    sprites.drawSelfMasked(80,32, menuArtwork, 1);
 
     // Here we draw the menu text
     // The text is wrapped in a F() function which tells the compiler to
     // Store the text in PROGMEM instead of RAM which saves us some valuable RAM.
-    tinyfont.setCursor(2, 7);
+
+    tinyfont.setTextColor(WHITE);
+
+    tinyfont.setCursor(44-cursorIdx*64, yOffset);
     tinyfont.print(AsFlashString(LOCA_SinglePlayer));
-    tinyfont.setCursor(2, 13);
+
+    tinyfont.setCursor(36-(cursorIdx-1)*64, yOffset);
     tinyfont.print(AsFlashString(LOCA_MultiPlayer));
-    tinyfont.setCursor(2, 19);
-    tinyfont.print(AsFlashString(LOCA_Options));
 
-    // depending on the cursor index, we draw the cursor
-    tinyfont.setCursor(75, 7 + cursorIdx*6);
-    tinyfont.print(F("<"));
+    tinyfont.setCursor(43-(cursorIdx-2)*64, yOffset);
+    tinyfont.print(AsFlashString(arduboy.audio.enabled()?LOCA_Sound_on:LOCA_Sound_off));
 
-    // print free memory
-    printFreeMemory();
+    tinyfont.setTextColor(BLACK);
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
@@ -155,10 +162,11 @@ AWGameState AWGame::showMainMenu(){
 }
 
 // This method displays the map selection menu to the player.
-unsigned const char * AWGame::showMapSelection(){
+unsigned const char * AWGame::showMapSelection(AWGameState aState){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
+  static constexpr uint8_t yOffset = 24;
 
   // Again a Game loop
   while(true){
@@ -169,10 +177,10 @@ unsigned const char * AWGame::showMapSelection(){
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
-    if (arduboy.justPressed(DOWN_BUTTON)){
+    if (arduboy.justPressed(RIGHT_BUTTON)){
       cursorIdx++;
     }
-    if (arduboy.justPressed(UP_BUTTON)){
+    if (arduboy.justPressed(LEFT_BUTTON)){
       cursorIdx--;
     }
     if (arduboy.justPressed(B_BUTTON)){
@@ -207,25 +215,35 @@ unsigned const char * AWGame::showMapSelection(){
     arduboy.clear();
 
     // fill the screen white
-    arduboy.fillScreen(WHITE);
+    arduboy.fillScreen(BLACK);
+
+    // draw title logo
+    sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
+
+    // Set textcolor
+    tinyfont.setTextColor(WHITE);
 
     // Draw the menu
-    tinyfont.setCursor(2, 8);
+    if (aState == AWGameState::playSinglePlayer) {
+      tinyfont.setCursor(44, 48);
+      tinyfont.print(AsFlashString(LOCA_SinglePlayer));
+    }
+    else if (aState == AWGameState::playMultiPlayer) {
+      tinyfont.setCursor(36, 48);
+      tinyfont.print(AsFlashString(LOCA_MultiPlayer));
+    }
+
+    tinyfont.setCursor(31, 56);
     tinyfont.print(AsFlashString(LOCA_BackWithA));
 
-    tinyfont.setCursor(2, 17);
+    tinyfont.setCursor(44-cursorIdx*64, yOffset);
     tinyfont.print(AsFlashString(LOCA_mapSmall));
-    tinyfont.setCursor(2, 23);
+    tinyfont.setCursor(49-(cursorIdx-1)*64, yOffset);
     tinyfont.print(AsFlashString(LOCA_mapMedium));
-    tinyfont.setCursor(2, 29);
+    tinyfont.setCursor(44-(cursorIdx-2)*64, yOffset);
     tinyfont.print(AsFlashString(LOCA_mapBig));
 
-    // depending on the cursor index, we draw the cursor
-    tinyfont.setCursor(64, 17 + cursorIdx*6);
-    tinyfont.print(F("<"));
-
-    // print free memory
-    printFreeMemory();
+    tinyfont.setTextColor(BLACK);
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
@@ -241,7 +259,7 @@ void AWGame::startNewSinglePlayerGame(){
   player2->reset();
 
   // shop map selection
-  unsigned const char *mapData = showMapSelection();
+  unsigned const char *mapData = showMapSelection(AWGameState::playSinglePlayer);
 
   // return if no map has been selected
   if (mapData == nullptr) return;
@@ -286,7 +304,7 @@ void AWGame::startNewMultiplayerPlayerGame(){
   player2->reset();
 
   // shop map selection
-  unsigned const char *mapData = showMapSelection();
+  unsigned const char *mapData = showMapSelection(AWGameState::playMultiPlayer);
 
   // return if no map has been selected
   if (mapData == nullptr) return;

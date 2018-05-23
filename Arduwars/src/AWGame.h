@@ -44,7 +44,7 @@ enum class AWGameState : uint8_t {
   showMapSelection,
   playSinglePlayer,
   playMultiPlayer,
-  showOptions
+  toggleSound
 };
 
 // Global defines
@@ -89,7 +89,8 @@ private:
 
     // Displays map selection
     // It returns a pointer to the selected map in progmem. nullptr if none was selected
-    unsigned const char * showMapSelection();
+    // Attribute is the current state, only multi/singleplayer is relevant.
+    unsigned const char * showMapSelection(AWGameState aState);
 
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
     void runSinglePlayerGame();       // Place where the singleplayer game runs
