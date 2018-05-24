@@ -134,6 +134,12 @@ private:
     // withFog == true fills the gamemap with fog
     void clearMap(bool withFog);
 
+    // Marks the given unit on the map by showing it's movement radius
+    void markUnitOnMap(const GameUnit *aUnit);
+
+    // clears the units marker
+    void unmarkUnitOnMap();
+
     // neat effect directly on the display buffer
     void makeScreenTransition();
 

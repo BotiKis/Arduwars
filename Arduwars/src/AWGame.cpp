@@ -398,6 +398,9 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
   // calculate mapsize in pixels, needed for camera stuff
   Point mapSizeInPixel = mapSize*TILE_SIZE;
 
+  // helps with unit selection
+  bool unitSelected = false;
+
     // Game loop
     while(true){
 
@@ -473,49 +476,66 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
         arduboy.display();
 
+
+        if (unitSelected && arduboy.justPressed(A_BUTTON)) {
+          unmarkUnitOnMap();
+          unitSelected = false;
+        }
         // Check if menu was pressed
         if (arduboy.justPressed(B_BUTTON)){
 
-          // check for tile
-          MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
-          MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
-
-          // // check first for Unit
-          if (currentMapTile.hasUnit == 1 && currentMapTile.unitBelongsTo == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2) && currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
-            // Do something
+          // check if unit is selected
+          if (unitSelected) {
+            /* code */
           }
-          // Second check for shop that belongs to user
-          else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer && currentMapTile.hasUnit == 0) {
+          else{
+            // check for tile
+            MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+            MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
 
-            // check if there is space for a new unit
-            if (currentPlayer->units.isFull()) {
-              showDialog(LOCA_Unit_limit_reached);
-              continue;
+            // // check first for Unit
+            if (currentMapTile.hasUnit == 1 && currentMapTile.unitBelongsTo == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2) && currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
+              // select unit on map
+              unitSelected = true;
+
+              // get unit
+              const GameUnit *u = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
+              if (u != nullptr)
+                markUnitOnMap(u);
+            }
+            // Second check for shop that belongs to user
+            else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer && currentMapTile.hasUnit == 0) {
+
+              // check if there is space for a new unit
+              if (currentPlayer->units.isFull()) {
+                showDialog(LOCA_Unit_limit_reached);
+                continue;
+              }
+
+              // Show shop window
+              UnitType selectedUnit = showShopForBuildingAndPlayer(currentTileType, currentPlayer);
+
+              // react to the users choice if he buys a unit
+              if(selectedUnit != UnitType::None){
+                GameUnit newUnit = GameUnit();
+
+                // init unit
+                newUnit.unitType = static_cast<uint8_t>(selectedUnit);
+                newUnit.mapPosX = currentIndex.x;
+                newUnit.mapPosY = currentIndex.y;
+                newUnit.activated = GameUnit::UnitStateDisabled;
+
+                currentPlayer->units.add(newUnit);
+                updateMapForPlayer(currentPlayer);
+              }
+            }
+            // last show end turn option
+            else if(showOption(LOCA_endTurn)){
+                currentPlayer->cursorIndex = currentIndex;
+                return;
             }
 
-            // Show shop window
-            UnitType selectedUnit = showShopForBuildingAndPlayer(currentTileType, currentPlayer);
-
-            // react to the users choice if he buys a unit
-            if(selectedUnit != UnitType::None){
-              GameUnit newUnit = GameUnit();
-
-              // init unit
-              newUnit.unitType = static_cast<uint8_t>(selectedUnit);
-              newUnit.mapPosX = currentIndex.x;
-              newUnit.mapPosY = currentIndex.y;
-              newUnit.activated = GameUnit::UnitStateDisabled;
-
-              currentPlayer->units.add(newUnit);
-              updateMapForPlayer(currentPlayer);
-            }
           }
-          // last show end turn option
-          else if(showOption(LOCA_endTurn)){
-              currentPlayer->cursorIndex = currentIndex;
-              return;
-          }
-
         }
     }
 }
@@ -944,7 +964,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     // get the traits of the unit
     UnitType unitType = static_cast<UnitType>(unit.unitType);
     UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-    uint8_t sightRadius = (traits.moveDistance-1)/2;
+    uint8_t sightRadius = traits.moveDistance-1;
 
     // add sight to unit if its on a hill or mountain
     // Only infantry units can be on ills and mountains and they get a sight boost.
@@ -1083,6 +1103,61 @@ void AWGame::clearMap(bool withFog){
   }
 }
 
+
+void AWGame::markUnitOnMap(const GameUnit *aUnit){
+  UnitType unitType = static_cast<UnitType>(aUnit->unitType);
+  UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+  uint8_t sightRadius = traits.moveDistance;
+
+  // calc the viewport
+  Rect unitViewPort;
+  unitViewPort.x = aUnit->mapPosX-sightRadius;
+  unitViewPort.y = aUnit->mapPosY-sightRadius;
+  unitViewPort.width  = sightRadius*2+1;
+  unitViewPort.height = sightRadius*2+1;
+
+  // iterate the viewport
+  for (int8_t y = unitViewPort.y; y < (unitViewPort.height+unitViewPort.y); y++) {
+    // check for vertical bounds
+    if (y < 0 || y >= mapSize.y) continue;
+
+    for (int8_t x = unitViewPort.x; x < (unitViewPort.width+unitViewPort.x); x++) {
+      // check for horizontal bounds
+      if (x < 0 || x >= mapSize.x) continue;
+
+      // check if inside sightRadius
+      int8_t deltaX = aUnit->mapPosX - x;
+      int8_t deltaY = aUnit->mapPosY - y;
+
+      // because the documentation says no functions inside the abs functions parameter
+      // https://www.arduino.cc/reference/en/language/functions/math/abs/
+      // this should be ok, but we stay on the safe side
+      deltaX = abs(deltaX);
+      deltaY = abs(deltaY);
+
+      // aproxximate the distance
+      // correct would be euclidean distance, but for us this is sufficient.
+      uint8_t distance = deltaX+deltaY;
+
+      // check if out of sight.
+      if (distance > sightRadius) continue;
+
+      // get maptile set selection marker
+      mapTileData[x+y*mapSize.x].showSelection = 1;
+    }
+  }
+
+}
+
+void AWGame::unmarkUnitOnMap(){  // go trough the whole map
+  for (int8_t y = 0; y < mapSize.y; y++) {
+    for (int8_t x = 0; x < mapSize.x; x++) {
+        // get the tile
+        mapTileData[y*mapSize.x+x].showSelection = 0;
+    }
+  }
+}
+
 void AWGame::drawMapAtPosition(Point pos){
 
   // In this variable we store the
@@ -1136,6 +1211,11 @@ void AWGame::drawMapAtPosition(Point pos){
             sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 1);
           }
         }
+      }
+
+      // draw unit selection
+      if (tile.showSelection == 1) {
+        sprites.drawErase(drawPos.x, drawPos.y, selectionAnimation, (arduboy.frameCount/10)%4);
       }
 
       // Draw Unit
