@@ -126,7 +126,7 @@ AWGameState AWGame::showMainMenu(){
     // This clears the dispaly and makes everything black.
     arduboy.clear();
 
-    // fill the screen white
+    // fill the screen black
     arduboy.fillScreen(BLACK);
 
     // draw title logo
@@ -214,7 +214,7 @@ unsigned const char * AWGame::showMapSelection(AWGameState aState){
     // This clears the dispaly and makes everything black.
     arduboy.clear();
 
-    // fill the screen white
+    // fill the screen black
     arduboy.fillScreen(BLACK);
 
     // draw title logo
