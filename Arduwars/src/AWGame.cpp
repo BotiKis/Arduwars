@@ -1177,19 +1177,19 @@ void AWGame::drawMapAtPosition(Point pos){
       const MapTile tile = mapTileData[y*mapSize.x+x];
       const MapTileType tileType = static_cast<MapTileType>(tile.tileID);
 
-      // If it's a headquarter draw upper half at the position above
-      if (tileType == MapTileType::P1HQ || tileType == MapTileType::P2HQ) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y-TILE_SIZE, worldSprite, (tileType == MapTileType::P1HQ)?32:33);
-
-        // get tile above for fog info
-        const MapTile tileAbove = mapTileData[((y-1)*mapSize.x)+x];
-        // draw fog
-        if (tileAbove.showsFog == 1)
-            sprites.drawErase(drawPos.x, drawPos.y-TILE_SIZE, mapFOG_16x16, 0);
-      }
-
       // draw maptile
       sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
+
+      // check if tile below is the HQ
+      if (y < mapSize.y-1) {
+        const MapTile tileBelow = mapTileData[((y+1)*mapSize.x)+x];
+        const MapTileType tileTypeOfTileBelow = static_cast<MapTileType>(tileBelow.tileID);
+
+        // If it's a headquarter draw upper half at the position above
+        if (tileTypeOfTileBelow == MapTileType::P1HQ || tileTypeOfTileBelow == MapTileType::P2HQ) {
+          sprites.drawOverwrite(drawPos.x, drawPos.y, worldSprite, (tileTypeOfTileBelow == MapTileType::P1HQ)?32:33);
+        }
+      }
 
       // draw fog
       if (tile.showsFog == 1) {
