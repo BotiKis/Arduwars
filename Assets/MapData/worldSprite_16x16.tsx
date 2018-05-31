@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset name="worldSprite_16x16" tilewidth="16" tileheight="16" tilecount="34" columns="1">
- <image source="../worldSprite_16x16.png" width="16" height="544"/>
+ <image source="../Gamesprites/worldSprite_16x16.png" width="16" height="544"/>
  <terraintypes>
-  <terrain name="Land" tile="14"/>
-  <terrain name="Water" tile="0"/>
+  <terrain name="plains" tile="-1"/>
+  <terrain name="water" tile="0"/>
  </terraintypes>
  <tile id="0" terrain="1,1,1,1"/>
  <tile id="2" terrain="0,0,0,1"/>
