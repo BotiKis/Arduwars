@@ -1,8 +1,11 @@
+[Map-artwork](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/artwork-map.png)
 ## Arduwars
+
+[Logo-artwork](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/artwork.png)
 ### Story
 There has been peace for many years in our lands until the evil forces of *Nextgenia* have invaded our country. Equipped with never before seen weapons their Army fearlessly takes over our lands.
 
-Cpt. *Eidbit*, it is your mission to recover our lands and stop the great evil once for all. You are the commander of our army which you have lead to victory 🏁.
+*Cpt. Eidbit*, it is your mission to recover our lands and stop the great evil once for all. You are the commander of our army which you have lead to victory 🏁.
 
 ```
 Rumors say the enemies forces are equipped with weaponary cosntructed with a magical metal from an ancient story happened a long time ago.
@@ -32,5 +35,11 @@ vakue 1  |  value 2
 
 
 ##### Terrain
+blah  |  blah
+--|--
+vakue 1  |  value 2
 
 ##### Units
+blah  |  blah
+--|--
+vakue 1  |  value 2
