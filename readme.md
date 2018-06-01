@@ -78,6 +78,15 @@ Sprite  |  Name   |  Description
 
 ![Mission-Report-6](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-06-05.04.2063.png "Mission Report 6")
 
+
+## Do you like Arduwars?
+Arduwars is free and should never be monetized.
+Anyhow I would appreciate any little donation if you think this game was worth it.
+
+[![donate](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/support-pp.gif "donate")](paypal.me/BotiKis)
+
+
+
 [//]: # (image references here)
 [terrain-forrest]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-forrest.png "terrain-forrest"
 [terrain-hill]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-hill.png "terrain-hill"
