@@ -60,18 +60,18 @@ vakue 1  |  value 2
 ![Mission-Report-6](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-06-05.04.2063.png "Mission Report 6")
 
 [//]: # (image references here)
-[terrain-forrest]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-forrest.png "terrain-forrest"
-[terrain-hill]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-hill.png "terrain-hill"
-[terrain-mountain]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-mountain.png "terrain-mountain"
-[terrain-plains]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-plains.png "terrain-plains"
-[terrain-reef]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-reef.png "terrain-reef"
-[terrain-street]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-street.png "terrain-street"
-[terrain-water]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-water.gif "terrain-water"
+[terrain-forrest]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-forrest.png "terrain-forrest" =16x16
+[terrain-hill]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-hill.png "terrain-hill" =16x16
+[terrain-mountain]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-mountain.png "terrain-mountain" =16x16
+[terrain-plains]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-plains.png "terrain-plains" =16x16
+[terrain-reef]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-reef.png "terrain-reef" =16x16
+[terrain-street]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-street.png "terrain-street" =16x16
+[terrain-water]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/terrain-water.gif "terrain-water" =16x16
 
-[building-airport]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-airport.png "building-airport"
-[building-city]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-city.png "building-city"
-[building-factory]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-factory.png "building-factory"
-[building-hq1]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-headquarter1.png "building-hq1"
-[building-hq2]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-headquarter2.png "building-hq2"
-[building-lab]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-lab.png "building-lab"
-[building-shipyard]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-shipyard.png "building-shipyard"
+[building-airport]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-airport.png "building-airport" =16x16
+[building-city]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-city.png "building-city" =16x16
+[building-factory]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-factory.png "building-factory" =16x16
+[building-hq1]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-headquarter1.png "building-hq1" =16x16
+[building-hq2]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-headquarter2.png "building-hq2" =16x16
+[building-lab]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-lab.png "building-lab" =16x16
+[building-shipyard]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-shipyard.png "building-shipyard" =16x16
