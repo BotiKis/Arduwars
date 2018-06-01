@@ -1,6 +1,6 @@
 ## Arduwars
 
-![Logo-artwork](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/artwork.png "Logo-Artwork")
+![Logo-artwork](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/arduwars-logo.png "Arduwars Logo")
 ### Story
 There has been peace for many years in our lands until the evil forces of *Nextgenia* have invaded our country. Equipped with never before seen weapons their Army fearlessly takes over our lands.
 
