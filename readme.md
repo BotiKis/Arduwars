@@ -15,6 +15,8 @@ It is a turn based strategy game where the Players goal is to overtake the enemi
 Every turn, the Player commands his *Units* to capture *Buildings* or fight enemy Units. They key for winning is to use the enviroment strategically for your benefit. Certain terrain grant bonus for defense or movement. Buildings need to be captured to build more Units and get more income.
 
 The Goal is to either capture the *Nextgenians* Headquarters or destroy all their units.
+![controls](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/readme-controls.png "Controls")
+
 
 ![Mission-Report-2](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-02-16.12.1991.png "Mission Report 2")
 
