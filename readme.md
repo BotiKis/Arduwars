@@ -25,37 +25,37 @@ All unit traits are listed in the Units-section.
 
 ![Mission-Report-3](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-03-05.10.2015.png "Mission Report 3")
 ##### Terrain
-blah  |  blah
---|--
-![terrain][terrain-forrest]   |  Forrests
-![terrain][terrain-hill]      |  Hills
-![terrain][terrain-mountain]  |  Mountains
-![terrain][terrain-plains]    |  Plains
-![terrain][terrain-reef]      |  Reefs
-![terrain][terrain-street]    |  Streets
-![terrain][terrain-water]     |  Water
-![building][building-city]    |  Buildings
+Sprite  |  Name   |  Description
+--|--|--
+![terrain][terrain-forrest]   |  Forrests   |
+![terrain][terrain-hill]      |  Hills      |
+![terrain][terrain-mountain]  |  Mountains  |
+![terrain][terrain-plains]    |  Plains     |
+![terrain][terrain-reef]      |  Reefs      |
+![terrain][terrain-street]    |  Streets    |
+![terrain][terrain-water]     |  Water      |
+![building][building-city]    |  Buildings  |
 
 ![Mission-Report-4](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-04-21.10.2015.png "Mission Report 4")
 
 ##### Buildings
 
-blah  |  blah
---|--
-![building][building-city]      |  Cities
-![building][building-factory]   |  Factories
-![building][building-hq1]       |  Players HQ
-![building][building-hq2]       |  Nextgenias Headquarter
-![building][building-airport]   |  Airports
-![building][building-shipyard]  |  Shipyards
-![building][building-lab]       |  Laboratories
+Sprite  |  Name   |  Description
+--|--|--
+![building][building-city]      |  Cities                   |
+![building][building-factory]   |  Factories                |
+![building][building-hq1]       |  Players HQ               |
+![building][building-hq2]       |  Nextgenias Headquarter   |
+![building][building-airport]   |  Airports                 |
+![building][building-shipyard]  |  Shipyards                |
+![building][building-lab]       |  Laboratories             |
 
 ![Mission-Report-5](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-05-04.07.1996.png "Mission Report 5")
 
 ##### Units
-blah  |  blah
---|--
-vakue 1  |  value 2
+Sprite  |  Name   |  Description
+--|--|--
+![building][building-lab]       |  Laboratories             | 2
 
 ![Mission-Report-6](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-06-05.04.2063.png "Mission Report 6")
 
@@ -75,3 +75,22 @@ vakue 1  |  value 2
 [building-hq2]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-headquarter2.png "building-hq2"
 [building-lab]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-lab.png "building-lab"
 [building-shipyard]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/terrainAndBuildings/building-shipyard.png "building-shipyard"
+
+
+[//]: # (Unit image references here)
+[unit-artillery]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-artillery.gif "unit-artillery"
+[unit-battleship]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-battleship.gif "unit-battleship"
+[unit-bigtank]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-bigtank.gif "unit-bigtank"
+[unit-bomber]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-bomber.gif "unit-bomber"
+[unit-cruiser]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-cruiser.gif "unit-cruiser"
+[unit-fighter]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-fighter.gif "unit-fighter"
+[unit-heli]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-heli.gif "unit-heli"
+[unit-mech]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-mech.gif "unit-mech"
+[unit-missiles]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-missiles.gif "unit-missiles"
+[unit-rocket]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-rocket.gif "unit-rocket"
+[unit-scout]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-scout.gif "unit-scout"
+[unit-soldier]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-soldier.gif "unit-soldier"
+[unit-specops]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-specops.gif "unit-specops"
+[unit-support]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-support.gif "unit-support"
+[unit-tank]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-tank.gif "unit-tank"
+[unit-transportship]: https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/unitgifs/unit-transportship.gif "unit-transportship"
