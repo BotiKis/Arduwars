@@ -977,7 +977,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     // The fog for a unit gets removed accordingly to it's sight.
     // Obstacles will conceal the things behind it so a unit can't
     // see through the enviroment.
-    removeFogAtPositionAndRadius({unit.mapPosX,unit.mapPosY}, sightRadius);
+    markMapAtPositionAndRadius({unit.mapPosX,unit.mapPosY}, sightRadius, true, false);
   }
 
   // udpate the  buildings
@@ -1076,44 +1076,7 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
   uint8_t sightRadius = traits.moveDistance;
 
-  // calc the viewport
-  Rect unitViewPort;
-  unitViewPort.x = aUnit->mapPosX-sightRadius;
-  unitViewPort.y = aUnit->mapPosY-sightRadius;
-  unitViewPort.width  = sightRadius*2+1;
-  unitViewPort.height = sightRadius*2+1;
-
-  // iterate the viewport
-  for (int8_t y = unitViewPort.y; y < (unitViewPort.height+unitViewPort.y); y++) {
-    // check for vertical bounds
-    if (y < 0 || y >= mapSize.y) continue;
-
-    for (int8_t x = unitViewPort.x; x < (unitViewPort.width+unitViewPort.x); x++) {
-      // check for horizontal bounds
-      if (x < 0 || x >= mapSize.x) continue;
-
-      // check if inside sightRadius
-      int8_t deltaX = aUnit->mapPosX - x;
-      int8_t deltaY = aUnit->mapPosY - y;
-
-      // because the documentation says no functions inside the abs functions parameter
-      // https://www.arduino.cc/reference/en/language/functions/math/abs/
-      // this should be ok, but we stay on the safe side
-      deltaX = abs(deltaX);
-      deltaY = abs(deltaY);
-
-      // aproxximate the distance
-      // correct would be euclidean distance, but for us this is sufficient.
-      uint8_t distance = deltaX+deltaY;
-
-      // check if out of sight.
-      if (distance > sightRadius) continue;
-
-      // get maptile set selection marker
-      mapTileData[x+y*mapSize.x].showSelection = 1;
-    }
-  }
-
+  markMapAtPositionAndRadius({aUnit->mapPosX,aUnit->mapPosY}, sightRadius, false, true);
 }
 
 void AWGame::unmarkUnitOnMap(){  // go trough the whole map
@@ -1161,15 +1124,13 @@ void AWGame::drawMapAtPosition(Point pos){
       // draw fog
       if (tile.showsFog == 1) {
           sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
-          // don't need to draw more if there is fog.
-          continue;
       }
 
       // Draw marker for buildings
       // we need to identify visually to whom the buiding belongs.
       // Since we have no colors to indicate this, we draw small markers at
       // the top right corner of a building.
-      if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
+      else if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
         if (tile.buildingIsOccupied == 1){
           if(tile.buildingBelongsTo == MapTile::BelongsToPlayer){
             sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 0);
@@ -1182,7 +1143,7 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // draw unit selection
       if (tile.showSelection == 1) {
-        sprites.drawErase(drawPos.x, drawPos.y, selectionAnimation, (arduboy.frameCount/10)%4);
+        sprites.drawOverwrite(drawPos.x, drawPos.y, selectionAnimation, (arduboy.frameCount/10)%4);
       }
 
       // Draw Unit
@@ -1268,12 +1229,12 @@ void AWGame::printFreeMemory(){
   tinyfont.print(freeMemory());
 }
 
-void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
+void AWGame::markMapAtPositionAndRadius(Point origin, uint8_t radius, bool removeFog, bool showSelection){
     // This is a lambda function.  Also called anonymous function
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
     // but outside this method it is useless.
-    auto castRayTo = [origin, this](int8_t xEnd, int8_t yEnd) {
+    auto castRayTo = [this, origin, removeFog, showSelection](int8_t xEnd, int8_t yEnd) {
 
       // We are doing here a so called Raycast. It's called this way because
       // it mathematecally shots a "ray" from the origin to the destination Like
@@ -1311,8 +1272,10 @@ void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
           MapTile tile = mapTileData[x0+y0*mapSize.x];
 
           // update tile data
-          if (forestLimit > 0)
-            tile.showsFog = 0;
+          if (forestLimit > 0){
+            if (removeFog) tile.showsFog = 0;
+            if (showSelection) tile.showSelection = 1;
+          }
 
           mapTileData[x0+y0*mapSize.x] = tile;
 
@@ -1324,7 +1287,7 @@ void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
         if ( x0==xEnd && y0==yEnd) break;
 
         // check if there is an Obstacle
-        if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID))) break;
+        if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID))) continue;
       }
     };
 

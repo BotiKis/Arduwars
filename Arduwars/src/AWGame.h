@@ -140,9 +140,9 @@ private:
     // clears the units marker
     void unmarkUnitOnMap();
 
-    // remove the fog at the given position and radius regarding visibility rules
+    // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings and mountains
-    void removeFogAtPositionAndRadius(Point origin, uint8_t radius);
+    void markMapAtPositionAndRadius(Point origin, uint8_t radius, bool removeFog, bool showSelection);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();
