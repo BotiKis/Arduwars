@@ -79,6 +79,11 @@ static inline bool mapTileIndexIsShop(MapTileType mapTileidx){
   return (mapTileidx == MapTileType::Factory || mapTileidx == MapTileType::Airport || mapTileidx == MapTileType::Shipyard);
 }
 
+// Helper function returns false if a unit can see throug the tile at the given Index
+static inline bool mapTileIsOpaque(MapTileType mapTileidx){
+  return (mapTileidx >= MapTileType::Hill && mapTileidx <= MapTileType::P2HQ);
+}
+
 
 // ====================================================
 // GameUnit

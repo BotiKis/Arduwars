@@ -973,45 +973,11 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     else if (tile.tileID == static_cast<uint8_t>(MapTileType::Mountain))
       sightRadius +=2;
 
-    // calc the viewport
-    Rect unitViewPort;
-    unitViewPort.x = unit.mapPosX-sightRadius;
-    unitViewPort.y = unit.mapPosY-sightRadius;
-    unitViewPort.width  = sightRadius*2+1;
-    unitViewPort.height = sightRadius*2+1;
-
-    // iterate the viewport
-    for (int8_t y = unitViewPort.y; y < (unitViewPort.height+unitViewPort.y); y++) {
-      // check for vertical bounds
-      if (y < 0 || y >= mapSize.y) continue;
-
-      for (int8_t x = unitViewPort.x; x < (unitViewPort.width+unitViewPort.x); x++) {
-        // check for horizontal bounds
-        if (x < 0 || x >= mapSize.x) continue;
-
-        // check if inside sightRadius
-        int8_t deltaX = unit.mapPosX - x;
-        int8_t deltaY = unit.mapPosY - y;
-
-        // because the documentation says no functions inside the abs functions parameter
-        // https://www.arduino.cc/reference/en/language/functions/math/abs/
-        // this should be ok, but we stay on the safe side
-        deltaX = abs(deltaX);
-        deltaY = abs(deltaY);
-
-        // aproxximate the distance
-        // correct would be euclidean distance, but for us this is sufficient.
-        uint8_t distance = deltaX+deltaY;
-
-        // check if out of sight.
-        if (distance > sightRadius) continue;
-
-        // get maptile to remove fog
-        tile = mapTileData[x+y*mapSize.x];
-        tile.showsFog = 0;
-        mapTileData[x+y*mapSize.x] = tile;
-      }
-    }
+    // remove the fog
+    // The fog for a unit gets removed accordingly to it's sight.
+    // Obstacles will conceal the things behind it so a unit can't
+    // see through the enviroment.
+    removeFogAtPositionAndRadius({unit.mapPosX,unit.mapPosY}, sightRadius);
   }
 
   // udpate the  buildings
@@ -1039,6 +1005,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     // check if building belongs to player, because now we remove the fog of war calculations
     if (!(building.isOccupied == 1 && building.belongsToPlayer == thisPlayer)) continue;
 
+    // Unlike units, buildings can see through obstacles.
     // calc the viewport
     Rect buildingViewPort;
     buildingViewPort.x = building.mapPosX-GameBuilding::buildingViewDistance;
@@ -1299,4 +1266,75 @@ void AWGame::printFreeMemory(){
   tinyfont.print(F("MEM FREE:"));
   tinyfont.setCursor(48, arduboy.height()-5);
   tinyfont.print(freeMemory());
+}
+
+void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
+
+    // This is a lambda function.  Also called anonymous function
+    // It only exists inside this one certain method.
+    // We do it this way because we will call it 4 times inside this method
+    // but outside this method it is useless.
+    auto castRayTo = [origin, this](int8_t xEnd, int8_t yEnd) {
+
+      // We are doing here a so called Raycast. It's called this way because
+      // it mathematecally shots a "ray" from the origin to the destination Like
+      // a light ray. If it hits an obstacle it stops so you can't see through.
+      // it also stops if it reaches the sight radius.
+      //
+      // The algorithm which we use to cast the ray is called
+      // Bresenham's algorithm and is often used in computer graphics to draw
+      // lines and circles. Even the Arduboy library uses it for this purpose.
+
+      int8_t x0 = origin.x;
+      int8_t y0 = origin.y;
+      int8_t dx =  abs(xEnd-x0), sx = x0<xEnd ? 1 : -1;
+      int8_t dy = -abs(yEnd-y0), sy = y0<yEnd ? 1 : -1;
+      int8_t err = dx+dy, e2;
+
+      // half the distance, because the endppoint which comes from the circle-
+      // algorithm is in double distance to avoid glitches.
+      int8_t r = (dx-dy)/2;
+
+      while(true){
+
+        e2 = 2*err;
+        if (e2 >= dy) { err += dy; x0 += sx; }
+        if (e2 <= dx) { err += dx; y0 += sy; }
+
+        // calc current disctance
+        uint8_t cd = abs(origin.x-x0) + abs(origin.y-y0);
+
+        // check for bounds and remove fog
+        if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && cd <= r) {
+          mapTileData[x0+y0*mapSize.x].showsFog = 0;
+        }
+
+        // check for end
+        if ( x0==xEnd && y0==yEnd) break;
+
+        // check if there is an Obstacle
+        if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID))) break;
+      }
+    };
+
+    // For the raycast to work we need to calculate every point which should
+    // be tested around the perimeter of the unit. For that we use Bresenham's
+    // circle algorithm to get every point on the perimeter and do a raycast to that point.
+    int8_t r = radius*2; // double the distance to avoid glitches
+    int8_t x = -r;
+    int8_t y = 0;
+    int8_t err = 2-2*r;
+    do {
+
+      // do a raycast in each quadrant of the circle.
+      castRayTo(origin.x-x, origin.y+y); // 1st quadrant
+      castRayTo(origin.x-y, origin.y-x); // 2nd quadrant
+      castRayTo(origin.x+x, origin.y-y); // 3rd quadrant
+      castRayTo(origin.x+y, origin.y+x); // 4th quadrant
+
+      // continue with bresenham
+      r = err;
+      if (r <= y) err += ++y*2+1;
+      if (r > x || err > y) err += ++x*2+1;
+    } while (x < 0);
 }
