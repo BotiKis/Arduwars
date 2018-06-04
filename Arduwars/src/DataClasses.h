@@ -81,7 +81,7 @@ static inline bool mapTileIndexIsShop(MapTileType mapTileidx){
 
 // Helper function returns false if a unit can see throug the tile at the given Index
 static inline bool mapTileIsOpaque(MapTileType mapTileidx){
-  return (mapTileidx >= MapTileType::Hill && mapTileidx <= MapTileType::P2HQ);
+  return (mapTileidx == MapTileType::Hill || mapTileidx <= MapTileType::Mountain);
 }
 
 

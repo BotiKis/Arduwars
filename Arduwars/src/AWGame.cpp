@@ -1269,7 +1269,6 @@ void AWGame::printFreeMemory(){
 }
 
 void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
-
     // This is a lambda function.  Also called anonymous function
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
@@ -1290,6 +1289,7 @@ void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
       int8_t dx =  abs(xEnd-x0), sx = x0<xEnd ? 1 : -1;
       int8_t dy = -abs(yEnd-y0), sy = y0<yEnd ? 1 : -1;
       int8_t err = dx+dy, e2;
+      int8_t forestLimit = 2; // Unit can see through 2 forests
 
       // half the distance, because the endppoint which comes from the circle-
       // algorithm is in double distance to avoid glitches.
@@ -1306,7 +1306,18 @@ void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
 
         // check for bounds and remove fog
         if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && cd <= r) {
-          mapTileData[x0+y0*mapSize.x].showsFog = 0;
+
+          // get the corresponding map tile
+          MapTile tile = mapTileData[x0+y0*mapSize.x];
+
+          // update tile data
+          if (forestLimit > 0)
+            tile.showsFog = 0;
+
+          mapTileData[x0+y0*mapSize.x] = tile;
+
+          // check for forrest
+          if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
         }
 
         // check for end
