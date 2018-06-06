@@ -136,13 +136,14 @@ private:
 
     // Marks the given unit on the map by showing it's movement radius
     void markUnitOnMap(const GameUnit *aUnit);
+    void markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit);
 
     // clears the units marker
     void unmarkUnitOnMap();
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings and mountains
-    void markMapAtPositionAndRadius(Point origin, uint8_t radius, bool removeFog, bool showSelection);
+    void removeFogAtPositionAndRadius(Point origin, uint8_t radius);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();

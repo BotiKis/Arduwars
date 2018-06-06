@@ -977,7 +977,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     // The fog for a unit gets removed accordingly to it's sight.
     // Obstacles will conceal the things behind it so a unit can't
     // see through the enviroment.
-    markMapAtPositionAndRadius({unit.mapPosX,unit.mapPosY}, sightRadius, true, false);
+    removeFogAtPositionAndRadius({unit.mapPosX,unit.mapPosY}, sightRadius);
   }
 
   // udpate the  buildings
@@ -1074,9 +1074,13 @@ void AWGame::clearMap(bool withFog){
 void AWGame::markUnitOnMap(const GameUnit *aUnit){
   UnitType unitType = static_cast<UnitType>(aUnit->unitType);
   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-  uint8_t sightRadius = traits.moveDistance;
+  uint8_t moveDistance = traits.moveDistance;
 
-  markMapAtPositionAndRadius({aUnit->mapPosX,aUnit->mapPosY}, sightRadius, false, true);
+  markPositionAsSelectedForUnit({aUnit->mapPosX, aUnit->mapPosY}, moveDistance, unitType);
+}
+
+void markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit){
+  #warning continue here
 }
 
 void AWGame::unmarkUnitOnMap(){  // go trough the whole map
@@ -1229,12 +1233,12 @@ void AWGame::printFreeMemory(){
   tinyfont.print(freeMemory());
 }
 
-void AWGame::markMapAtPositionAndRadius(Point origin, uint8_t radius, bool removeFog, bool showSelection){
+void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
     // This is a lambda function.  Also called anonymous function
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
     // but outside this method it is useless.
-    auto castRayTo = [this, origin, removeFog, showSelection](int8_t xEnd, int8_t yEnd) {
+    auto castRayTo = [this, origin](int8_t xEnd, int8_t yEnd) {
 
       // We are doing here a so called Raycast. It's called this way because
       // it mathematecally shots a "ray" from the origin to the destination Like
@@ -1272,10 +1276,8 @@ void AWGame::markMapAtPositionAndRadius(Point origin, uint8_t radius, bool remov
           MapTile tile = mapTileData[x0+y0*mapSize.x];
 
           // update tile data
-          if (forestLimit > 0){
-            if (removeFog) tile.showsFog = 0;
-            if (showSelection) tile.showSelection = 1;
-          }
+          if (forestLimit > 0)
+            tile.showsFog = 0;
 
           mapTileData[x0+y0*mapSize.x] = tile;
 
