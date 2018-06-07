@@ -157,11 +157,16 @@ const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
 // ====================================================
 // EnviromentEffects
 
-const EnviromentEffects EnviromentEffects::effectForType(EnviromentType type){
+const EnviromentEffects EnviromentEffects::effectForType(MapTileType mapTileType){
+
+  // get the type
+  EnviromentType enviromentType = EnviromentEffects::enviromentTypeForMapTileType(mapTileType);
+
+  // the effect which will be populated and returned
   EnviromentEffects effects;
 
   // Switch through types
-  switch (type) {
+  switch (enviromentType) {
     default:
     case EnviromentType::Ground:
     case EnviromentType::Water:{
@@ -170,7 +175,7 @@ const EnviromentEffects EnviromentEffects::effectForType(EnviromentType type){
       break;
     };
     case EnviromentType::Street:{
-      effects.moveBonus     = 1;
+      effects.moveBonus     = 0;
       effects.defenseBonus  = 0;
       break;
     };
@@ -198,36 +203,6 @@ const EnviromentEffects EnviromentEffects::effectForType(EnviromentType type){
   }
 
   return effects;
-}
-
-
-const bool EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType){
-
-  static constexpr uint8_t PROGMEM moveTable[16] =
-  {
-    //Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
-    0b10111101,  // Soldier
-    0b10111101, // Mech
-    0b10111101, // SpecOps
-    0b10110101, // Recon
-    0b10110101, // Assist,
-    0b10110101, // Tank
-    0b10110101, // BigTank
-    0b10110101, // Artillery
-    0b10110101, // Rocket,
-    0b10110101, // Missiles,
-    0b11111111, // Heli,
-    0b11111111, // Fighter
-    0b11111111, // Bomber,
-    0b01000000, // Cruiser,
-    0b01000000, // Battleship,
-    0b01000000 // Transportship
-  };
-
- const uint8_t moveMask = pgm_read_byte(moveTable+static_cast<uint8_t>(unitType));
- const uint8_t value = (moveMask >> (7-static_cast<uint8_t>(enviromentType))) & 0b00000001;
-
- return (value == 1);
 }
 
 const EnviromentType EnviromentEffects::enviromentTypeForMapTileType(MapTileType mapTileType){
@@ -275,7 +250,35 @@ const EnviromentType EnviromentEffects::enviromentTypeForMapTileType(MapTileType
 }
 
 const bool EnviromentEffects::canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType){
-  return EnviromentEffects::canEnviromentBeAccessedByUnit(EnviromentEffects::enviromentTypeForMapTileType(mapTileType),unitType);
+
+  // get Enviroment
+  EnviromentType enviromentType = EnviromentEffects::enviromentTypeForMapTileType(mapTileType);
+
+  static constexpr uint8_t PROGMEM moveTable[16] =
+  {
+    //Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
+    0b10111101, // Soldier
+    0b10111101, // Mech
+    0b10111101, // SpecOps
+    0b10110101, // Recon
+    0b10110101, // Assist,
+    0b10110101, // Tank
+    0b10110101, // BigTank
+    0b10110101, // Artillery
+    0b10110101, // Rocket,
+    0b10110101, // Missiles,
+    0b11111111, // Heli,
+    0b11111111, // Fighter
+    0b11111111, // Bomber,
+    0b01000000, // Cruiser,
+    0b01000000, // Battleship,
+    0b01000000 // Transportship
+  };
+
+  const uint8_t moveMask = pgm_read_byte(moveTable+static_cast<uint8_t>(unitType));
+  const uint8_t value = (moveMask >> (7-static_cast<uint8_t>(enviromentType))) & 0b00000001;
+
+  return (value == 1);
 }
 
 

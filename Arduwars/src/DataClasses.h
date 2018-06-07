@@ -186,9 +186,7 @@ public:
   int8_t defenseBonus  :4; // -4 to 3
 
   // Returns an effect for a given type.
-  static const EnviromentEffects effectForType(EnviromentType type);
-  static const bool canEnviromentBeAccessedByUnit(EnviromentType enviromentType, UnitType unitType);
-
+  static const EnviromentEffects effectForType(MapTileType mapTileType);
   static const EnviromentType enviromentTypeForMapTileType(MapTileType mapTileType);
   static const bool canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType);
 };
