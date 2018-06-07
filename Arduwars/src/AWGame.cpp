@@ -1079,8 +1079,32 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   markPositionAsSelectedForUnit({aUnit->mapPosX, aUnit->mapPosY}, moveDistance, unitType);
 }
 
-void markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit){
-  #warning continue here
+void AWGame::markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit){
+  // get the tile
+  MapTile tile = mapTileData[position.y*mapSize.x+position.x];
+
+  // check if unit can move to the field
+  if (!EnviromentEffects::canMapTileTypeBeAccessedByUnit(static_cast<MapTileType>(tile.tileID), unit)) return;
+
+  // set maptile to show the selection
+  tile.showSelection = 1;
+  mapTileData[position.y*mapSize.x+position.x] = tile;
+
+  // get effects
+  EnviromentEffects effects = EnviromentEffects::effectForType(static_cast<MapTileType>(tile.tileID));
+  distance = distance + effects.moveBonus;
+
+  // if the new distance would be 0 we are at the end
+  if (distance <= 1) return;
+  distance--;
+
+  // recursively call this method for every orientation
+  if (position.x > 0)           markPositionAsSelectedForUnit({position.x+1, position.y}, distance, unit);
+  if (position.x < mapSize.x-1) markPositionAsSelectedForUnit({position.x-1, position.y}, distance, unit);
+  if (position.y > 0)           markPositionAsSelectedForUnit({position.x, position.y+1}, distance, unit);
+  if (position.y < mapSize.y-1) markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
+
+  return;
 }
 
 void AWGame::unmarkUnitOnMap(){  // go trough the whole map
@@ -1147,7 +1171,7 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // draw unit selection
       if (tile.showSelection == 1) {
-        sprites.drawOverwrite(drawPos.x, drawPos.y, selectionAnimation, (arduboy.frameCount/10)%4);
+        sprites.drawErase(drawPos.x, drawPos.y, selectionAnimation, (arduboy.frameCount/10)%4);
       }
 
       // Draw Unit
