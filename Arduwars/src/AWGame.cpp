@@ -1074,7 +1074,7 @@ void AWGame::clearMap(bool withFog){
 void AWGame::markUnitOnMap(const GameUnit *aUnit){
   UnitType unitType = static_cast<UnitType>(aUnit->unitType);
   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-  uint8_t moveDistance = traits.moveDistance;
+  uint8_t moveDistance = traits.moveDistance+2;
 
   markPositionAsSelectedForUnit({aUnit->mapPosX, aUnit->mapPosY}, moveDistance, unitType);
 }
@@ -1100,9 +1100,9 @@ void AWGame::markPositionAsSelectedForUnit(Point position, uint8_t distance, Uni
 
   // recursively call this method for every orientation
   if (position.x > 0)           markPositionAsSelectedForUnit({position.x+1, position.y}, distance, unit);
+  if (position.y < mapSize.y-1) markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
   if (position.x < mapSize.x-1) markPositionAsSelectedForUnit({position.x-1, position.y}, distance, unit);
   if (position.y > 0)           markPositionAsSelectedForUnit({position.x, position.y+1}, distance, unit);
-  if (position.y < mapSize.y-1) markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
 
   return;
 }
@@ -1150,7 +1150,7 @@ void AWGame::drawMapAtPosition(Point pos){
       }
 
       // draw fog
-      if (tile.showsFog == 1) {
+      if (tile.showsFog == 1 && tile.showSelection == 0) {
           sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
       }
 
