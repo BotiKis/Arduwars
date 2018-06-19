@@ -81,8 +81,14 @@ static inline bool mapTileIndexIsShop(MapTileType mapTileidx){
 
 // Helper function returns false if a unit can see throug the tile at the given Index
 static inline bool mapTileIsOpaque(MapTileType mapTileidx){
-  return (mapTileidx == MapTileType::Hill || mapTileidx <= MapTileType::Mountain);
+  return (mapTileidx == MapTileType::Hill || mapTileidx == MapTileType::Mountain);
 }
+
+// Helper function returns true if the maptile is a street
+static inline bool mapTileIsStreet(MapTileType mapTileidx){
+  return (mapTileidx >= MapTileType::Street1 && mapTileidx <= MapTileType::Street6);
+}
+
 
 
 // ====================================================
@@ -120,11 +126,15 @@ public:
   uint8_t mapPosX     :5; // X Position on the map - max 32.
   uint8_t mapPosY     :5; // Y Position on the map - max 32.
   uint8_t activated   :1; // GameUnit::UnitStateDisabled if unit has took its action. Default... GameUnit::UnitStateActive
+
   // If it's a transport unit we store here the index of the unit in
   // the players Units which is transported.
-  // Default... GameUnit::PayloadNone if there is no unit
+  // Default... GameUnit::PayloadNone if there is no unit.
+  // It has the value of 31 which is save, since every player can only have 24 units.
   uint8_t payload     :5;
+
   // 3 Bytes in total.
+  // Every Player can have 24 Units. That makes 144 Bytes in RAM.
 
   // Constructor
   // Default constructor initializes an all 0 filled UnitType::Soldier Unit.
@@ -155,42 +165,11 @@ public:
   uint8_t defense     :5; // Unit have max 31 defense.
   uint8_t moveDistance:3; // Unit can move in a radius of max 7 tiles.
   uint8_t attackRange :3; // Unit can attack in a radius of max 7 tiles.
-
-  // 2 Bytes in total
+  // 2 Bytes in total.
 
   // Function returns the traits for a certain unit type
   static const UnitTraits traitsForUnitType(UnitType unitType);
 };
-
-
-// ====================================================
-// EnviromentEffects
-
-// This enum defines the possible Enviroments.
-enum class EnviromentType : uint8_t {
-  Ground = 0,
-  Water,
-  Street,
-  Hill,
-  Mountain,
-  Forest,
-  Reef,
-  Building
-};
-
-// Certain enviroments interact with units by giving or taking away certain traits.
-class EnviromentEffects{
-public:
-
-  int8_t moveBonus     :4; // -4 to 3
-  int8_t defenseBonus  :4; // -4 to 3
-
-  // Returns an effect for a given type.
-  static const EnviromentEffects effectForType(MapTileType mapTileType);
-  static const EnviromentType enviromentTypeForMapTileType(MapTileType mapTileType);
-  static const bool canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType);
-};
-
 
 // ====================================================
 // GameBuilding
@@ -237,7 +216,7 @@ public:
   Point cursorIndex;
 
   // Stores all the units
-  List<GameUnit, 24> units;          // 24 Units make approximately 72 Bytes.
+  List<GameUnit, 24> units; // 24 Units make approximately 72 Bytes.
   // Approximately 75 bytes in total.
 
   // reset the data of this class
@@ -252,24 +231,35 @@ public:
 };
 
 // This class is used to tell the map drawing method what to draw.
-// It is NOT a Datastorage and should only be used to tell the drawing method what to draw.
-// An 2D array with instances of this class is populated at the start of every round
-// of a player.
-
+// It is NOT a Datastorage except for maptiles and should only be used to tell
+// the drawing method what to draw. An 2D array with instances of this class
+// is populated at the start of every round of a game.
 
 // ====================================================
 // MapTile
 
+static constexpr uint8_t PROGMEM moveLookupTable[4] =
+{
+  // Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
+  0b10111101, // Infantry
+  0b10110101, // Ground
+  0b11111111, // Air
+  0b01000000, // Water
+};
+
 class MapTile {
 public:
 
+  // Helper constants
   static constexpr uint8_t BelongsToPlayer1 = 0;
   static constexpr uint8_t BelongsToPlayer2 = 1;
   static constexpr uint8_t BelongsToPlayer  = 0;
   static constexpr uint8_t BelongsToEnemy   = 1;
 
+  // constructor
   MapTile(void);
 
+  // members
   uint8_t tileID:5;              // Holds the ID of the Tile in the Tilesheet
   uint8_t buildingIsOccupied:1;  // 0 if building is not occupied
   uint8_t buildingBelongsTo:1;   // Tells to whom the building belongs (if it's a building).
@@ -280,6 +270,14 @@ public:
   uint8_t unitIsActive:1;        // Default GameUnit::UnitStateActive.
   uint8_t unitSpriteID:4;        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
   // 2 bytes in total
+  // with a 24x16 array this makes 768 Bytes in RAM. This is about 50% of the available RAM.
+
+  // Returns true if the provided unit can enter the maptile
+  bool canBeAccessedByUnit(UnitType unitType);
+
+private:
+  // returns a number from 0-7 at the position of the type in the LUT
+  static uint8_t lutIndexForMaptile(MapTileType mapTileType);
 };
 
 #endif

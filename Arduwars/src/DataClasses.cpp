@@ -153,135 +153,6 @@ const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   return traits;
 }
 
-
-// ====================================================
-// EnviromentEffects
-
-const EnviromentEffects EnviromentEffects::effectForType(MapTileType mapTileType){
-
-  // get the type
-  EnviromentType enviromentType = EnviromentEffects::enviromentTypeForMapTileType(mapTileType);
-
-  // the effect which will be populated and returned
-  EnviromentEffects effects;
-
-  // Switch through types
-  switch (enviromentType) {
-    default:
-    case EnviromentType::Ground:
-    case EnviromentType::Water:{
-      effects.moveBonus     = 0;
-      effects.defenseBonus  = 0;
-      break;
-    };
-    case EnviromentType::Street:{
-      effects.moveBonus     = 0;
-      effects.defenseBonus  = 0;
-      break;
-    };
-    case EnviromentType::Hill:{
-      effects.moveBonus     = -1;
-      effects.defenseBonus  = 2;
-      break;
-    };
-    case EnviromentType::Mountain:{
-      effects.moveBonus     = -3;
-      effects.defenseBonus  = 2;
-      break;
-    };
-    case EnviromentType::Building: // Building is same as a forest
-    case EnviromentType::Forest:{
-      effects.moveBonus     = -1;
-      effects.defenseBonus  = 1;
-      break;
-    };
-    case EnviromentType::Reef:{
-      effects.moveBonus     = -3;
-      effects.defenseBonus  = 1;
-      break;
-    };
-  }
-
-  return effects;
-}
-
-const EnviromentType EnviromentEffects::enviromentTypeForMapTileType(MapTileType mapTileType){
-  switch (mapTileType) {
-
-    // Water fields
-    case MapTileType::Water:
-    case MapTileType::Coast1:
-    case MapTileType::Coast12:
-    default: return EnviromentType::Water;
-
-    // Reef
-    case MapTileType::Reef: return EnviromentType::Reef;
-
-    // Street
-    case MapTileType::Street1:
-    case MapTileType::Street2:
-    case MapTileType::Street3:
-    case MapTileType::Street4:
-    case MapTileType::Street5:
-    case MapTileType::Street6: return EnviromentType::Street;
-
-    // Hill
-    case MapTileType::Hill: return EnviromentType::Hill;
-
-    // Mountain
-    case MapTileType::Mountain: return EnviromentType::Mountain;
-
-    // Forest
-    case MapTileType::Forest: return EnviromentType::Forest;
-
-    // Ground
-    case MapTileType::Plains:
-    case MapTileType::Grass: return EnviromentType::Ground;
-
-    // Street
-    case MapTileType::City:
-    case MapTileType::Factory:
-    case MapTileType::Airport:
-    case MapTileType::Shipyard:
-    case MapTileType::ScienceLab:
-    case MapTileType::P1HQ:
-    case MapTileType::P2HQ: return EnviromentType::Building;
-  }
-}
-
-const bool EnviromentEffects::canMapTileTypeBeAccessedByUnit(MapTileType mapTileType, UnitType unitType){
-
-  // get Enviroment
-  EnviromentType enviromentType = EnviromentEffects::enviromentTypeForMapTileType(mapTileType);
-
-  static constexpr uint8_t PROGMEM moveTable[16] =
-  {
-    //Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
-    0b10111101, // Soldier
-    0b10111101, // Mech
-    0b10111101, // SpecOps
-    0b10110101, // Recon
-    0b10110101, // Assist,
-    0b10110101, // Tank
-    0b10110101, // BigTank
-    0b10110101, // Artillery
-    0b10110101, // Rocket,
-    0b10110101, // Missiles,
-    0b11111111, // Heli,
-    0b11111111, // Fighter
-    0b11111111, // Bomber,
-    0b01000000, // Cruiser,
-    0b01000000, // Battleship,
-    0b01000000 // Transportship
-  };
-
-  const uint8_t moveMask = pgm_read_byte(moveTable+static_cast<uint8_t>(unitType));
-  const uint8_t value = (moveMask >> (7-static_cast<uint8_t>(enviromentType))) & 0b00000001;
-
-  return (value == 1);
-}
-
-
 // ====================================================
 // GameBuilding
 
@@ -355,4 +226,69 @@ MapTile::MapTile(void){
 
   unitIsActive = GameUnit::UnitStateActive;
   unitSpriteID = 0;
+}
+
+
+bool MapTile::canBeAccessedByUnit(UnitType unitType){
+  // get correct entry from LUT for the unit
+  uint8_t lut = 0;
+  if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::SpecOps))
+    lut = 0;
+  else if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::Missiles))
+    lut = 1;
+  else if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::Bomber))
+    lut = 2;
+  else if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::Transportship))
+    lut = 3;
+  else return false; // unit is invalid
+  lut = pgm_read_byte(moveLookupTable+lut); // reuse the variable
+
+  // get the correct value from lut end return the result
+  MapTileType type = static_cast<MapTileType>(this->tileID);
+  return (lut >> MapTile::lutIndexForMaptile(type)) & 0x01;
+}
+
+// Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
+uint8_t MapTile::lutIndexForMaptile(MapTileType mapTileType){
+  switch (mapTileType) {
+
+    // Water fields
+    case MapTileType::Water:
+    case MapTileType::Coast1:
+    case MapTileType::Coast12:
+    default: return 6;
+
+    // Ground
+    case MapTileType::Plains:
+    case MapTileType::Grass: return 7;
+
+    // Street
+    case MapTileType::Street1:
+    case MapTileType::Street2:
+    case MapTileType::Street3:
+    case MapTileType::Street4:
+    case MapTileType::Street5:
+    case MapTileType::Street6: return 5;
+
+    // Hill
+    case MapTileType::Hill: return 4;
+
+    // Mountain
+    case MapTileType::Mountain: return 3;
+
+    // Forest
+    case MapTileType::Forest: return 2;
+
+    // Reef
+    case MapTileType::Reef: return 1;
+
+    // Building
+    case MapTileType::City:
+    case MapTileType::Factory:
+    case MapTileType::Airport:
+    case MapTileType::Shipyard:
+    case MapTileType::ScienceLab:
+    case MapTileType::P1HQ:
+    case MapTileType::P2HQ: return 0;
+  }
 }

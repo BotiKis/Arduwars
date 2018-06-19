@@ -1076,6 +1076,11 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
   uint8_t moveDistance = traits.moveDistance+2;
 
+  // check if maptile is a street and give a small bonus
+  MapTile tile = mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX];
+  if (mapTileIsStreet(static_cast<MapTileType>(tile.tileID)))
+    moveDistance += 1;
+
   markPositionAsSelectedForUnit({aUnit->mapPosX, aUnit->mapPosY}, moveDistance, unitType);
 }
 
@@ -1084,15 +1089,19 @@ void AWGame::markPositionAsSelectedForUnit(Point position, uint8_t distance, Uni
   MapTile tile = mapTileData[position.y*mapSize.x+position.x];
 
   // check if unit can move to the field
-  if (!EnviromentEffects::canMapTileTypeBeAccessedByUnit(static_cast<MapTileType>(tile.tileID), unit)) return;
+  if (!tile.canBeAccessedByUnit(unit)) return;
 
   // set maptile to show the selection
   tile.showSelection = 1;
   mapTileData[position.y*mapSize.x+position.x] = tile;
 
-  // get effects
-  EnviromentEffects effects = EnviromentEffects::effectForType(static_cast<MapTileType>(tile.tileID));
-  distance = distance + effects.moveBonus;
+  // check for movement malus
+  if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
+    distance--;
+  else if (static_cast<MapTileType>(tile.tileID) == MapTileType::Hill)
+    distance--;
+  else if (static_cast<MapTileType>(tile.tileID) == MapTileType::Mountain)
+    distance = 1;
 
   // if the new distance would be 0 we are at the end
   if (distance <= 1) return;
