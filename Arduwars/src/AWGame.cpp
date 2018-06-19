@@ -459,7 +459,17 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         drawMapAtPosition(cameraPosition * -1);
 
         // Draw the cursor on top
-        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the +1 looks more correct
+        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
+
+        // draw relevant cursor helper
+        if (turnState == AWTurnState::UnitMove) {
+          // get tile at current index
+          MapTile currentTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+
+          // only show if unit can move here
+          if (currentTile.showSelection)
+            sprites.drawPlusMask(cursorPosition.x-cameraPosition.x+8, cursorPosition.y-cameraPosition.y+1+8, cursorExtraMove_plus_mask, 0); // the +1 looks more correct
+        }
 
         // Draw HUD
         drawHudForPlayer(currentPlayer);
