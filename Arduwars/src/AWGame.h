@@ -47,20 +47,10 @@ enum class AWGameState : uint8_t {
   toggleSound
 };
 
-// Global defines
-// Defines are almost like variables.
-// They have no type (like int or char) and cannot be reassigned.
-//
-// By standard they are written in capital letters so everyone immediately sees
-// that they are #defines.
-//
-// They are mostly used for readability and it is actually not a good practice to use them.
-// You can easily replace them with constant variables.
-// E.g. const uint8_t scrollspeed_normal = 1;
-// But since it is very common to see #defines we stick with it.
-#define SCROLLSPEED_NORMAL 1
-#define SCROLLSPEED_FAST 3
-#define TILE_SIZE 16
+// Global variables
+constexpr uint8_t SCROLLSPEED_NORMAL = 1;
+constexpr uint8_t SCROLLSPEED_FAST = 3;
+constexpr uint8_t TILE_SIZE = 16;
 
 
 // The Game class
