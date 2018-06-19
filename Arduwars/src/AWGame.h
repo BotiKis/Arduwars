@@ -47,6 +47,12 @@ enum class AWGameState : uint8_t {
   toggleSound
 };
 
+enum class AWTurnState : uint8_t {
+  Default,
+  UnitMove,
+  UnitAttack
+};
+
 // Global variables
 constexpr uint8_t SCROLLSPEED_NORMAL = 1;
 constexpr uint8_t SCROLLSPEED_FAST = 3;

@@ -398,8 +398,8 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
   // calculate mapsize in pixels, needed for camera stuff
   Point mapSizeInPixel = mapSize*TILE_SIZE;
 
-  // helps with unit selection
-  bool unitSelected = false;
+  // stores the state of the round
+  AWTurnState turnState = AWTurnState::Default;
 
     // Game loop
     while(true){
@@ -477,32 +477,40 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         arduboy.display();
 
 
-        if (unitSelected && arduboy.justPressed(A_BUTTON)) {
-          unmarkUnitOnMap();
-          unitSelected = false;
+        if (arduboy.justPressed(A_BUTTON)) {
+
+          // Check for the turnstate
+          if (turnState == AWTurnState::UnitMove || turnState == AWTurnState::UnitAttack) {
+            unmarkUnitOnMap();
+            turnState = AWTurnState::Default;
+          }
+
         }
         // Check if menu was pressed
         if (arduboy.justPressed(B_BUTTON)){
 
           // check if unit is selected
-          if (unitSelected) {
+          if (turnState == AWTurnState::UnitMove) {
             /* code */
           }
-          else{
+          if (turnState == AWTurnState::Default){
             // check for tile
             MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
             MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
 
-            // // check first for Unit
+            /////
+            // check first for Unit
             if (currentMapTile.hasUnit == 1 && currentMapTile.unitBelongsTo == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2) && currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
               // select unit on map
-              unitSelected = true;
+              turnState = AWTurnState::UnitMove;
 
               // get unit
               const GameUnit *u = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
               if (u != nullptr)
                 markUnitOnMap(u);
             }
+
+            /////
             // Second check for shop that belongs to user
             else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer && currentMapTile.hasUnit == 0) {
 
