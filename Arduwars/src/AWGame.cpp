@@ -537,10 +537,18 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
                 updateMapForPlayer(currentPlayer);
               }
             }
+
+            /////
             // last show end turn option
-            else if(showOption(LOCA_endTurn)){
-                currentPlayer->cursorIndex = currentIndex;
-                return;
+            else {
+
+                char_P* options[2] = {LOCA_endTurn, LOCA_cancel};
+                uint8_t selectedOption = showOptions(options);
+
+                if (selectedOption == 0) {
+                  currentPlayer->cursorIndex = currentIndex;
+                  return;
+                }
             }
 
           }
@@ -589,15 +597,21 @@ void AWGame::showDialog(char_P *titleText){
   }
 }
 
-bool AWGame::showOption(char_P *buttonTitle){
+int8_t AWGame::showOptions(char_P *options[]){
+
+  // Number of options
+  uint8_t numberOfOptions = sizeof(options)/sizeof(char_P);
 
   // frame for the dialog
   static Rect frame;
 
-  frame.width = strlen(buttonTitle)*5+8;
-  frame.height = 14;
+  frame.width = 54;
+  frame.height = 9+numberOfOptions*5;
   frame.x = arduboy.width() - frame.width - 4;
   frame.y = 10;
+
+  // selected Index
+  int8_t selectedIndex = 0;
 
   // dialog loop
   while (true) {
@@ -608,22 +622,38 @@ bool AWGame::showOption(char_P *buttonTitle){
     // Get input
     arduboy.pollButtons();
 
-    // Exit on button press
+    // Cancel
     if (arduboy.justPressed(A_BUTTON)){
-      return false;
-    }  // Exit on button press
-    if (arduboy.justPressed(B_BUTTON)){
-      return true;
+      return -1;
     }
+    // Close dialog and return with selected index
+    if (arduboy.justPressed(B_BUTTON)){
+      return selectedIndex;
+    }
+    if (arduboy.justPressed(DOWN_BUTTON)){
+      selectedIndex++;
+    }  // Exit on button press
+    if (arduboy.justPressed(UP_BUTTON)){
+      selectedIndex--;
+    }
+    // wrap and limit index
+    selectedIndex = (selectedIndex<0)?(numberOfOptions-1):selectedIndex;
+    selectedIndex = selectedIndex%numberOfOptions;
 
     // Drawing
     // Infobox
     arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
     arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
 
-    // OK Button
-    tinyfont.setCursor(frame.x + 4, frame.y + 5);
-    tinyfont.print(AsFlashString(buttonTitle));
+    // options
+    for (uint8_t i = 0; i < numberOfOptions; i++) {
+      tinyfont.setCursor(frame.x + 9, frame.y + 4 + 7*i);
+      tinyfont.print(AsFlashString(options[i]));
+    }
+
+    // cursor
+    tinyfont.setCursor(frame.x + 4, frame.y + 4 + 7*selectedIndex);
+    tinyfont.print(F(">"));
 
     arduboy.display();
   }

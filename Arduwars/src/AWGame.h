@@ -47,6 +47,7 @@ enum class AWGameState : uint8_t {
   toggleSound
 };
 
+// These states define the possible states during the turn of a player.
 enum class AWTurnState : uint8_t {
   Default,
   UnitMove,
@@ -103,10 +104,11 @@ private:
     // closes if B is pressed
     void showDialog(char_P *titleText);
 
-    // Shows a option dialog with a text at the top right.
+    // Shows a option dialog with the titles at the top right of the screen.
     // Used as contextmenu in-game
-    // Returns false of B is pressed, true if A is pressed
-    bool showOption(char_P *buttonTitle);
+    // Returns the index of the selected option.
+    // Returns -1 if cancelled with A_BUTTON.
+    int8_t showOptions(char_P *options[]);
 
     // shows the shop UI for the given Building.
     // Will isntantly return UnitType::None if the building
