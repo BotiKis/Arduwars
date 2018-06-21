@@ -62,10 +62,12 @@ char_P LOCA_Unit_Transportships[] PROGMEM = "TRANSPORT";
 
 // all units toghether
 char_P* const LOCA_Unit_Names[] PROGMEM = {
+  // Infantry
   LOCA_Unit_Soldier,
   LOCA_Unit_Mech,
   LOCA_Unit_SpecOps,
 
+  // Ground Units
   LOCA_Unit_scout,
   LOCA_Unit_Assist,
   LOCA_Unit_Tank,
@@ -74,10 +76,12 @@ char_P* const LOCA_Unit_Names[] PROGMEM = {
   LOCA_Unit_Rocket,
   LOCA_Unit_Missiles,
 
+  // Air Units
   LOCA_Unit_Heli,
   LOCA_Unit_Fighter,
   LOCA_Unit_Bomber,
 
+  // Marine Units
   LOCA_Unit_Cruiser,
   LOCA_Unit_Battleship,
   LOCA_Unit_Transportships
