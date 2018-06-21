@@ -197,7 +197,7 @@ void Player::reset(){
   units.clear();
 }
 
-const GameUnit * Player::getUnitForMapCoordinates(Point coordinates){
+GameUnit * Player::getUnitForMapCoordinates(Point coordinates){
 
   // go through all units
   for (uint8_t i = 0; i < units.getCount(); i++) {

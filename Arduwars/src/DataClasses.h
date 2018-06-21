@@ -224,7 +224,7 @@ public:
 
   // return a unit for give coordinates on the map.
   // nullptr if no unit found.
-  const GameUnit * getUnitForMapCoordinates(Point coordinates);
+  GameUnit * getUnitForMapCoordinates(Point coordinates);
 
   // Default income for one building
   static constexpr uint8_t BaseIncome = 10;
