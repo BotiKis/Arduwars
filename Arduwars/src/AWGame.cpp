@@ -395,11 +395,32 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
   Point cameraPosition = {0, 0};
   Point currentIndex = {0, 0};
 
+  // store additional helpers
+  GameUnit *selectedUnit = nullptr;
+  Point originalUnitPosition = {0, 0};
+
   // calculate mapsize in pixels, needed for camera stuff
   Point mapSizeInPixel = mapSize*TILE_SIZE;
 
   // stores the state of the round
   AWTurnState turnState = AWTurnState::Default;
+
+  // helper function to reset  unit
+  // This is a lambda function.  Also called anonymous function
+  // It only exists inside this one certain method.
+  // We do it this way because we will call it on different user interactions.
+  auto resetSelectedUnit = [&]() {
+
+    // cancel unit movement
+    unmarkUnitOnMap();
+    turnState = AWTurnState::Default;
+
+    // reset original unit
+    selectedUnit->mapPosX = originalUnitPosition.x;
+    selectedUnit->mapPosY = originalUnitPosition.y;
+    selectedUnit = nullptr;
+    updateMapForPlayer(currentPlayer);
+  };
 
     // Game loop
     while(true){
@@ -486,24 +507,49 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
         arduboy.display();
 
-
+        // Check for single button presses
         if (arduboy.justPressed(A_BUTTON)) {
 
           // Check for the turnstate
           if (turnState == AWTurnState::UnitMove || turnState == AWTurnState::UnitAttack) {
-            unmarkUnitOnMap();
-            turnState = AWTurnState::Default;
+            // cancel unit movement
+            resetSelectedUnit();
           }
 
         }
         // Check if menu was pressed
         if (arduboy.justPressed(B_BUTTON)){
 
-          // check if unit is selected
+          // check for the turn state and do so accodringly
           if (turnState == AWTurnState::UnitMove) {
-            /* code */
+            // get tile at current index
+            MapTile currentTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+
+            // only continue if unit can move here
+            if (currentTile.showSelection && selectedUnit != nullptr){
+              selectedUnit->mapPosX = currentIndex.x;
+              selectedUnit->mapPosY = currentIndex.y;
+
+              // show options box
+              char_P* options[4] = {LOCA_attack, LOCA_rest, LOCA_cancel, LOCA_cancel};
+              switch (showOptions(options)) {
+                case 0:{
+                  // prepare for attack
+                  turnState = AWTurnState::UnitAttack;
+                  updateMapForPlayer(currentPlayer);
+                  break;
+                }
+                case 1:{
+                  // Send unit to sleep
+                }
+                default:{
+                  resetSelectedUnit();
+                }
+              }
+            }
+
           }
-          if (turnState == AWTurnState::Default){
+          else if (turnState == AWTurnState::Default){
             // check for tile
             MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
             MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
@@ -515,9 +561,11 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
               turnState = AWTurnState::UnitMove;
 
               // get unit
-              const GameUnit *u = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
-              if (u != nullptr)
-                markUnitOnMap(u);
+              selectedUnit = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
+              if (selectedUnit != nullptr){
+                originalUnitPosition = currentIndex;
+                markUnitOnMap(selectedUnit);
+              }
             }
 
             /////
@@ -607,7 +655,7 @@ void AWGame::showDialog(char_P *titleText){
   }
 }
 
-int8_t AWGame::showOptions(char_P *options[]){
+int8_t AWGame::showOptions(char_P * options[]){
 
   // Number of options
   uint8_t numberOfOptions = sizeof(options)/sizeof(char_P);
