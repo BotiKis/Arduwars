@@ -531,8 +531,8 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
               selectedUnit->mapPosY = currentIndex.y;
 
               // show options box
-              char_P* options[4] = {LOCA_attack, LOCA_rest, LOCA_cancel, LOCA_cancel};
-              switch (showOptions(options)) {
+              char_P* options[3] = {LOCA_attack, LOCA_rest, LOCA_cancel};
+              switch (showOptions(options, 3)) {
                 case 0:{
                   // prepare for attack
                   turnState = AWTurnState::UnitAttack;
@@ -601,7 +601,7 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
             else {
 
                 char_P* options[2] = {LOCA_endTurn, LOCA_cancel};
-                uint8_t selectedOption = showOptions(options);
+                uint8_t selectedOption = showOptions(options, 2);
 
                 if (selectedOption == 0) {
                   currentPlayer->cursorIndex = currentIndex;
@@ -655,16 +655,13 @@ void AWGame::showDialog(char_P *titleText){
   }
 }
 
-int8_t AWGame::showOptions(char_P * options[]){
-
-  // Number of options
-  uint8_t numberOfOptions = sizeof(options)/sizeof(char_P);
+int8_t AWGame::showOptions(char_P *options[], uint8_t count){
 
   // frame for the dialog
   static Rect frame;
 
   frame.width = 54;
-  frame.height = 9+numberOfOptions*5;
+  frame.height = 9+count*5;
   frame.x = arduboy.width() - frame.width - 4;
   frame.y = 10;
 
@@ -695,8 +692,8 @@ int8_t AWGame::showOptions(char_P * options[]){
       selectedIndex--;
     }
     // wrap and limit index
-    selectedIndex = (selectedIndex<0)?(numberOfOptions-1):selectedIndex;
-    selectedIndex = selectedIndex%numberOfOptions;
+    selectedIndex = (selectedIndex<0)?(count-1):selectedIndex;
+    selectedIndex = selectedIndex%count;
 
     // Drawing
     // Infobox
@@ -704,7 +701,7 @@ int8_t AWGame::showOptions(char_P * options[]){
     arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
 
     // options
-    for (uint8_t i = 0; i < numberOfOptions; i++) {
+    for (uint8_t i = 0; i < count; i++) {
       tinyfont.setCursor(frame.x + 9, frame.y + 4 + 7*i);
       tinyfont.print(AsFlashString(options[i]));
     }

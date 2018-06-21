@@ -108,7 +108,7 @@ private:
     // Used as contextmenu in-game
     // Returns the index of the selected option.
     // Returns -1 if cancelled with A_BUTTON.
-    int8_t showOptions(char_P *options[]);
+    int8_t showOptions(char_P *options[], uint8_t count);
 
     // shows the shop UI for the given Building.
     // Will isntantly return UnitType::None if the building
