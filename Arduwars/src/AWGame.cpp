@@ -79,7 +79,7 @@ AWGameState AWGame::showMainMenu(){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
-  static constexpr uint8_t yOffset = 24;
+  constexpr uint8_t yOffset = 24;
 
   // Again a Game loop
   while(true){
@@ -166,7 +166,7 @@ unsigned const char * AWGame::showMapSelection(AWGameState aState){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
-  static constexpr uint8_t yOffset = 24;
+  constexpr uint8_t yOffset = 24;
 
   // Again a Game loop
   while(true){
@@ -662,7 +662,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
 void AWGame::showDialog(char_P *titleText){
 
   // frame for the dialog
-  static Rect frame;
+  Rect frame;
 
   frame.width = strlen_P(titleText)*5+8;
   frame.height = 16;
@@ -703,7 +703,7 @@ void AWGame::showDialog(char_P *titleText){
 int8_t AWGame::showOptions(char_P *options[], uint8_t count){
 
   // frame for the dialog
-  static Rect frame;
+  Rect frame;
 
   frame.width = 54;
   frame.height = 6+count*7;
@@ -769,7 +769,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aP
   // helper for drawing
   UnitType unitToDraw;
   int8_t yOffset = 0;
-  static const uint8_t textPadding = 8;
+  const uint8_t textPadding = 8;
 
   // check building type
   switch (building) {
