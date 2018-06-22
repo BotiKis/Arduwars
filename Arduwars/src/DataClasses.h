@@ -238,7 +238,7 @@ public:
 // ====================================================
 // MapTile
 
-static constexpr uint8_t PROGMEM moveLookupTable[4] =
+constexpr uint8_t PROGMEM moveLookupTable[4] =
 {
   // Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
   0b10111101, // Infantry
