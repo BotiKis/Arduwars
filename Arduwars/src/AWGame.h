@@ -50,6 +50,7 @@ enum class AWGameState : uint8_t {
 // These states define the possible states during the turn of a player.
 enum class AWTurnState : uint8_t {
   Default,
+  UnitSelected,
   UnitMove,
   UnitAttack
 };

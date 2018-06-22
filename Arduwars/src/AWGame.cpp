@@ -413,13 +413,13 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
     // cancel unit movement
     unmarkUnitOnMap();
-    turnState = AWTurnState::Default;
+    turnState = AWTurnState::UnitSelected;
 
     // reset original unit
     selectedUnit->mapPosX = originalUnitPosition.x;
     selectedUnit->mapPosY = originalUnitPosition.y;
-    selectedUnit = nullptr;
     updateMapForPlayer(currentPlayer);
+    selectedUnit = nullptr;
   };
 
     // Game loop
@@ -483,7 +483,7 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
         sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
 
         // draw relevant cursor helper
-        if (turnState == AWTurnState::UnitMove) {
+        if (turnState == AWTurnState::UnitSelected) {
           // get tile at current index
           MapTile currentTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
 
@@ -507,110 +507,140 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
 
         arduboy.display();
 
-        // Check for single button presses
+        //// Check for single button presses
+        // THE A BUTTON
         if (arduboy.justPressed(A_BUTTON)) {
 
-          // Check for the turnstate
-          if (turnState == AWTurnState::UnitMove || turnState == AWTurnState::UnitAttack) {
-            // cancel unit movement
-            resetSelectedUnit();
+          // state machine for the turn
+          switch (turnState) {
+            default:
+            case AWTurnState::Default:{
+
+            }
+            break; // End of default state
+
+            case AWTurnState::UnitSelected:{
+
+            }
+            break; // End of nit selected state
+
+            case AWTurnState::UnitMove:
+            case AWTurnState::UnitAttack:{
+              // cancel unit movement
+              resetSelectedUnit();
+            }
+            break; // End of move/attack state
           }
 
         }
-        // Check if menu was pressed
+        // THE B BUTTON
         if (arduboy.justPressed(B_BUTTON)){
 
-          // check for the turn state and do so accodringly
-          if (turnState == AWTurnState::UnitMove) {
-            // get tile at current index
-            MapTile currentTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+          // state machine for the turn
+          switch (turnState) {
 
-            // only continue if unit can move here
-            if (currentTile.showSelection && selectedUnit != nullptr){
-              selectedUnit->mapPosX = currentIndex.x;
-              selectedUnit->mapPosY = currentIndex.y;
+            // Default State
+            default:
+            case AWTurnState::Default:{
+              // check for tile
+              MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+              MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
 
-              // show options box
-              char_P* options[3] = {LOCA_attack, LOCA_rest, LOCA_cancel};
-              switch (showOptions(options, 3)) {
-                case 0:{
-                  // prepare for attack
-                  turnState = AWTurnState::UnitAttack;
-                  updateMapForPlayer(currentPlayer);
-                  break;
+              /////
+              // check first for Unit
+              if (currentMapTile.hasUnit == 1 &&
+                currentMapTile.unitBelongsTo == ((currentPlayer == player1) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2) &&
+                currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
+                // get unit
+                selectedUnit = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
+                if (selectedUnit != nullptr){
+                  // select unit on map
+                  originalUnitPosition = currentIndex;
+                  markUnitOnMap(selectedUnit);
+
+                  // update state
+                  turnState = AWTurnState::UnitSelected;
                 }
-                case 1:{
-                  // Send unit to sleep
+              }
+
+              /////
+              // Second check for shop that belongs to user
+              else if (mapTileIndexIsShop(currentTileType) &&
+              currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer &&
+              currentMapTile.hasUnit == 0) {
+
+                // check if there is space for a new unit
+                if (currentPlayer->units.isFull()) {
+                  showDialog(LOCA_Unit_limit_reached);
                 }
-                default:{
-                  resetSelectedUnit();
+                else{
+                  // Show shop window
+                  UnitType selectedUnit = showShopForBuildingAndPlayer(currentTileType, currentPlayer);
+
+                  // react to the users choice if he buys a unit
+                  if(selectedUnit != UnitType::None){
+                    GameUnit newUnit = GameUnit();
+
+                    // init unit
+                    newUnit.unitType = static_cast<uint8_t>(selectedUnit);
+                    newUnit.mapPosX = currentIndex.x;
+                    newUnit.mapPosY = currentIndex.y;
+                    newUnit.activated = GameUnit::UnitStateDisabled;
+
+                    currentPlayer->units.add(newUnit);
+                    updateMapForPlayer(currentPlayer);
+                  }
+                }
+              }
+
+              /////
+              // last show end turn option
+              else {
+                  char_P* options[2] = {LOCA_endTurn, LOCA_cancel};
+                  uint8_t selectedOption = showOptions(options, 2);
+
+                  if (selectedOption == 0) {
+                    currentPlayer->cursorIndex = currentIndex;
+                    return;
+                  }
+              }
+            }
+            break; // End of default state
+
+            // A Unit is selected
+            case AWTurnState::UnitSelected:{
+
+              // get tile at current index
+              MapTile currentTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+
+              // only continue if unit can move here
+              if (currentTile.showSelection && selectedUnit != nullptr){
+                selectedUnit->mapPosX = currentIndex.x;
+                selectedUnit->mapPosY = currentIndex.y;
+
+                // show options box
+                char_P* options[3] = {LOCA_attack, LOCA_rest, LOCA_cancel};
+                switch (showOptions(options, 3)) {
+                  case 0:{
+                    // prepare for attack
+                    turnState = AWTurnState::UnitAttack;
+                    updateMapForPlayer(currentPlayer);
+                    break;
+                  }
+                  case 1:{
+                    // Send unit to sleep
+                  }
+                  default:{
+                    resetSelectedUnit();
+                  }
                 }
               }
             }
-
-          }
-          else if (turnState == AWTurnState::Default){
-            // check for tile
-            MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
-            MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
-
-            /////
-            // check first for Unit
-            if (currentMapTile.hasUnit == 1 && currentMapTile.unitBelongsTo == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2) && currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
-              // select unit on map
-              turnState = AWTurnState::UnitMove;
-
-              // get unit
-              selectedUnit = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
-              if (selectedUnit != nullptr){
-                originalUnitPosition = currentIndex;
-                markUnitOnMap(selectedUnit);
-              }
-            }
-
-            /////
-            // Second check for shop that belongs to user
-            else if (mapTileIndexIsShop(currentTileType) && currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer && currentMapTile.hasUnit == 0) {
-
-              // check if there is space for a new unit
-              if (currentPlayer->units.isFull()) {
-                showDialog(LOCA_Unit_limit_reached);
-                continue;
-              }
-
-              // Show shop window
-              UnitType selectedUnit = showShopForBuildingAndPlayer(currentTileType, currentPlayer);
-
-              // react to the users choice if he buys a unit
-              if(selectedUnit != UnitType::None){
-                GameUnit newUnit = GameUnit();
-
-                // init unit
-                newUnit.unitType = static_cast<uint8_t>(selectedUnit);
-                newUnit.mapPosX = currentIndex.x;
-                newUnit.mapPosY = currentIndex.y;
-                newUnit.activated = GameUnit::UnitStateDisabled;
-
-                currentPlayer->units.add(newUnit);
-                updateMapForPlayer(currentPlayer);
-              }
-            }
-
-            /////
-            // last show end turn option
-            else {
-
-                char_P* options[2] = {LOCA_endTurn, LOCA_cancel};
-                uint8_t selectedOption = showOptions(options, 2);
-
-                if (selectedOption == 0) {
-                  currentPlayer->cursorIndex = currentIndex;
-                  return;
-                }
-            }
+            break; // End of Unit selected state
 
           }
         }
+        // End button handling here
     }
 }
 
@@ -661,7 +691,7 @@ int8_t AWGame::showOptions(char_P *options[], uint8_t count){
   static Rect frame;
 
   frame.width = 54;
-  frame.height = 9+count*5;
+  frame.height = 6+count*7;
   frame.x = arduboy.width() - frame.width - 4;
   frame.y = 10;
 
