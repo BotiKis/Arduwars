@@ -1482,7 +1482,7 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
 
           mapTileData[x0+y0*mapSize.x] = tile;
 
-          // ignorethe origin
+          // ignore the origin
           if (currentDistance != 0){
 
             // check for forrest
