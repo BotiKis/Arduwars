@@ -417,7 +417,6 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
     // reset original unit
     selectedUnit->mapPosX = originalUnitPosition.x;
     selectedUnit->mapPosY = originalUnitPosition.y;
-    updateMapForPlayer(currentPlayer);
     selectedUnit = nullptr;
   };
 
@@ -620,20 +619,28 @@ void AWGame::doRoundOfPlayer(Player *currentPlayer){
               if (currentTile.showSelection && selectedUnit != nullptr){
 
                 // show options box
-                char_P* options[3] = {LOCA_attack, LOCA_move, LOCA_cancel};
+                char_P* options[3] = {LOCA_move, LOCA_attack, LOCA_cancel};
                 switch (showOptions(options, 3)) {
                   case 0:{
-                    // prepare for attack
-                    turnState = AWTurnState::UnitAttack;
+                    // unmark unit
+                    unmarkUnitOnMap(selectedUnit);
+
+                    // update units position
+                    selectedUnit->mapPosX = currentIndex.x;
+                    selectedUnit->mapPosY = currentIndex.y;
+
+                    // set unit to sleep
+                    selectedUnit->activated = GameUnit::UnitStateDisabled;
                     updateMapForPlayer(currentPlayer);
+                    selectedUnit = nullptr;
+
+                    // update state
+                    turnState = AWTurnState::Default;
                   }
                   break;
                   case 1:{
-                    turnState = AWTurnState::UnitMove
-                    ;
-                    // Place unit and send it to sleep
-                    selectedUnit->mapPosX = currentIndex.x;
-                    selectedUnit->mapPosY = currentIndex.y;
+                    // prepare for attack
+                    turnState = AWTurnState::UnitAttack;
                   }
                   break;
                   default:{
