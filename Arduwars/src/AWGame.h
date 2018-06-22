@@ -96,7 +96,7 @@ private:
     void startNewMultiplayerPlayerGame();  // Starts a new multiplayer game
     void runMultiPlayerGame();       // Place where the multiplayer game runs
 
-    void doRoundOfPlayer(Player *currentPlayer);
+    void doRoundOfPlayer(AWPlayer *currentPlayer);
 
     // Game Helper
     void drawMapAtPosition(Point pos); // Draws the map at the given position
@@ -115,10 +115,10 @@ private:
     // Will isntantly return UnitType::None if the building
     // is not the Factory, Airport or the Shipyard.
     // Also returns UnitType::None if the PLayer doesn't buy anything.
-    UnitType showShopForBuildingAndPlayer(MapTileType building, Player *aPlayer);
+    UnitType showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aPlayer);
 
     // Shows a HUD with name, Days and Funds
-    void drawHudForPlayer(Player *aPlayer);
+    void drawHudForPlayer(AWPlayer *aPlayer);
 
     // Helper to calculate the camera
     Point calculateCameraPosition(Point forCursorPosition);
@@ -127,7 +127,7 @@ private:
     void loadMap(unsigned const char *mapData);
 
     // updates the gamemap for the player
-    void updateMapForPlayer(Player *aPlayer);
+    void updateMapForPlayer(AWPlayer *aPlayer);
 
     // removes all units from the map
     // withFog == true fills the gamemap with fog
@@ -142,7 +142,7 @@ private:
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings, mountains and enemy units
-    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, Player *aPlayer);
+    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();
@@ -177,8 +177,8 @@ private:
 
     // In these two variables we store the players.
     // There are always two players where the first one is the actual player and the second the AI.
-    Player *player1;
-    Player *player2;
+    AWPlayer *player1;
+    AWPlayer *player2;
 
     // This attribute stores the days.
     // A day passes if both players has ended their rounds.

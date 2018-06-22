@@ -205,7 +205,7 @@ public:
 // Player
 
 // This class defines a Player which has Units, Buildings, Money and other Information.
-class Player{
+class AWPlayer{
 public:
 
   // Stores the players Money. MAX 255

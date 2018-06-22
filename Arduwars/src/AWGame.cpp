@@ -27,8 +27,8 @@ AWGame::AWGame(){
   tinyfont.setTextColor(BLACK);
 
   // Initialize players
-  player1 = new Player();
-  player2 = new Player();
+  player1 = new AWPlayer();
+  player2 = new AWPlayer();
 
   // Now we set our Gamestate to showMenu since we want to start there.
   gameState = AWGameState::showMainMenu;
@@ -317,7 +317,7 @@ void AWGame::startNewMultiplayerPlayerGame(){
 
 void AWGame::runMultiPlayerGame(){
 
-  Player *currentPlayer = player1;
+  AWPlayer *currentPlayer = player1;
 
   // Game Loop
   while (true) {
@@ -338,7 +338,7 @@ void AWGame::runMultiPlayerGame(){
       if(gameBuildings[i].buildingType == static_cast<uint8_t>(MapTileType::City) &&
       gameBuildings[i].isOccupied == 1 &&
       gameBuildings[i].belongsToPlayer == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2)){
-        currentPlayer->money += Player::BaseIncome;
+        currentPlayer->money += AWPlayer::BaseIncome;
       }
     }
 
@@ -384,7 +384,7 @@ void AWGame::runMultiPlayerGame(){
   }
 }
 
-void AWGame::doRoundOfPlayer(Player *currentPlayer){
+void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
 
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
 
@@ -759,7 +759,7 @@ int8_t AWGame::showOptions(char_P *options[], uint8_t count){
   }
 }
 
-UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPlayer){
+UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aPlayer){
 
   // data for the shop
   int8_t menuCursorIDX = 0;
@@ -924,7 +924,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, Player *aPla
   return UnitType::None;
 }
 
-void AWGame::drawHudForPlayer(Player *aPlayer){
+void AWGame::drawHudForPlayer(AWPlayer *aPlayer){
   // Draw player, day and funds
   arduboy.fillRect(0, 0, 128, 7, BLACK);
   arduboy.fillRect(0, 0, 128, 6, WHITE);
@@ -1080,13 +1080,13 @@ void AWGame::loadMap(unsigned const char *mapData){
   }
 }
 
-void AWGame::updateMapForPlayer(Player *aPlayer){
+void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
 
   // fill map with fog
   clearMap(true);
 
   // add the enemies units
-  Player *enemyPlayer = (aPlayer == player1)?player2:player1;
+  AWPlayer *enemyPlayer = (aPlayer == player1)?player2:player1;
   for (uint8_t i = 0; i < enemyPlayer->units.getCount(); i++) {
     GameUnit unit = enemyPlayer->units[i];
 
@@ -1429,7 +1429,7 @@ void AWGame::printFreeMemory(){
   tinyfont.print(freeMemory());
 }
 
-void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, Player *aPlayer){
+void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer){
     // This is a lambda function.  Also called anonymous function
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method

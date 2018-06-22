@@ -186,7 +186,7 @@ GameBuilding::GameBuilding(MapTileType type){
 // ====================================================
 // Player
 
-void Player::reset(){
+void AWPlayer::reset(){
   // default 30 money
   money = 30;
 
@@ -197,7 +197,7 @@ void Player::reset(){
   units.clear();
 }
 
-GameUnit * Player::getUnitForMapCoordinates(Point coordinates){
+GameUnit * AWPlayer::getUnitForMapCoordinates(Point coordinates){
 
   // go through all units
   for (uint8_t i = 0; i < units.getCount(); i++) {
