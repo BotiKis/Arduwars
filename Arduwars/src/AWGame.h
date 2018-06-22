@@ -138,7 +138,7 @@ private:
     void markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit);
 
     // clears the units marker
-    void unmarkUnitOnMap();
+    void unmarkUnitOnMap(const GameUnit *aUnit);
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings and mountains
