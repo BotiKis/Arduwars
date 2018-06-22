@@ -135,7 +135,7 @@ private:
 
     // Marks the given unit on the map by showing it's movement radius
     void markUnitOnMap(const GameUnit *aUnit);
-    void markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit);
+    void markPositionAsSelectedForUnit(Point position, int8_t distance, UnitType unit);
 
     // clears the units marker
     void unmarkUnitOnMap(const GameUnit *aUnit);

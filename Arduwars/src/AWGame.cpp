@@ -1118,12 +1118,10 @@ void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
     UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
     uint8_t sightRadius = traits.moveDistance;
 
-    // add sight to unit if its on a hill or mountain
-    // Only infantry units can be on ills and mountains and they get a sight boost.
-    if (tile.tileID == static_cast<uint8_t>(MapTileType::Hill))
+    // add sight to unit if its on a mountain
+    // Only infantry units can be on hills and mountains and they get a sight boost.
+    if (tile.tileID == static_cast<uint8_t>(MapTileType::Mountain))
       sightRadius +=1;
-    else if (tile.tileID == static_cast<uint8_t>(MapTileType::Mountain))
-      sightRadius +=2;
 
     // remove the fog
     // The fog for a unit gets removed accordingly to it's sight.
@@ -1226,7 +1224,7 @@ void AWGame::clearMap(bool withFog){
 void AWGame::markUnitOnMap(const GameUnit *aUnit){
   UnitType unitType = static_cast<UnitType>(aUnit->unitType);
   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-  uint8_t moveDistance = traits.moveDistance+2;
+  uint8_t moveDistance = traits.moveDistance+1;
 
   // check if maptile is a street and give a small bonus
   MapTile tile = mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX];
@@ -1239,7 +1237,14 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   markPositionAsSelectedForUnit({aUnit->mapPosX, aUnit->mapPosY}, moveDistance, unitType);
 }
 
-void AWGame::markPositionAsSelectedForUnit(Point position, uint8_t distance, UnitType unit){
+void AWGame::markPositionAsSelectedForUnit(Point position, int8_t distance, UnitType unit){
+
+  // check if we are at the end
+  if (distance <= 0) return;
+
+  // check for bounds
+  if (position.x < 0 || position.x >= mapSize.x || position.y < 0 || position.y >= mapSize.y ) return;
+
   // get the tile
   MapTile tile = mapTileData[position.y*mapSize.x+position.x];
 
@@ -1258,17 +1263,19 @@ void AWGame::markPositionAsSelectedForUnit(Point position, uint8_t distance, Uni
   else if (static_cast<MapTileType>(tile.tileID) == MapTileType::Hill)
     distance--;
   else if (static_cast<MapTileType>(tile.tileID) == MapTileType::Mountain)
-    distance = 1;
+    distance = min(2, distance);
 
-  // if the new distance would be 0 we are at the end
-  if (distance <= 1) return;
+  // shorten the distance for every step.
   distance--;
 
+  // printFreeMemory();
+  // arduboy.display();
+
   // recursively call this method for every orientation
-  if (position.x > 0)           markPositionAsSelectedForUnit({position.x+1, position.y}, distance, unit);
-  if (position.y < mapSize.y-1) markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
-  if (position.x < mapSize.x-1) markPositionAsSelectedForUnit({position.x-1, position.y}, distance, unit);
-  if (position.y > 0)           markPositionAsSelectedForUnit({position.x, position.y+1}, distance, unit);
+  markPositionAsSelectedForUnit({position.x+1, position.y}, distance, unit);
+  markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
+  markPositionAsSelectedForUnit({position.x-1, position.y}, distance, unit);
+  markPositionAsSelectedForUnit({position.x, position.y+1}, distance, unit);
 
   return;
 }
@@ -1461,10 +1468,10 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
       while(true){
 
         // calc current disctance
-        uint8_t cd = abs(origin.x-x0) + abs(origin.y-y0);
+        uint8_t currentDistance = abs(origin.x-x0) + abs(origin.y-y0);
 
         // check for bounds and remove fog
-        if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && cd <= r) {
+        if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && currentDistance <= r) {
 
           // get the corresponding map tile
           MapTile tile = mapTileData[x0+y0*mapSize.x];
@@ -1475,16 +1482,20 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
 
           mapTileData[x0+y0*mapSize.x] = tile;
 
-          // check for forrest
-          if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
+          // ignorethe origin
+          if (currentDistance != 0){
 
-          // check if there is an Obstacle
-          if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
+            // check for forrest
+            if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
+
+            // check if there is an Obstacle
+            if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
+                break;
+
+            // check if there is an enemy unit because we can't see through it
+            if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
               break;
-
-          // check if there is an enemy unit because we can't see through it
-          if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
-            break;
+            }
           }
         }
 
