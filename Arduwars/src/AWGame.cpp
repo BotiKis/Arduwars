@@ -1085,6 +1085,20 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
   // fill map with fog
   clearMap(true);
 
+  // add the enemies units
+  Player *enemyPlayer = (aPlayer == player1)?player2:player1;
+  for (uint8_t i = 0; i < enemyPlayer->units.getCount(); i++) {
+    GameUnit unit = enemyPlayer->units[i];
+
+    // get the corresponding map tile
+    MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
+    tile.hasUnit = 1;
+    tile.unitBelongsTo = (enemyPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+    tile.unitSpriteID = unit.unitType;
+    tile.unitIsActive = GameUnit::UnitStateActive;
+    mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
+  }
+
   // udpate the player units
   for (uint8_t i = 0; i < aPlayer->units.getCount(); i++) {
     GameUnit unit = aPlayer->units[i];
@@ -1115,7 +1129,7 @@ void AWGame::updateMapForPlayer(Player *aPlayer){
     // The fog for a unit gets removed accordingly to it's sight.
     // Obstacles will conceal the things behind it so a unit can't
     // see through the enviroment.
-    removeFogAtPositionAndRadius({unit.mapPosX,unit.mapPosY}, sightRadius);
+    removeFogAtPositionRadiusAndPlayer({unit.mapPosX,unit.mapPosY}, sightRadius, aPlayer);
   }
 
   // udpate the  buildings
@@ -1333,7 +1347,7 @@ void AWGame::drawMapAtPosition(Point pos){
       }
 
       // Draw Unit
-      if(tile.hasUnit == 1){
+      if(tile.hasUnit == 1 && tile.showsFog == 0){
         // unitSprite
         const unsigned char *unitSprite = nullptr;
 
@@ -1415,12 +1429,12 @@ void AWGame::printFreeMemory(){
   tinyfont.print(freeMemory());
 }
 
-void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
+void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, Player *aPlayer){
     // This is a lambda function.  Also called anonymous function
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
     // but outside this method it is useless.
-    auto castRayTo = [this, origin](int8_t xEnd, int8_t yEnd) {
+    auto castRayTo = [this, origin, aPlayer](int8_t xEnd, int8_t yEnd) {
 
       // We are doing here a so called Raycast. It's called this way because
       // it mathematecally shots a "ray" from the origin to the destination Like
@@ -1439,14 +1453,10 @@ void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
       int8_t forestLimit = 2; // Unit can see through 2 forests
 
       // half the distance, because the endppoint which comes from the circle-
-      // algorithm is in double distance to avoid glitches.
-      int8_t r = (dx-dy)/2;
+      // algorithm is in a doubled distance to avoid glitches.
+      int8_t r = (dx-dy)/2; // There might be rounding issues but for simplicity we don't care.
 
       while(true){
-
-        e2 = 2*err;
-        if (e2 >= dy) { err += dy; x0 += sx; }
-        if (e2 <= dx) { err += dx; y0 += sy; }
 
         // calc current disctance
         uint8_t cd = abs(origin.x-x0) + abs(origin.y-y0);
@@ -1458,20 +1468,31 @@ void AWGame::removeFogAtPositionAndRadius(Point origin, uint8_t radius){
           MapTile tile = mapTileData[x0+y0*mapSize.x];
 
           // update tile data
-          if (forestLimit > 0)
+          if (forestLimit >= 0)
             tile.showsFog = 0;
 
           mapTileData[x0+y0*mapSize.x] = tile;
 
           // check for forrest
           if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
+
+          // check if there is an Obstacle
+          if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
+              break;
+
+          // check if there is an enemy unit because we can't see through it
+          if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
+            break;
+          }
         }
 
         // check for end
         if ( x0==xEnd && y0==yEnd) break;
 
-        // check if there is an Obstacle
-        if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID))) continue;
+        // update algorithm
+        e2 = 2*err;
+        if (e2 >= dy) { err += dy; x0 += sx; }
+        if (e2 <= dx) { err += dx; y0 += sy; }
       }
     };
 

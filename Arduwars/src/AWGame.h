@@ -141,8 +141,8 @@ private:
     void unmarkUnitOnMap(const GameUnit *aUnit);
 
     // Mark the map at the given position and radius regarding visibility rules
-    // e.g. Not through buildings and mountains
-    void removeFogAtPositionAndRadius(Point origin, uint8_t radius);
+    // e.g. Not through buildings, mountains and enemy units
+    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, Player *aPlayer);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();
