@@ -1116,7 +1116,7 @@ void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
     // get the traits of the unit
     UnitType unitType = static_cast<UnitType>(unit.unitType);
     UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-    uint8_t sightRadius = traits.moveDistance-1;
+    uint8_t sightRadius = traits.moveDistance;
 
     // add sight to unit if its on a hill or mountain
     // Only infantry units can be on ills and mountains and they get a sight boost.
@@ -1246,9 +1246,11 @@ void AWGame::markPositionAsSelectedForUnit(Point position, uint8_t distance, Uni
   // check if unit can move to the field
   if (!tile.canBeAccessedByUnit(unit)) return;
 
-  // set maptile to show the selection
-  tile.showSelection = 1;
-  mapTileData[position.y*mapSize.x+position.x] = tile;
+  // set maptile to show the selection if there is no other unit
+  if (!tile.hasUnit) {
+    tile.showSelection = 1;
+    mapTileData[position.y*mapSize.x+position.x] = tile;
+  }
 
   // check for movement malus
   if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
