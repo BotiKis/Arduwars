@@ -164,7 +164,7 @@ private:
 
     // This is our instance of the Sprites class.
     // We need this to draw tilesets and animations which Arduboy2 can not do.
-    Sprites sprites;
+    SpritesB sprites;
 
     // This is tinyfont, a small font we use to print text on the display.
     // It is much smaller that Arduboy2s font so we can fit it better on the screen.
