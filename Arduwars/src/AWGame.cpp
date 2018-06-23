@@ -79,7 +79,7 @@ AWGameState AWGame::showMainMenu(){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
-  constexpr uint8_t yOffset = 24;
+  constexpr uint8_t yOffset = 44;
 
   // Again a Game loop
   while(true){
@@ -92,11 +92,11 @@ AWGameState AWGame::showMainMenu(){
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
-    if (arduboy.justPressed(RIGHT_BUTTON)){
-      cursorIdx++;
-    }
-    if (arduboy.justPressed(LEFT_BUTTON)){
+    if (arduboy.justPressed(UP_BUTTON)){
       cursorIdx--;
+    }
+    if (arduboy.justPressed(DOWN_BUTTON)){
+      cursorIdx++;
     }
     if (arduboy.justPressed(B_BUTTON)){
 
@@ -132,24 +132,20 @@ AWGameState AWGame::showMainMenu(){
     // draw title logo
     sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
 
-    // draw extras
-    sprites.drawSelfMasked(0, 32, menuArtwork, 0);
-    sprites.drawSelfMasked(80,32, menuArtwork, 1);
-
     // Here we draw the menu text
-    // The text is wrapped in a F() function which tells the compiler to
-    // Store the text in PROGMEM instead of RAM which saves us some valuable RAM.
-
     tinyfont.setTextColor(WHITE);
 
-    tinyfont.setCursor(44-cursorIdx*64, yOffset);
+    tinyfont.setCursor(10, yOffset);
     tinyfont.print(AsFlashString(LOCA_SinglePlayer));
 
-    tinyfont.setCursor(36-(cursorIdx-1)*64, yOffset);
+    tinyfont.setCursor(10, yOffset+8);
     tinyfont.print(AsFlashString(LOCA_MultiPlayer));
 
-    tinyfont.setCursor(43-(cursorIdx-2)*64, yOffset);
+    tinyfont.setCursor(10, yOffset+16);
     tinyfont.print(AsFlashString(arduboy.audio.enabled()?LOCA_Sound_on:LOCA_Sound_off));
+
+    tinyfont.setCursor(2, yOffset + 8*cursorIdx);
+    tinyfont.print(AsFlashString(LOCA_Cursor));
 
     tinyfont.setTextColor(BLACK);
 
@@ -166,7 +162,7 @@ unsigned const char * AWGame::showMapSelection(AWGameState aState){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
-  constexpr uint8_t yOffset = 24;
+  constexpr uint8_t yOffset = 44;
 
   // Again a Game loop
   while(true){
@@ -177,11 +173,11 @@ unsigned const char * AWGame::showMapSelection(AWGameState aState){
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
-    if (arduboy.justPressed(RIGHT_BUTTON)){
-      cursorIdx++;
-    }
-    if (arduboy.justPressed(LEFT_BUTTON)){
+    if (arduboy.justPressed(UP_BUTTON)){
       cursorIdx--;
+    }
+    if (arduboy.justPressed(DOWN_BUTTON)){
+      cursorIdx++;
     }
     if (arduboy.justPressed(B_BUTTON)){
 
@@ -225,23 +221,26 @@ unsigned const char * AWGame::showMapSelection(AWGameState aState){
 
     // Draw the menu
     if (aState == AWGameState::playSinglePlayer) {
-      tinyfont.setCursor(44, 48);
+      tinyfont.setCursor(44, 20);
       tinyfont.print(AsFlashString(LOCA_SinglePlayer));
     }
     else if (aState == AWGameState::playMultiPlayer) {
-      tinyfont.setCursor(36, 48);
+      tinyfont.setCursor(36, 20);
       tinyfont.print(AsFlashString(LOCA_MultiPlayer));
     }
 
-    tinyfont.setCursor(31, 56);
+    tinyfont.setCursor(2, yOffset-8);
     tinyfont.print(AsFlashString(LOCA_BackWithA));
 
-    tinyfont.setCursor(44-cursorIdx*64, yOffset);
+    tinyfont.setCursor(10, yOffset);
     tinyfont.print(AsFlashString(LOCA_mapSmall));
-    tinyfont.setCursor(49-(cursorIdx-1)*64, yOffset);
+    tinyfont.setCursor(10, yOffset+8);
     tinyfont.print(AsFlashString(LOCA_mapMedium));
-    tinyfont.setCursor(44-(cursorIdx-2)*64, yOffset);
+    tinyfont.setCursor(10, yOffset+16);
     tinyfont.print(AsFlashString(LOCA_mapBig));
+
+    tinyfont.setCursor(2, yOffset + 8*cursorIdx);
+    tinyfont.print(AsFlashString(LOCA_Cursor));
 
     tinyfont.setTextColor(BLACK);
 
@@ -753,7 +752,7 @@ int8_t AWGame::showOptions(char_P *options[], uint8_t count){
 
     // cursor
     tinyfont.setCursor(frame.x + 4, frame.y + 4 + 7*selectedIndex);
-    tinyfont.print(F(">"));
+    tinyfont.print(AsFlashString(LOCA_Cursor));
 
     arduboy.display();
   }
@@ -876,7 +875,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aP
 
     // draw cursor
     tinyfont.setCursor(6, 14 + menuCursorIDX*textPadding + yOffset);
-    tinyfont.print(F(">"));
+    tinyfont.print(AsFlashString(LOCA_Cursor));
 
     // draw the sprite of the selected unit
 

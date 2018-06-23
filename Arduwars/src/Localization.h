@@ -13,7 +13,8 @@ char_P LOCA_SinglePlayer[] PROGMEM    = "NEW GAME";
 char_P LOCA_MultiPlayer[] PROGMEM     = "MULTIPLAYER";
 char_P LOCA_Sound_on[] PROGMEM        = "SOUND ON";
 char_P LOCA_Sound_off[] PROGMEM       = "SOUND OFF";
-char_P LOCA_BackWithA[] PROGMEM       = "< BACK WITH A";
+char_P LOCA_BackWithA[] PROGMEM       = "BACK WITH A";
+char_P LOCA_Cursor[] PROGMEM          = ">";
 
 // Map selection
 char_P LOCA_mapSmall[] PROGMEM        = "SKIRMISH";
