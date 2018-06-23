@@ -1155,47 +1155,9 @@ void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
     // check if building belongs to player, because now we remove the fog of war calculations
     if (!(building.isOccupied && building.belongsToPlayer == thisPlayer)) continue;
 
-    // Unlike units, buildings can see through obstacles.
-    // calc the viewport
-    Rect buildingViewPort;
-    buildingViewPort.x = building.mapPosX-GameBuilding::buildingViewDistance;
-    buildingViewPort.y = building.mapPosY-GameBuilding::buildingViewDistance;
-    buildingViewPort.width  = GameBuilding::buildingViewDistance*2+1;
-    buildingViewPort.height = GameBuilding::buildingViewDistance*2+1;
+    removeFogAtPositionRadiusAndPlayer({building.mapPosX,building.mapPosY}, GameBuilding::buildingViewDistance, aPlayer, true);
 
-    // iterate the viewport
-    for (int8_t y = buildingViewPort.y; y < (buildingViewPort.height+buildingViewPort.y); y++) {
-      // check for vertical bounds
-      if (y < 0 || y >= mapSize.y) continue;
-
-      for (int8_t x = buildingViewPort.x; x < (buildingViewPort.width+buildingViewPort.x); x++) {
-        // check for horizontal bounds
-        if (x < 0 || x >= mapSize.x) continue;
-
-        // check if inside sightRadius
-        int8_t deltaX = building.mapPosX - x;
-        int8_t deltaY = building.mapPosY - y;
-
-        // because the documentation says no functions inside the abs functions parameter
-        // https://www.arduino.cc/reference/en/language/functions/math/abs/
-        // this should be ok, but we stay on the safe side
-        deltaX = abs(deltaX);
-        deltaY = abs(deltaY);
-
-        // aproxximate the distance
-        // correct would be euclidean distance, but for us this is sufficient.
-        uint8_t distance = deltaX+deltaY;
-
-        // check if tile out of sight.
-        if (distance <= GameBuilding::buildingViewDistance){
-          // get maptile to remove fog
-          mapTileData[x+y*mapSize.x].showsFog = 0;
-        }
-
-      }
-    }
   }
-
 }
 
 void AWGame::clearMap(bool withFog){
@@ -1438,12 +1400,12 @@ void AWGame::printFreeMemory(){
   tinyfont.print(freeMemory());
 }
 
-void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer){
+void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough){
     // This is a lambda function.  Also called anonymous function
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
     // but outside this method it is useless.
-    auto castRayTo = [this, origin, aPlayer](int8_t xEnd, int8_t yEnd) {
+    auto castRayTo = [&](int8_t xEnd, int8_t yEnd) {
 
       // We are doing here a so called Raycast. It's called this way because
       // it mathematecally shots a "ray" from the origin to the destination Like
@@ -1477,13 +1439,13 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
           MapTile tile = mapTileData[x0+y0*mapSize.x];
 
           // update tile data
-          if (forestLimit >= 0)
+          if (forestLimit >= 0 || seeThrough)
             tile.showsFog = 0;
 
           mapTileData[x0+y0*mapSize.x] = tile;
 
           // ignore the origin
-          if (currentDistance != 0){
+          if (currentDistance != 0 && !seeThrough){
 
             // check for forrest
             if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;

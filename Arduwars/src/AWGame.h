@@ -142,7 +142,7 @@ private:
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings, mountains and enemy units
-    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer);
+    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough = false);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();
