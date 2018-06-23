@@ -336,7 +336,7 @@ void AWGame::runMultiPlayerGame(){
     // Calculate Income for every City
     for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
       if(gameBuildings[i].buildingType == static_cast<uint8_t>(MapTileType::City) &&
-      gameBuildings[i].isOccupied == 1 &&
+      gameBuildings[i].isOccupied &&
       gameBuildings[i].belongsToPlayer == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2)){
         currentPlayer->money += AWPlayer::BaseIncome;
       }
@@ -550,7 +550,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
 
               /////
               // check first for Unit
-              if (currentMapTile.hasUnit == 1 &&
+              if (currentMapTile.hasUnit &&
                 currentMapTile.unitBelongsTo == ((currentPlayer == player1) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2) &&
                 currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
                 // get unit
@@ -569,7 +569,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
               // Second check for shop that belongs to user
               else if (mapTileIndexIsShop(currentTileType) &&
               currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer &&
-              currentMapTile.hasUnit == 0) {
+              !currentMapTile.hasUnit) {
 
                 // check if there is space for a new unit
                 if (currentPlayer->units.isFull()) {
@@ -1153,7 +1153,7 @@ void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
     mapTileData[building.mapPosX+building.mapPosY*mapSize.x] = tile;
 
     // check if building belongs to player, because now we remove the fog of war calculations
-    if (!(building.isOccupied == 1 && building.belongsToPlayer == thisPlayer)) continue;
+    if (!(building.isOccupied && building.belongsToPlayer == thisPlayer)) continue;
 
     // Unlike units, buildings can see through obstacles.
     // calc the viewport
@@ -1331,7 +1331,7 @@ void AWGame::drawMapAtPosition(Point pos){
       }
 
       // draw fog
-      if (tile.showsFog == 1 && tile.showSelection == 0) {
+      if (tile.showsFog && !tile.showSelection) {
           sprites.drawErase(drawPos.x, drawPos.y, mapFOG_16x16, 0);
       }
 
@@ -1340,7 +1340,7 @@ void AWGame::drawMapAtPosition(Point pos){
       // Since we have no colors to indicate this, we draw small markers at
       // the top right corner of a building.
       else if (mapTileIndexIsBuilding(tileType) && tileType != MapTileType::P1HQ && tileType != MapTileType::P2HQ) {
-        if (tile.buildingIsOccupied == 1){
+        if (tile.buildingIsOccupied){
           if(tile.buildingBelongsTo == MapTile::BelongsToPlayer){
             sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 0);
           }
@@ -1351,12 +1351,12 @@ void AWGame::drawMapAtPosition(Point pos){
       }
 
       // draw unit selection
-      if (tile.showSelection == 1) {
+      if (tile.showSelection) {
         sprites.drawErase(drawPos.x, drawPos.y, selectionAnimation, (arduboy.frameCount/10)%4);
       }
 
       // Draw Unit
-      if(tile.hasUnit == 1 && tile.showsFog == 0){
+      if(tile.hasUnit && !tile.showsFog){
         // unitSprite
         const unsigned char *unitSprite = nullptr;
 
