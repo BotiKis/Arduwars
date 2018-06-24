@@ -567,6 +567,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
               /////
               // Second check for shop that belongs to user
               else if (mapTileIndexIsShop(currentTileType) &&
+              currentMapTile.buildingIsOccupied &&
               currentMapTile.buildingBelongsTo == MapTile::BelongsToPlayer &&
               !currentMapTile.hasUnit) {
 
@@ -1070,10 +1071,6 @@ void AWGame::loadMap(unsigned const char *mapData){
 
       // add building to our global buildings
       gameBuildings.add(building);
-
-      // udpate tile
-      mapTileData[i].buildingIsOccupied = building.isOccupied;
-      mapTileData[i].buildingBelongsTo = building.belongsToPlayer;
     }
 
   }
@@ -1154,8 +1151,8 @@ void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
     // check if building belongs to player, because now we remove the fog of war calculations
     if (!(building.isOccupied && building.belongsToPlayer == thisPlayer)) continue;
 
+    // remove fog of war
     removeFogAtPositionRadiusAndPlayer({building.mapPosX,building.mapPosY}, GameBuilding::buildingViewDistance, aPlayer, true);
-
   }
 }
 
