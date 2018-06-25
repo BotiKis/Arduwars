@@ -1405,7 +1405,7 @@ void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType uni
     if (distance <= 0) return;
 
     // check player
-    static uint8_t thisPlayer = (attackingPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+    uint8_t thisPlayer = (attackingPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
 
     // check for bounds
     if (position.x < 0 || position.x >= mapSize.x || position.y < 0 || position.y >= mapSize.y ) return;
