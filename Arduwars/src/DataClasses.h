@@ -94,6 +94,34 @@ static inline bool mapTileIsStreet(MapTileType mapTileidx){
 // ====================================================
 // GameUnit
 
+// This is a Loockuptable that tells which unit can attack which unit.
+constexpr uint16_t PROGMEM attackLookupTable[16] =
+{
+  // Infantry
+  0b1111111111000000,  // Soldier
+  0b1111111111000000, // Mech
+  0b1111111111000000, // SpecOps
+
+  // Vehicles
+  0b1111111111000000, // Scout
+  0b0000000000000000, // Assist
+  0b1111111111000000, // Tank
+  0b1111111111000000, // BigTank
+  0b1111111111111111, // Artillery
+  0b0000000000111111, // Rocket
+  0b1111111111111111, // Missiles
+
+  // Planes
+  0b1111111111111111, // Heli
+  0b0000000000111000, // Fighter
+  0b1111111111111111, // Bomber
+
+  // Ships
+  0b0000000000000111, // Cruiser
+  0b1111111111111111, // Battleship
+  0b0000000000000000, // Transportship
+};
+
 // This class defines a Unit like Soldiers or Tanks
 class GameUnit{
 public:
@@ -157,6 +185,9 @@ public:
 
   // Default health for units
   static constexpr uint8_t UnitDefaultHealth  = 10;
+
+  // Static method tells if a unit can attack another one.
+  static bool canUnitAttackUnit(UnitType attacker, UnitType defender);
 };
 
 class UnitTraits{

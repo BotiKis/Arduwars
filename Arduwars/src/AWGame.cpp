@@ -408,7 +408,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
   // This is a lambda function.  Also called anonymous function
   // It only exists inside this one certain method.
   // We do it this way because we will call it on different user interactions.
-  auto resetSelectedUnit = [&]() {
+  auto resetSelectedUnit = [&cursorPosition, &selectedUnit, this, &originalUnitPosition]() {
 
     // cancel unit movement
     unmarkUnitOnMap(selectedUnit);
@@ -417,6 +417,10 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
     selectedUnit->mapPosX = originalUnitPosition.x;
     selectedUnit->mapPosY = originalUnitPosition.y;
     selectedUnit = nullptr;
+
+    // reset camera
+    cursorPosition.x = originalUnitPosition.x*TILE_SIZE-8;
+    cursorPosition.y = originalUnitPosition.y*TILE_SIZE-8;
   };
 
     // Game loop
@@ -429,16 +433,75 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
         arduboy.pollButtons();
 
         if (arduboy.pressed(DOWN_BUTTON)){
-          cursorPosition.y += scrollMultiplier;
+          // state machine
+          switch (turnState) {
+
+            /////
+            // Go through possible attack locations when unit is attacking
+            case AWTurnState::UnitAttack:{
+
+            }
+            break;
+
+            ////
+            // Default state, Normal Scroll map
+            default:{
+              cursorPosition.y += scrollMultiplier;
+            }
+          }
         }
         if (arduboy.pressed(UP_BUTTON)){
-          cursorPosition.y -= scrollMultiplier;
+          // state machine
+          switch (turnState) {
+
+            /////
+            // Go through possible attack locations when unit is attacking
+            case AWTurnState::UnitAttack:{
+
+            }
+            break;
+
+            ////
+            // Default state, Normal Scroll map
+            default:{
+              cursorPosition.y -= scrollMultiplier;
+            }
+          }
         }
         if (arduboy.pressed(LEFT_BUTTON)){
-          cursorPosition.x -= scrollMultiplier;
+          // state machine
+          switch (turnState) {
+
+            /////
+            // Go through possible attack locations when unit is attacking
+            case AWTurnState::UnitAttack:{
+
+            }
+            break;
+
+            ////
+            // Default state, Normal Scroll map
+            default:{
+              cursorPosition.x -= scrollMultiplier;
+            }
+          }
         }
         if (arduboy.pressed(RIGHT_BUTTON)){
-          cursorPosition.x += scrollMultiplier;
+          // state machine
+          switch (turnState) {
+
+            /////
+            // Go through possible attack locations when unit is attacking
+            case AWTurnState::UnitAttack:{
+
+            }
+            break;
+
+            // Default state, Normal Scroll map
+            default:{
+              cursorPosition.x += scrollMultiplier;
+            }
+          }
         }
         if (arduboy.pressed(A_BUTTON)){
           scrollMultiplier = SCROLLSPEED_FAST;
@@ -496,13 +559,6 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
         // Draw HUD
         drawHudForPlayer(currentPlayer);
 
-        // log index
-        // arduboy.fillRect(0, 64-12, 11, 12, WHITE);
-        // tinyfont.setCursor(1, 64 - 11);
-        // tinyfont.print(currentIndex.x);
-        // tinyfont.setCursor(1, 64 - 5);
-        // tinyfont.print(currentIndex.y);
-
         // print free memory
         printFreeMemory();
 
@@ -516,21 +572,33 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
           switch (turnState) {
             default:
             case AWTurnState::Default:{
-
+              // Don't react to A_BUTTON press
             }
             break; // End of default state
 
             case AWTurnState::UnitSelected:{
-              // turnState = AWTurnState::Default;
-              // // cancel unit movement
-              // resetSelectedUnit();
+              // Ignore cancel button press when unit is selected
             }
-            break; // End of nit selected state
+            break; // End of unit selected state
 
-            case AWTurnState::UnitMove:
             case AWTurnState::UnitAttack:{
+
+              // move unit to his original position
+              selectedUnit->mapPosX = originalUnitPosition.x;
+              selectedUnit->mapPosY = originalUnitPosition.y;
+
+              // unmarkl
+
+              // update map
+              updateMapForPlayer(currentPlayer);
+
+              // select unit on map
+              markUnitOnMap(selectedUnit);
+
+              // update state
+              turnState = AWTurnState::UnitSelected;
             }
-            break; // End of move/attack state
+            break; // End attack state
           }
 
         }
@@ -621,6 +689,9 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
                 // show options box
                 char_P* options[3] = {LOCA_move, LOCA_attack, LOCA_cancel};
                 switch (showOptions(options, 3)) {
+
+                  ///////
+                  // MOVE
                   case 0:{
                     // unmark unit
                     unmarkUnitOnMap(selectedUnit);
@@ -638,20 +709,55 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
                     turnState = AWTurnState::Default;
                   }
                   break;
+
+                  /////////
+                  // ATTACK
                   case 1:{
                     // prepare for attack
                     turnState = AWTurnState::UnitAttack;
+
+                    // unmark unit
+                    unmarkUnitOnMap(selectedUnit);
+
+                    // update units position
+                    selectedUnit->mapPosX = currentIndex.x;
+                    selectedUnit->mapPosY = currentIndex.y;
+
+                    // update map
+                    updateMapForPlayer(currentPlayer);
+
+                    // get units traits
+                    UnitType unitType = static_cast<UnitType>(selectedUnit.unitType);
+                    UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+
+                    // mark attack positions
+                    markPositionForAttack({selectedUnit->mapPosX,selectedUnit->mapPosY}, traits.attackRange+1, static_cast<UnitType>(selectedUnit->unitType), currentPlayer);
                   }
+
+                  /////////////////
+                  // CANCEL ACTION
                   break;
                   default:{
                     turnState = AWTurnState::Default;
+
+                    // unmark unit
+                    unmarkUnitOnMap(selectedUnit);
+
+                    // reset unit
                     resetSelectedUnit();
+                    updateMapForPlayer(currentPlayer);
                   }
                 }
                 // End of options
               }
             }
             break; // End of Unit selected state
+
+            // A Unit is attacking
+            case AWTurnState::UnitAttack:{
+
+            }
+            break;
 
           }
         }
@@ -1167,6 +1273,9 @@ void AWGame::clearMap(bool withFog){
         // turn fog on
         tile.showsFog = withFog?1:0;
 
+        // disable selection
+        tile.showSelection = 0;
+
         // remove unit info
         tile.hasUnit = 0;
         tile.unitBelongsTo = 0;
@@ -1226,9 +1335,6 @@ void AWGame::markPositionAsSelectedForUnit(Point position, int8_t distance, Unit
   // shorten the distance for every step.
   distance--;
 
-  // printFreeMemory();
-  // arduboy.display();
-
   // recursively call this method for every orientation
   markPositionAsSelectedForUnit({position.x+1, position.y}, distance, unit);
   markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
@@ -1246,13 +1352,45 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
     mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX].hasUnit = 1;
   }
 
-  // go trough the whole map
+  // go trough the whole map and remove selection
   for (int8_t y = 0; y < mapSize.y; y++) {
     for (int8_t x = 0; x < mapSize.x; x++) {
         // get the tile
         mapTileData[y*mapSize.x+x].showSelection = 0;
     }
   }
+}
+
+void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer *attackingPlayer){
+
+    // check if we are at the end
+    if (distance <= 0) return;
+
+    // check player
+    static uint8_t thisPlayer = (attackingPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+
+    // check for bounds
+    if (position.x < 0 || position.x >= mapSize.x || position.y < 0 || position.y >= mapSize.y ) return;
+
+    // get the tile
+    MapTile tile = mapTileData[position.y*mapSize.x+position.x];
+
+    // chek if there is an enemy unit
+    if (!tile.showsFog && tile.hasUnit && tile.unitBelongsTo != thisPlayer) {
+      tile.showSelection = 1;
+      mapTileData[position.y*mapSize.x+position.x] = tile;
+    }
+
+    // shorten the distance for every step.
+    distance--;
+
+    // recursively call this method for every orientation
+    markPositionForAttack({position.x+1, position.y}, distance, unit, attackingPlayer);
+    markPositionForAttack({position.x, position.y-1}, distance, unit, attackingPlayer);
+    markPositionForAttack({position.x-1, position.y}, distance, unit, attackingPlayer);
+    markPositionForAttack({position.x, position.y+1}, distance, unit, attackingPlayer);
+
+    return;
 }
 
 void AWGame::drawMapAtPosition(Point pos){
@@ -1401,7 +1539,7 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
     // but outside this method it is useless.
-    auto castRayTo = [&](int8_t xEnd, int8_t yEnd) {
+    auto castRayTo = [origin, this, seeThrough, &aPlayer](int8_t xEnd, int8_t yEnd) {
 
       // We are doing here a so called Raycast. It's called this way because
       // it mathematecally shots a "ray" from the origin to the destination Like

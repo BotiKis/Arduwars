@@ -26,6 +26,18 @@ uint8_t GameUnit::costsOfUnit(UnitType unitType){
   return pgm_read_byte(unitPrices + static_cast<uint8_t>(unitType));
 }
 
+bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
+
+  // check for none
+  if (attacker == UnitType::None || defender == UnitType::None) return false;
+
+  // Read from lookuptable
+  uint16_t lutForAttacker = pgm_read_word(attackLookupTable+static_cast<uint16_t>(attacker));
+
+  // get the correct value from lut end return the result
+  return (lutForAttacker & (0b1000000000000000 >> static_cast<uint16_t>(defender)) );
+}
+
 const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   UnitTraits traits;
 

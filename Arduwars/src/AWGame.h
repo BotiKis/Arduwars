@@ -51,7 +51,6 @@ enum class AWGameState : uint8_t {
 enum class AWTurnState : uint8_t {
   Default,
   UnitSelected,
-  UnitMove,
   UnitAttack
 };
 
@@ -139,6 +138,9 @@ private:
 
     // clears the units marker
     void unmarkUnitOnMap(const GameUnit *aUnit);
+
+#warning naming
+    void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer *attackingPlayer);
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings, mountains and enemy units
