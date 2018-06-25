@@ -202,6 +202,32 @@ public:
   static const UnitTraits traitsForUnitType(UnitType unitType);
 };
 
+constexpr UnitTraits PROGMEM allUnitTraits[16] = {
+  // Infantry
+  {1,0,3,1},  // Soldier
+  {3,0,2,1}, // Mech
+  {3,0,5,1}, // SpecOps
+
+  // Vehicles
+  {3,1,6,1}, // Scout
+  {0,1,7,0}, // Assist
+  {5,2,4,1}, // Tank
+  {7,3,2,1}, // BigTank
+  {4,1,3,5}, // Artillery
+  {5,1,3,4}, // Rocket
+  {6,0,4,6}, // Missiles
+
+  // Planes
+  {3,1,5,1}, // Heli
+  {4,2,7,1}, // Fighter
+  {7,3,3,1}, // Bomber
+
+  // Ships
+  {3,1,4,1}, // Cruiser
+  {5,3,5,4}, // Battleship
+  {0,1,7,0}, // Transportship
+};
+
 // ====================================================
 // GameBuilding
 

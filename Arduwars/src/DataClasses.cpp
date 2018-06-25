@@ -1,5 +1,6 @@
 #include "DataClasses.h"
 #include "ShopData.h"
+#include "ProgmemReadAnything.h"
 
 // ====================================================
 // GameUnit
@@ -41,126 +42,7 @@ bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
 const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   UnitTraits traits;
 
-  // Switch through types
-  switch (unitType) {
-    default:
-    // Infantry
-    case UnitType::Soldier:{
-      traits.attackPower  = 1; // MAX 31
-      traits.defense      = 0; // MAX 31
-      traits.moveDistance = 3; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::Mech:{
-      traits.attackPower  = 3; // MAX 31
-      traits.defense      = 0; // MAX 31
-      traits.moveDistance = 2; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::SpecOps:{
-      traits.attackPower  = 3; // MAX 31
-      traits.defense      = 0; // MAX 31
-      traits.moveDistance = 5; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    // Vehicles
-    case UnitType::Scout:{
-      traits.attackPower  = 3; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 6; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::Assist:{
-      traits.attackPower  = 0; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 7; // MAX 7
-      traits.attackRange  = 0; // MAX 7
-      break;
-    };
-    case UnitType::Tank:{
-      traits.attackPower  = 5; // MAX 31
-      traits.defense      = 2; // MAX 31
-      traits.moveDistance = 4; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::BigTank:{
-      traits.attackPower  = 7; // MAX 31
-      traits.defense      = 3; // MAX 31
-      traits.moveDistance = 2; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::Artillery:{
-      traits.attackPower  = 4; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 3; // MAX 7
-      traits.attackRange  = 5; // MAX 7
-      break;
-    };
-    case UnitType::Rocket:{
-      traits.attackPower  = 5; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 3; // MAX 7
-      traits.attackRange  = 4; // MAX 7
-      break;
-    };
-    case UnitType::Missiles:{
-      traits.attackPower  = 6; // MAX 7
-      traits.defense      = 0; // MAX 3
-      traits.moveDistance = 4; // MAX 7
-      traits.attackRange  = 6; // MAX 7
-      break;
-    };
-    // Planes
-    case UnitType::Heli:{
-      traits.attackPower  = 3; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 5; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::Fighter:{
-      traits.attackPower  = 4; // MAX 31
-      traits.defense      = 2; // MAX 3
-      traits.moveDistance = 7; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::Bomber:{
-      traits.attackPower  = 7; // MAX 31
-      traits.defense      = 3; // MAX 31
-      traits.moveDistance = 3; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    // Ships
-    case UnitType::Cruiser:{
-      traits.attackPower  = 3; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 4; // MAX 7
-      traits.attackRange  = 1; // MAX 7
-      break;
-    };
-    case UnitType::Battleship:{
-      traits.attackPower  = 5; // MAX 31
-      traits.defense      = 3; // MAX 31
-      traits.moveDistance = 5; // MAX 7
-      traits.attackRange  = 4; // MAX 7
-      break;
-    };
-    case UnitType::Transportship:{
-      traits.attackPower  = 0; // MAX 31
-      traits.defense      = 1; // MAX 31
-      traits.moveDistance = 7; // MAX 7
-      traits.attackRange  = 0; // MAX 7
-      break;
-    };
-  }
+  pgm_readAnything(&allUnitTraits[static_cast<uint8_t>(unitType)], traits);
 
   return traits;
 }
