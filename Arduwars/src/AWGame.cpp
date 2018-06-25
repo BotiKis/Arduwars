@@ -727,7 +727,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
                     updateMapForPlayer(currentPlayer);
 
                     // get units traits
-                    UnitType unitType = static_cast<UnitType>(selectedUnit.unitType);
+                    UnitType unitType = static_cast<UnitType>(selectedUnit->unitType);
                     UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
 
                     // mark attack positions
