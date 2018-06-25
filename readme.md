@@ -1,4 +1,14 @@
 ![Logo-artwork](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/arduwars-logo.png "Arduwars Logo")
+
+### Game Features
+* Turn Based Strategy Game for the Arduboy
+* Single player against AI
+* Multiplayer with passing the device
+* 3 Maps with land, air and sea battles
+* Custom maps with a [map editor](https://www.mapeditor.org/)
+
+---
+
 ### Story
 There has been peace for many years in our lands until the evil forces of *Nextgenia* have invaded our country. Equipped with never before seen weapons their Army fearlessly takes over our lands.
 
@@ -17,6 +27,8 @@ Every turn, the Player commands his *Units* to capture *Buildings* or fight enem
 The Goal is to either capture the *Nextgenians* Headquarters or destroy all their units.
 
 ![Mission-Report-2](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-02-16.12.1991.png "Mission Report 2")
+
+### How to play
 
 #### Controls
 ![controls](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/readme-controls.png "Controls")
