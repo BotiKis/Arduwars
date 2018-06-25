@@ -33,6 +33,8 @@ char_P LOCA_Unit_limit_reached[] PROGMEM  = "UNIT LIMIT REACHED";
 char_P LOCA_attack[] PROGMEM              = "ATTACK";
 char_P LOCA_move[] PROGMEM                = "MOVE";
 char_P LOCA_cancel[] PROGMEM              = "CANCEL";
+char_P LOCA_load[] PROGMEM                = "LOAD";
+char_P LOCA_loadout[] PROGMEM             = "LOAD OUT";
 
 // Unit Traits
 char_P LOCA_Trait_attack[] PROGMEM   = "ATK";
