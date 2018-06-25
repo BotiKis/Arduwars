@@ -419,8 +419,9 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
     selectedUnit = nullptr;
 
     // reset camera
-    cursorPosition.x = originalUnitPosition.x*TILE_SIZE-8;
-    cursorPosition.y = originalUnitPosition.y*TILE_SIZE-8;
+    cursorPosition = originalUnitPosition*TILE_SIZE;
+    cursorPosition.x -= 8;
+    cursorPosition.y -= 8;
   };
 
     // Game loop
@@ -439,7 +440,14 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
             /////
             // Go through possible attack locations when unit is attacking
             case AWTurnState::UnitAttack:{
-
+              // get next marked Pos if it exists
+              Point nextPos = nextMarkedMapPosition(currentIndex, 1);
+              if (nextPos.x > 0) { // This check if enough to verify a correct position
+                // move camera to tile
+                cursorPosition = nextPos*TILE_SIZE;
+                cursorPosition.x -= 8;
+                cursorPosition.y -= 8;
+              }
             }
             break;
 
@@ -457,7 +465,14 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
             /////
             // Go through possible attack locations when unit is attacking
             case AWTurnState::UnitAttack:{
-
+              // get next marked Pos if it exists
+              Point nextPos = nextMarkedMapPosition(currentIndex, -1);
+              if (nextPos.x > 0) { // This check if enough to verify a correct position
+                // move camera to tile
+                cursorPosition = nextPos*TILE_SIZE;
+                cursorPosition.x -= 8;
+                cursorPosition.y -= 8;
+              }
             }
             break;
 
@@ -475,6 +490,14 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
             /////
             // Go through possible attack locations when unit is attacking
             case AWTurnState::UnitAttack:{
+              // get next marked Pos if it exists
+              Point nextPos = nextMarkedMapPosition(currentIndex, -1);
+              if (nextPos.x > 0) { // This check if enough to verify a correct position
+                // move camera to tile
+                cursorPosition = nextPos*TILE_SIZE;
+                cursorPosition.x -= 8;
+                cursorPosition.y -= 8;
+              }
 
             }
             break;
@@ -493,7 +516,14 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
             /////
             // Go through possible attack locations when unit is attacking
             case AWTurnState::UnitAttack:{
-
+              // get next marked Pos if it exists
+              Point nextPos = nextMarkedMapPosition(currentIndex, 1);
+              if (nextPos.x > 0) { // This check if enough to verify a correct position
+                // move camera to tile
+                cursorPosition = nextPos*TILE_SIZE;
+                cursorPosition.x -= 8;
+                cursorPosition.y -= 8;
+              }
             }
             break;
 
@@ -562,6 +592,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
         // print free memory
         printFreeMemory();
 
+        // Draw everything
         arduboy.display();
 
         //// Check for single button presses
@@ -586,8 +617,6 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
               // move unit to his original position
               selectedUnit->mapPosX = originalUnitPosition.x;
               selectedUnit->mapPosY = originalUnitPosition.y;
-
-              // unmarkl
 
               // update map
               updateMapForPlayer(currentPlayer);
@@ -732,6 +761,15 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
 
                     // mark attack positions
                     markPositionForAttack({selectedUnit->mapPosX,selectedUnit->mapPosY}, traits.attackRange+1, static_cast<UnitType>(selectedUnit->unitType), currentPlayer);
+
+                    // get first marked position if it exists
+                    Point nextPos = nextMarkedMapPosition(currentIndex);
+                    if (nextPos.x > 0) { // This check if enough to verify a correct position
+                      // move camera to tile
+                      cursorPosition = nextPos*TILE_SIZE;
+                      cursorPosition.x -= 8;
+                      cursorPosition.y -= 8;
+                    }
                   }
 
                   /////////////////
@@ -1393,6 +1431,23 @@ void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType uni
     return;
 }
 
+
+Point AWGame::nextMarkedMapPosition(Point currentPosition, int8_t direction){
+
+    // iterate through the map
+    for (int8_t i = (currentPosition.x+currentPosition.y*mapSize.x)+direction; i < (mapSize.x*mapSize.y) && i >= 0; i += direction) {
+
+      // get maptile
+      const MapTile tile = mapTileData[i];
+
+      // return coordinates if found
+      if (tile.showSelection)
+        return {i%mapSize.x,i/mapSize.x};
+    }
+
+    return {-1,-1};
+}
+
 void AWGame::drawMapAtPosition(Point pos){
 
   // In this variable we store the
@@ -1486,21 +1541,21 @@ void AWGame::drawMapAtPosition(Point pos){
 void AWGame::makeScreenTransition(){
   uint8_t *dbuff = arduboy.getBuffer();
 
-  for (uint8_t i = 0; i < 128; i++) {
-      for (uint8_t x = 0; x < 128; x++) {
+  for (uint8_t i = 0; i < arduboy.width(); i++) {
+      for (uint8_t x = 0; x < arduboy.width(); x++) {
         for (uint8_t y = 0; y < 8; y++) {
           if (y%2==0) {
-            if (x == 127)
-              dbuff[x+y*128] = 0;
+            if (x == arduboy.width()-1)
+              dbuff[x+y*arduboy.width()] = 0;
             else
-              dbuff[x+y*128] = dbuff[x+y*128+1];
+              dbuff[x+y*arduboy.width()] = dbuff[x+y*arduboy.width()+1];
           }
           else{
-            uint8_t helperX = 127-x;
+            uint8_t helperX = arduboy.width()-1-x;
             if (helperX == 0)
-              dbuff[helperX+y*128] = 0;
+              dbuff[helperX+y*arduboy.width()] = 0;
             else
-              dbuff[helperX+y*128] = dbuff[helperX+y*128-1];
+              dbuff[helperX+y*arduboy.width()] = dbuff[helperX+y*arduboy.width()-1];
           }
         }
       }

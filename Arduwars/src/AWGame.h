@@ -139,8 +139,15 @@ private:
     // clears the units marker
     void unmarkUnitOnMap(const GameUnit *aUnit);
 
-#warning naming
+    // This method marks the maptiles, where an enemy unit is which can be attacked.
     void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer *attackingPlayer);
+
+    // returns the position of the next marked tile.
+    // Arguments:
+    // optional currentPosition... the point from where it searches. Default is 0,0.
+    // optional direction... in which direction it will be searched. Default is 1. 1 goes forward, -1 backward
+    // Returns {-1,-1} if no marker has been found.
+    Point nextMarkedMapPosition(Point currentPosition = {0,0}, int8_t direction = 1);
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings, mountains and enemy units
