@@ -34,7 +34,8 @@ char_P LOCA_attack[] PROGMEM              = "ATTACK";
 char_P LOCA_move[] PROGMEM                = "MOVE";
 char_P LOCA_cancel[] PROGMEM              = "CANCEL";
 char_P LOCA_load[] PROGMEM                = "LOAD";
-char_P LOCA_loadout[] PROGMEM             = "LOAD OUT";
+char_P LOCA_loadout[] PROGMEM             = "L. OUT";
+char_P LOCA_capture[] PROGMEM             = "CAP";
 
 // Unit Traits
 char_P LOCA_Trait_attack[] PROGMEM   = "ATK";
