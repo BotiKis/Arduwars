@@ -164,9 +164,6 @@ private:
     // returns nullptr if there is no building at the Location
     const GameBuilding * getBuildingAtCoordinate(Point coordinate);
 
-    // print free memory // debug Only
-    void printFreeMemory();
-
     // ======================
     // Data
     // This is our instance of the Arduboy2Base class. It is the foundation for

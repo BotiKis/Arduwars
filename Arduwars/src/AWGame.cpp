@@ -11,8 +11,6 @@
 #include "PointMath.h"
 #include "UnitSprites.h"
 
-#include <MemoryFree.h>
-
 // This method starts the actual game and is called in the Arduwars.ino file.
 void AWGame::run(void){
 
@@ -21,7 +19,7 @@ void AWGame::run(void){
   arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
   arduboy.audio.begin();
-  
+
   // Set up text
   tinyfont.setTextColor(BLACK);
 
@@ -571,9 +569,6 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
 
         // Draw HUD
         drawHudForPlayer(currentPlayer);
-
-        // print free memory
-        printFreeMemory();
 
         // Draw everything
         arduboy.display();
@@ -1560,19 +1555,6 @@ const GameBuilding * AWGame::getBuildingAtCoordinate(Point coordinate){
   return nullptr;
 }
 
-void AWGame::printFreeMemory(){
-
-  #warning Remove Memory free when done.
-  arduboy.fillRect(0, arduboy.height()-7, arduboy.width(), 6, BLACK);
-  arduboy.fillRect(0, arduboy.height()-6, arduboy.width(), 6, WHITE);
-
-  tinyfont.setCursor(1, arduboy.height()-5);
-  tinyfont.print(F("MEM FREE:"));
-  tinyfont.setCursor(48, arduboy.height()-5);
-  tinyfont.print(freeMemory());
-}
-
-
 void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough){
 
 
@@ -1664,4 +1646,3 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t
     if (e2 <= dx) { err += dx; y0 += sy; }
   }
 }
-
