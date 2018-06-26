@@ -69,7 +69,7 @@ class AWGame{
     // This is the constructor.
     // Like setup() it is called once when a new instance of AWGame was created.
     // Start looking at this method in the AWGame.cpp file when done reading this file.
-    AWGame();
+    AWGame(void) = default;
 
     // ======================
     // Methods

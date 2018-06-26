@@ -13,21 +13,6 @@
 
 #include <MemoryFree.h>
 
-// -------------------------------------------------------
-// Constructor sets up basic stuff for the game
-AWGame::AWGame(){
-
-  // Set up text
-  tinyfont.setTextColor(BLACK);
-
-  // Initialize players
-  player1 = new AWPlayer();
-  player2 = new AWPlayer();
-
-  // Now we set our Gamestate to showMenu since we want to start there.
-  gameState = AWGameState::showMainMenu;
-}
-
 // This method starts the actual game and is called in the Arduwars.ino file.
 void AWGame::run(void){
 
@@ -36,6 +21,17 @@ void AWGame::run(void){
   arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
   arduboy.audio.begin();
+  
+  // Initialize players
+  player1 = new AWPlayer();
+  player2 = new AWPlayer();
+
+  // Set up text
+  tinyfont.setTextColor(BLACK);
+
+  // Now we set our Gamestate to showMenu since we want to start there.
+  gameState = AWGameState::showMainMenu;
+
 
   // Game loop
   // The gameloop works like the loop() in the Arduwars.ino file.
