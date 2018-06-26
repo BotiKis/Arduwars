@@ -17,12 +17,6 @@
 // Constructor sets up basic stuff for the game
 AWGame::AWGame(){
 
-  // First we need to initialize our Arduboy instance by calling the usual methods.
-  arduboy.begin();
-  arduboy.setFrameRate(60);
-  arduboy.initRandomSeed();
-  arduboy.audio.on();
-
   // Set up text
   tinyfont.setTextColor(BLACK);
 
@@ -36,6 +30,12 @@ AWGame::AWGame(){
 
 // This method starts the actual game and is called in the Arduwars.ino file.
 void AWGame::run(void){
+
+  // First we need to initialize our Arduboy instance by calling the usual methods.
+  arduboy.begin();
+  arduboy.setFrameRate(60);
+  arduboy.initRandomSeed();
+  arduboy.audio.begin();
 
   // Game loop
   // The gameloop works like the loop() in the Arduwars.ino file.
