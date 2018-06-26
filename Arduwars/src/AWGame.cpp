@@ -84,11 +84,18 @@ AWGameState AWGame::showMainMenu(){
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
+    // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
     if (arduboy.justPressed(UP_BUTTON)){
-      cursorIdx--;
+      if(cursorIdx > 0)
+        cursorIdx--;
+      else
+        cursorIdx = 2;
     }
     if (arduboy.justPressed(DOWN_BUTTON)){
-      cursorIdx++;
+      if(cursorIdx < 2)
+        cursorIdx++;
+      else
+        cursorIdx = 0;
     }
     if (arduboy.justPressed(B_BUTTON)){
 
@@ -108,10 +115,6 @@ AWGameState AWGame::showMainMenu(){
         default: return AWGameState::showMainMenu; // this default is not needed but it's safe to do this.
       }
     }
-
-    // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
-    cursorIdx = (cursorIdx<0)?2:cursorIdx;
-    cursorIdx = cursorIdx%3;
 
     // Now we start drawing the menu to the screen
 
