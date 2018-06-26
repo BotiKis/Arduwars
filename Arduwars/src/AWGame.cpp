@@ -1644,9 +1644,6 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t
       // ignore the origin
       if (currentDistance != 0 && !seeThrough){
 
-        // check for forrest
-        if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
-
         // check if there is an Obstacle
         if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
             break;
@@ -1654,6 +1651,10 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t
         // check if there is an enemy unit because we can't see through it
         if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
           break;
+
+        // check for forest
+        if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
+          forestLimit--;
         }
       }
     }
