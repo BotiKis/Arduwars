@@ -121,9 +121,6 @@ AWGameState AWGame::showMainMenu(){
     // This clears the dispaly and makes everything black.
     arduboy.clear();
 
-    // fill the screen black
-    arduboy.fillScreen(BLACK);
-
     // draw title logo
     sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
 
@@ -205,9 +202,6 @@ unsigned const char * AWGame::showMapSelection(AWGameState aState){
     // This clears the dispaly and makes everything black.
     arduboy.clear();
 
-    // fill the screen black
-    arduboy.fillScreen(BLACK);
-
     // draw title logo
     sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
 
@@ -277,8 +271,6 @@ void AWGame::runSinglePlayerGame(){
     if (arduboy.justPressed(A_BUTTON)) {
       return;
     }
-
-    arduboy.clear();
 
     // fill the screen white
     arduboy.fillScreen(WHITE);
