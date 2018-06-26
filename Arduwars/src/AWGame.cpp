@@ -1581,7 +1581,7 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
     // It only exists inside this one certain method.
     // We do it this way because we will call it 4 times inside this method
     // but outside this method it is useless.
-    auto castRayTo = [origin, this, seeThrough, &aPlayer](int8_t xEnd, int8_t yEnd) {
+    auto castRayTo = [origin, this, seeThrough, aPlayer](int8_t xEnd, int8_t yEnd) {
 
       // We are doing here a so called Raycast. It's called this way because
       // it mathematecally shots a "ray" from the origin to the destination Like
