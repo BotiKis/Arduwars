@@ -22,10 +22,6 @@ void AWGame::run(void){
   arduboy.initRandomSeed();
   arduboy.audio.begin();
   
-  // Initialize players
-  player1 = new AWPlayer();
-  player2 = new AWPlayer();
-
   // Set up text
   tinyfont.setTextColor(BLACK);
 
