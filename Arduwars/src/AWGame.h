@@ -153,6 +153,9 @@ private:
     // e.g. Not through buildings, mountains and enemy units
     void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough = false);
 
+    // Helper function for removeFogAtPositionRadiusAndPlayer
+    void castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t xEnd, int8_t yEnd);
+
     // neat effect directly on the display buffer
     void makeScreenTransition();
 

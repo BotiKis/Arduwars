@@ -1576,76 +1576,9 @@ void AWGame::printFreeMemory(){
   tinyfont.print(freeMemory());
 }
 
+
 void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough){
-    // This is a lambda function.  Also called anonymous function
-    // It only exists inside this one certain method.
-    // We do it this way because we will call it 4 times inside this method
-    // but outside this method it is useless.
-    auto castRayTo = [origin, this, seeThrough, aPlayer](int8_t xEnd, int8_t yEnd) {
 
-      // We are doing here a so called Raycast. It's called this way because
-      // it mathematecally shots a "ray" from the origin to the destination Like
-      // a light ray. If it hits an obstacle it stops so you can't see through.
-      // it also stops if it reaches the sight radius.
-      //
-      // The algorithm which we use to cast the ray is called
-      // Bresenham's algorithm and is often used in computer graphics to draw
-      // lines and circles. Even the Arduboy library uses it for this purpose.
-
-      int8_t x0 = origin.x;
-      int8_t y0 = origin.y;
-      int8_t dx =  abs(xEnd-x0), sx = x0<xEnd ? 1 : -1;
-      int8_t dy = -abs(yEnd-y0), sy = y0<yEnd ? 1 : -1;
-      int8_t err = dx+dy, e2;
-      int8_t forestLimit = 2; // Unit can see through 2 forests
-
-      // half the distance, because the endppoint which comes from the circle-
-      // algorithm is in a doubled distance to avoid glitches.
-      int8_t r = (dx-dy)/2; // There might be rounding issues but for simplicity we don't care.
-
-      while(true){
-
-        // calc current disctance
-        uint8_t currentDistance = abs(origin.x-x0) + abs(origin.y-y0);
-
-        // check for bounds and remove fog
-        if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && currentDistance <= r) {
-
-          // get the corresponding map tile
-          MapTile tile = mapTileData[x0+y0*mapSize.x];
-
-          // update tile data
-          if (forestLimit >= 0 || seeThrough)
-            tile.showsFog = 0;
-
-          mapTileData[x0+y0*mapSize.x] = tile;
-
-          // ignore the origin
-          if (currentDistance != 0 && !seeThrough){
-
-            // check for forrest
-            if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
-
-            // check if there is an Obstacle
-            if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
-                break;
-
-            // check if there is an enemy unit because we can't see through it
-            if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
-              break;
-            }
-          }
-        }
-
-        // check for end
-        if ( x0==xEnd && y0==yEnd) break;
-
-        // update algorithm
-        e2 = 2*err;
-        if (e2 >= dy) { err += dy; x0 += sx; }
-        if (e2 <= dx) { err += dx; y0 += sy; }
-      }
-    };
 
     // For the raycast to work we need to calculate every point which should
     // be tested around the perimeter of the unit. For that we use Bresenham's
@@ -1657,10 +1590,10 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
     do {
 
       // do a raycast in each quadrant of the circle.
-      castRayTo(origin.x-x, origin.y+y); // 1st quadrant
-      castRayTo(origin.x-y, origin.y-x); // 2nd quadrant
-      castRayTo(origin.x+x, origin.y-y); // 3rd quadrant
-      castRayTo(origin.x+y, origin.y+x); // 4th quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x-x, origin.y+y); // 1st quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x-y, origin.y-x); // 2nd quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x+x, origin.y-y); // 3rd quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x+y, origin.y+x); // 4th quadrant
 
       // continue with bresenham
       r = err;
@@ -1668,3 +1601,70 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
       if (r > x || err > y) err += ++x*2+1;
     } while (x < 0);
 }
+
+void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t xEnd, int8_t yEnd) {
+
+  // We are doing here a so called Raycast. It's called this way because
+  // it mathematecally shots a "ray" from the origin to the destination Like
+  // a light ray. If it hits an obstacle it stops so you can't see through.
+  // it also stops if it reaches the sight radius.
+  //
+  // The algorithm which we use to cast the ray is called
+  // Bresenham's algorithm and is often used in computer graphics to draw
+  // lines and circles. Even the Arduboy library uses it for this purpose.
+
+  int8_t x0 = origin.x;
+  int8_t y0 = origin.y;
+  int8_t dx =  abs(xEnd-x0), sx = x0<xEnd ? 1 : -1;
+  int8_t dy = -abs(yEnd-y0), sy = y0<yEnd ? 1 : -1;
+  int8_t err = dx+dy, e2;
+  int8_t forestLimit = 2; // Unit can see through 2 forests
+
+  // half the distance, because the endppoint which comes from the circle-
+  // algorithm is in a doubled distance to avoid glitches.
+  int8_t r = (dx-dy)/2; // There might be rounding issues but for simplicity we don't care.
+
+  while(true){
+
+    // calc current disctance
+    uint8_t currentDistance = abs(origin.x-x0) + abs(origin.y-y0);
+
+    // check for bounds and remove fog
+    if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && currentDistance <= r) {
+
+      // get the corresponding map tile
+      MapTile tile = mapTileData[x0+y0*mapSize.x];
+
+      // update tile data
+      if (forestLimit >= 0 || seeThrough)
+        tile.showsFog = 0;
+
+      mapTileData[x0+y0*mapSize.x] = tile;
+
+      // ignore the origin
+      if (currentDistance != 0 && !seeThrough){
+
+        // check for forrest
+        if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest) forestLimit--;
+
+        // check if there is an Obstacle
+        if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
+            break;
+
+        // check if there is an enemy unit because we can't see through it
+        if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
+          break;
+        }
+      }
+    }
+
+    // check for end
+    if ( x0==xEnd && y0==yEnd) break;
+
+    // update algorithm
+    e2 = 2*err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+
