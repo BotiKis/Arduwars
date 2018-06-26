@@ -187,8 +187,10 @@ private:
 
     // In these two variables we store the players.
     // There are always two players where the first one is the actual player and the second the AI.
-    AWPlayer *player1;
-    AWPlayer *player2;
+    AWPlayer player1Object;
+    AWPlayer player2Object;
+    AWPlayer *player1 = &player1Object;
+    AWPlayer *player2 = &player2Object;
 
     // This attribute stores the days.
     // A day passes if both players has ended their rounds.
