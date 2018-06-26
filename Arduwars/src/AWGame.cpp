@@ -13,29 +13,21 @@
 
 #include <MemoryFree.h>
 
-// -------------------------------------------------------
-// Constructor sets up basic stuff for the game
-AWGame::AWGame(){
+// This method starts the actual game and is called in the Arduwars.ino file.
+void AWGame::run(void){
 
   // First we need to initialize our Arduboy instance by calling the usual methods.
   arduboy.begin();
   arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
-  arduboy.audio.on();
-
-  // Set up text
-  tinyfont.setTextColor(BLACK);
-
+  arduboy.audio.begin();
+  
   // Initialize players
   player1 = new AWPlayer();
   player2 = new AWPlayer();
 
-  // Now we set our Gamestate to showMenu since we want to start there.
-  gameState = AWGameState::showMainMenu;
-}
-
-// This method starts the actual game and is called in the Arduwars.ino file.
-void AWGame::run(void){
+  // Set up text
+  tinyfont.setTextColor(BLACK);
 
   // Game loop
   // The gameloop works like the loop() in the Arduwars.ino file.
@@ -92,11 +84,18 @@ AWGameState AWGame::showMainMenu(){
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
+    // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
     if (arduboy.justPressed(UP_BUTTON)){
-      cursorIdx--;
+      if(cursorIdx > 0)
+        cursorIdx--;
+      else
+        cursorIdx = 2;
     }
     if (arduboy.justPressed(DOWN_BUTTON)){
-      cursorIdx++;
+      if(cursorIdx < 2)
+        cursorIdx++;
+      else
+        cursorIdx = 0;
     }
     if (arduboy.justPressed(B_BUTTON)){
 
@@ -116,10 +115,6 @@ AWGameState AWGame::showMainMenu(){
         default: return AWGameState::showMainMenu; // this default is not needed but it's safe to do this.
       }
     }
-
-    // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
-    cursorIdx = (cursorIdx<0)?2:cursorIdx;
-    cursorIdx = cursorIdx%3;
 
     // Now we start drawing the menu to the screen
 

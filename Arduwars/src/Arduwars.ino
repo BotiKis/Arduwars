@@ -4,7 +4,7 @@
 // It's not an actual variable to the main game but a pointer to it.
 // This means, we don't yet have a main game but we will store it in
 // this pointer.
-AWGame *game;
+AWGame game = AWGame();
 
 // ---------------------------------------------------
 // Setup function
@@ -22,8 +22,6 @@ void setup() {
   // But there is o need to delete this since it only needs to be deleted when
   // the game is turned off and that is only when the Arduboy is turned off.
   // And when the Arduboy is turned off, it does not need to free any memory. :D
-
-  game = new AWGame();
 }
 
 // ---------------------------------------------------
@@ -39,7 +37,7 @@ void loop() {
   // Since we have a pointer we can not simply call any method with the '.'
   // operator and we need to use the '->' operator. It is called "pointer-operator".
 
-  game->run();
+  game.run();
 
   // when we call run() it will execute the code there until we return from that function.
   // This loop()-function won't continue until then but that is no problem.

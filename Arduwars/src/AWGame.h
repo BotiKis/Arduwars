@@ -69,7 +69,7 @@ class AWGame{
     // This is the constructor.
     // Like setup() it is called once when a new instance of AWGame was created.
     // Start looking at this method in the AWGame.cpp file when done reading this file.
-    AWGame();
+    AWGame(void) = default;
 
     // ======================
     // Methods
@@ -182,7 +182,8 @@ private:
 
     // Here we see our enum again.
     // We create a variable which will store the current gamestate.
-    AWGameState gameState;
+	// We also give it a default value using a C++11 technique.
+    AWGameState gameState = AWGameState::showMainMenu;
 
     // In these two variables we store the players.
     // There are always two players where the first one is the actual player and the second the AI.
