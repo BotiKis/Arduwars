@@ -192,10 +192,10 @@ public:
 
 class UnitTraits{
 public:
-  uint8_t attackPower :5; // Unit have max 31 attackPower.
-  uint8_t defense     :5; // Unit have max 31 defense.
   uint8_t moveDistance:3; // Unit can move in a radius of max 7 tiles.
+  uint8_t attackPower :5; // Unit have max 31 attackPower.
   uint8_t attackRange :3; // Unit can attack in a radius of max 7 tiles.
+  uint8_t defense     :5; // Unit have max 31 defense.
   // 2 Bytes in total.
 
   // Function returns the traits for a certain unit type
@@ -204,28 +204,28 @@ public:
 
 constexpr UnitTraits PROGMEM allUnitTraits[16] = {
   // Infantry
-  {1,0,3,1},  // Soldier
-  {3,0,2,1}, // Mech
-  {3,0,5,1}, // SpecOps
+  {3,1,1,0},  // Soldier
+  {2,3,1,0}, // Mech
+  {5,3,1,0}, // SpecOps
 
   // Vehicles
-  {3,1,6,1}, // Scout
-  {0,1,7,0}, // Assist
-  {5,2,4,1}, // Tank
-  {7,3,2,1}, // BigTank
-  {4,1,3,5}, // Artillery
-  {5,1,3,4}, // Rocket
-  {6,0,4,6}, // Missiles
+  {6,3,1,1}, // Scout
+  {7,0,0,1}, // Assist
+  {4,5,1,2}, // Tank
+  {2,7,1,3}, // BigTank
+  {3,4,5,1}, // Artillery
+  {3,5,4,1}, // Rocket
+  {4,6,6,0}, // Missiles
 
   // Planes
-  {3,1,5,1}, // Heli
-  {4,2,7,1}, // Fighter
-  {7,3,3,1}, // Bomber
+  {5,3,1,1}, // Heli
+  {7,4,1,2}, // Fighter
+  {3,7,1,3}, // Bomber
 
   // Ships
-  {3,1,4,1}, // Cruiser
-  {5,3,5,4}, // Battleship
-  {0,1,7,0}, // Transportship
+  {4,3,1,1}, // Cruiser
+  {5,5,4,3}, // Battleship
+  {7,0,0,1}, // Transportship
 };
 
 // ====================================================
