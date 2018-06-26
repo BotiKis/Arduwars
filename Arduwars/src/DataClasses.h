@@ -334,7 +334,7 @@ public:
 
 private:
   // returns a number from 0-7 at the position of the type in the LUT
-  static uint8_t lutIndexForMaptile(MapTileType mapTileType);
+  static uint8_t lutMaskForMaptile(MapTileType mapTileType);
 };
 
 #endif
