@@ -135,26 +135,26 @@ bool MapTile::canBeAccessedByUnit(UnitType unitType){
   else if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::Transportship))
     lut = 3;
   else return false; // unit is invalid
-  lut = pgm_read_byte(moveLookupTable+lut); // reuse the variable
+  const uint8_t movement = pgm_read_byte(moveLookupTable+lut); // reuse the variable
 
   // get the correct value from lut end return the result
   MapTileType type = static_cast<MapTileType>(this->tileID);
-  return (lut >> MapTile::lutIndexForMaptile(type)) & 0x01;
+  return (movement & MapTile::lutMaskForMaptile(type)) != 0;
 }
 
 // Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
-uint8_t MapTile::lutIndexForMaptile(MapTileType mapTileType){
+uint8_t MapTile::lutMaskForMaptile(MapTileType mapTileType){
   switch (mapTileType) {
 
     // Water fields
     case MapTileType::Water:
     case MapTileType::Coast1:
     case MapTileType::Coast12:
-    default: return 6;
+    default: return (1 << 6);
 
     // Ground
     case MapTileType::Plains:
-    case MapTileType::Grass: return 7;
+    case MapTileType::Grass: return (1 << 7);
 
     // Street
     case MapTileType::Street1:
@@ -162,19 +162,19 @@ uint8_t MapTile::lutIndexForMaptile(MapTileType mapTileType){
     case MapTileType::Street3:
     case MapTileType::Street4:
     case MapTileType::Street5:
-    case MapTileType::Street6: return 5;
+    case MapTileType::Street6: return (1 << 5);
 
     // Hill
-    case MapTileType::Hill: return 4;
+    case MapTileType::Hill: return (1 << 4);
 
     // Mountain
-    case MapTileType::Mountain: return 3;
+    case MapTileType::Mountain: return (1 << 3);
 
     // Forest
-    case MapTileType::Forest: return 2;
+    case MapTileType::Forest: return (1 << 2);
 
     // Reef
-    case MapTileType::Reef: return 1;
+    case MapTileType::Reef: return (1 << 1);
 
     // Building
     case MapTileType::City:
@@ -183,6 +183,6 @@ uint8_t MapTile::lutIndexForMaptile(MapTileType mapTileType){
     case MapTileType::Shipyard:
     case MapTileType::ScienceLab:
     case MapTileType::P1HQ:
-    case MapTileType::P2HQ: return 0;
+    case MapTileType::P2HQ: return (1 << 0);
   }
 }
