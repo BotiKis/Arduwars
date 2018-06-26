@@ -80,6 +80,11 @@ GameBuilding::GameBuilding(MapTileType type){
 // ====================================================
 // Player
 
+AWPlayer::AWPlayer(uint8_t aid){
+  this->playerID = aid;
+  this->reset();
+}
+
 void AWPlayer::reset(){
   // default 30 money
   money = 30;
@@ -101,6 +106,10 @@ GameUnit * AWPlayer::getUnitForMapCoordinates(Point coordinates){
   }
 
   return nullptr;
+}
+
+bool AWPlayer::operator==(const AWPlayer& other) const{
+    return this->playerID == other.playerID;
 }
 
 // ====================================================
