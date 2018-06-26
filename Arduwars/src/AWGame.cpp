@@ -29,10 +29,6 @@ void AWGame::run(void){
   // Set up text
   tinyfont.setTextColor(BLACK);
 
-  // Now we set our Gamestate to showMenu since we want to start there.
-  gameState = AWGameState::showMainMenu;
-
-
   // Game loop
   // The gameloop works like the loop() in the Arduwars.ino file.
   // It repeats itself indefinitely and will only stop if you turn off you Arduboy.

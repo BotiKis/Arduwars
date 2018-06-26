@@ -182,7 +182,8 @@ private:
 
     // Here we see our enum again.
     // We create a variable which will store the current gamestate.
-    AWGameState gameState;
+	// We also give it a default value using a C++11 technique.
+    AWGameState gameState = AWGameState::showMainMenu;
 
     // In these two variables we store the players.
     // There are always two players where the first one is the actual player and the second the AI.
