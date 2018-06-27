@@ -87,7 +87,7 @@ private:
     // Displays map selection
     // It returns a pointer to the selected map in progmem. nullptr if none was selected
     // Attribute is the current state, only multi/singleplayer is relevant.
-    unsigned const char * showMapSelection(AWGameState aState);
+    const unsigned char * showMapSelection(AWGameState aState);
 
     void startNewSinglePlayerGame();  // Starts a new singleplayer game
     void runSinglePlayerGame();       // Place where the singleplayer game runs
@@ -123,7 +123,7 @@ private:
     Point calculateCameraPosition(Point forCursorPosition);
 
     // Loads the map from progmem to memory
-    void loadMap(unsigned const char *mapData);
+    void loadMap(const unsigned char *mapData);
 
     // updates the gamemap for the player
     void updateMapForPlayer(AWPlayer *aPlayer);
