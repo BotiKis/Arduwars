@@ -199,7 +199,7 @@ public:
   // 2 Bytes in total.
 
   // Function returns the traits for a certain unit type
-  static const UnitTraits traitsForUnitType(UnitType unitType);
+  static UnitTraits traitsForUnitType(UnitType unitType);
 };
 
 constexpr UnitTraits PROGMEM allUnitTraits[16] = {
