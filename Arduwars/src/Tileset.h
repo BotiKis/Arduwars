@@ -3,7 +3,7 @@
 
 #include <avr/pgmspace.h>
 
-const unsigned char PROGMEM worldSprite[] =
+const unsigned char worldSprite[] PROGMEM =
 {
 // width, height,
 16, 16,
