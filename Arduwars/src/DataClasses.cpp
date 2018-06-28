@@ -39,7 +39,7 @@ bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
   return (lutForAttacker & (0b1000000000000000 >> static_cast<uint16_t>(defender)) );
 }
 
-const UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
+UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   UnitTraits traits;
 
   pgm_readAnything(&allUnitTraits[static_cast<uint8_t>(unitType)], traits);

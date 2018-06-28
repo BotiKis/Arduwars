@@ -145,7 +145,7 @@ AWGameState AWGame::showMainMenu(){
 }
 
 // This method displays the map selection menu to the player.
-unsigned const char * AWGame::showMapSelection(AWGameState aState){
+const unsigned char * AWGame::showMapSelection(AWGameState aState){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
@@ -242,7 +242,7 @@ void AWGame::startNewSinglePlayerGame(){
   player2.reset();
 
   // shop map selection
-  unsigned const char *mapData = showMapSelection(AWGameState::playSinglePlayer);
+  const unsigned char *mapData = showMapSelection(AWGameState::playSinglePlayer);
 
   // return if no map has been selected
   if (mapData == nullptr) return;
@@ -285,7 +285,7 @@ void AWGame::startNewMultiplayerPlayerGame(){
   player2.reset();
 
   // shop map selection
-  unsigned const char *mapData = showMapSelection(AWGameState::playMultiPlayer);
+  const unsigned char *mapData = showMapSelection(AWGameState::playMultiPlayer);
 
   // return if no map has been selected
   if (mapData == nullptr) return;
@@ -1084,7 +1084,7 @@ Point AWGame::calculateCameraPosition(Point forCursorPosition){
   return cameraPosition;
 }
 
-void AWGame::loadMap(unsigned const char *mapData){
+void AWGame::loadMap(const unsigned char *mapData){
 
   // clear old map Data
   if (mapTileData != nullptr) {

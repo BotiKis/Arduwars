@@ -3,7 +3,7 @@
 
 #include <avr/pgmspace.h>
 
-const unsigned char PROGMEM waterAnimation[] =
+const unsigned char waterAnimation[] PROGMEM =
 {
 // width, height,
 16, 16,
@@ -24,7 +24,7 @@ const unsigned char PROGMEM waterAnimation[] =
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-const unsigned char PROGMEM selectionAnimation[] =
+const unsigned char selectionAnimation[] PROGMEM =
 {
 // width, height,
 16, 16,
@@ -42,7 +42,7 @@ const unsigned char PROGMEM selectionAnimation[] =
 0x15, 0x2a, 0x54, 0xa8, 0x51, 0xa2, 0x45, 0x8a, 0x15, 0x2a, 0x54, 0xa8, 0x51, 0xa2, 0x45, 0x8a,
 };
 
-const unsigned char PROGMEM gameCursorAnimation_plus_mask[] =
+const unsigned char gameCursorAnimation_plus_mask[] PROGMEM =
 {
 // width, height,
 32, 32,

@@ -3,7 +3,7 @@
 
 #include <avr/pgmspace.h>
 
-const unsigned char PROGMEM mapMarkers_plus_mask[] =
+const unsigned char mapMarkers_plus_mask[] PROGMEM =
 {
 // width, height,
 8, 8,
@@ -20,7 +20,7 @@ const unsigned char PROGMEM mapMarkers_plus_mask[] =
 0x55, 0x7f, 0x59, 0x7f, 0x22, 0x3e, 0x1c, 0x1c,
 };
 
-const unsigned char PROGMEM mapFOG_16x16[] =
+const unsigned char mapFOG_16x16[] PROGMEM =
 {
 // width, height,
 16, 16,
@@ -29,7 +29,7 @@ const unsigned char PROGMEM mapFOG_16x16[] =
 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa,
 };
 
-const unsigned char PROGMEM arduwarsLogo[] =
+const unsigned char arduwarsLogo[] PROGMEM =
 {
 // width, height,
 114, 16,
