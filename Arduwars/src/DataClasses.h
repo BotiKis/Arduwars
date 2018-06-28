@@ -276,6 +276,9 @@ public:
   List<GameUnit, 24> units; // 24 Units make approximately 72 Bytes.
   // Approximately 75 bytes in total.
 
+  // Constructor calls the reset function.
+  AWPlayer(uint8_t aid);
+
   // reset the data of this class
   void reset();
 
@@ -285,6 +288,13 @@ public:
 
   // Default income for one building
   static constexpr uint8_t BaseIncome = 10;
+
+  // operator compares the player ID
+  bool operator==(const AWPlayer& other) const;
+
+private:
+  // Internal helper for equivalence comparison
+  uint8_t playerID;
 };
 
 // This class is used to tell the map drawing method what to draw.

@@ -95,7 +95,7 @@ private:
     void startNewMultiplayerPlayerGame();  // Starts a new multiplayer game
     void runMultiPlayerGame();       // Place where the multiplayer game runs
 
-    void doRoundOfPlayer(AWPlayer *currentPlayer);
+    void doRoundOfPlayer(AWPlayer &currentPlayer);
 
     // Game Helper
     void drawMapAtPosition(Point pos); // Draws the map at the given position
@@ -114,10 +114,10 @@ private:
     // Will isntantly return UnitType::None if the building
     // is not the Factory, Airport or the Shipyard.
     // Also returns UnitType::None if the PLayer doesn't buy anything.
-    UnitType showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aPlayer);
+    UnitType showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aPlayer);
 
     // Shows a HUD with name, Days and Funds
-    void drawHudForPlayer(AWPlayer *aPlayer);
+    void drawHudForPlayer(AWPlayer &aPlayer);
 
     // Helper to calculate the camera
     Point calculateCameraPosition(Point forCursorPosition);
@@ -126,7 +126,7 @@ private:
     void loadMap(unsigned const char *mapData);
 
     // updates the gamemap for the player
-    void updateMapForPlayer(AWPlayer *aPlayer);
+    void updateMapForPlayer(AWPlayer &aPlayer);
 
     // removes all units from the map
     // withFog == true fills the gamemap with fog
@@ -140,7 +140,7 @@ private:
     void unmarkUnitOnMap(const GameUnit *aUnit);
 
     // This method marks the maptiles, where an enemy unit is which can be attacked.
-    void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer *attackingPlayer);
+    void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer);
 
     // returns the position of the next marked tile.
     // Arguments:
@@ -151,10 +151,10 @@ private:
 
     // Mark the map at the given position and radius regarding visibility rules
     // e.g. Not through buildings, mountains and enemy units
-    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough = false);
+    void removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer &aPlayer, bool seeThrough = false);
 
     // Helper function for removeFogAtPositionRadiusAndPlayer
-    void castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t xEnd, int8_t yEnd);
+    void castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t xEnd, int8_t yEnd);
 
     // neat effect directly on the display buffer
     void makeScreenTransition();
@@ -187,10 +187,8 @@ private:
 
     // In these two variables we store the players.
     // There are always two players where the first one is the actual player and the second the AI.
-    AWPlayer player1Object;
-    AWPlayer player2Object;
-    AWPlayer *player1 = &player1Object;
-    AWPlayer *player2 = &player2Object;
+    AWPlayer player1 = AWPlayer(1);
+    AWPlayer player2 = AWPlayer(2);
 
     // This attribute stores the days.
     // A day passes if both players has ended their rounds.

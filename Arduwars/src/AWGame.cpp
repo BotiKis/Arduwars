@@ -7,6 +7,7 @@
 #include "ShopData.h"
 
 #include <UtilityFunctions.h>
+#include <Utility.h>
 #include <FlashString.h>
 #include "PointMath.h"
 #include "UnitSprites.h"
@@ -237,8 +238,8 @@ void AWGame::startNewSinglePlayerGame(){
   daysPlayed = 0;
 
   // reset players
-  player1->reset();
-  player2->reset();
+  player1.reset();
+  player2.reset();
 
   // shop map selection
   unsigned const char *mapData = showMapSelection(AWGameState::playSinglePlayer);
@@ -280,8 +281,8 @@ void AWGame::startNewMultiplayerPlayerGame(){
   daysPlayed = 0;
 
   // reset players
-  player1->reset();
-  player2->reset();
+  player1.reset();
+  player2.reset();
 
   // shop map selection
   unsigned const char *mapData = showMapSelection(AWGameState::playMultiPlayer);
@@ -297,7 +298,7 @@ void AWGame::startNewMultiplayerPlayerGame(){
 
 void AWGame::runMultiPlayerGame(){
 
-  AWPlayer *currentPlayer = player1;
+  AWPlayer *currentPlayer = &player1;
 
   // Game Loop
   while (true) {
@@ -306,7 +307,7 @@ void AWGame::runMultiPlayerGame(){
     makeScreenTransition();
 
     // show dialog for player
-    showDialog((currentPlayer == player1)?LOCA_player1:LOCA_player2);
+    showDialog((*currentPlayer == player1)?LOCA_player1:LOCA_player2);
 
     // activate all units
     for (uint8_t i = 0; i < currentPlayer->units.getCount(); i++) {
@@ -317,13 +318,13 @@ void AWGame::runMultiPlayerGame(){
     for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
       if(gameBuildings[i].buildingType == static_cast<uint8_t>(MapTileType::City) &&
       gameBuildings[i].isOccupied &&
-      gameBuildings[i].belongsToPlayer == ((currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2)){
+      gameBuildings[i].belongsToPlayer == ((*currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2)){
         currentPlayer->money += AWPlayer::BaseIncome;
       }
     }
 
     // update player map
-    updateMapForPlayer(currentPlayer);
+    updateMapForPlayer(*currentPlayer);
 
     // Draw map and HUD for new player
     arduboy.clear();
@@ -341,12 +342,12 @@ void AWGame::runMultiPlayerGame(){
     drawMapAtPosition(cameraPosition * -1);
 
     // Draw HUD
-    drawHudForPlayer(currentPlayer);
+    drawHudForPlayer(*currentPlayer);
 
     arduboy.display();
 
     // show player round
-    doRoundOfPlayer(currentPlayer);
+    doRoundOfPlayer(*currentPlayer);
 
     // check for win condition
     if (daysPlayed == 255) {
@@ -355,21 +356,22 @@ void AWGame::runMultiPlayerGame(){
     }
 
     // switch players
-    if (currentPlayer == player1)
-      currentPlayer = player2;
+    if (*currentPlayer == player1){
+      currentPlayer = &player2;
+    }
     else{
-      currentPlayer = player1;
+      currentPlayer = &player1;
       daysPlayed++;
     }
   }
 }
 
-void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
+void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
 
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
 
   // Store cursor data
-  Point cursorPosition = currentPlayer->cursorIndex*TILE_SIZE;
+  Point cursorPosition = currentPlayer.cursorIndex*TILE_SIZE;
   cursorPosition.x -= 8;
   cursorPosition.y -= 8;
   Point cameraPosition = {0, 0};
@@ -628,7 +630,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
                 currentMapTile.unitBelongsTo == ((currentPlayer == player1) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2) &&
                 currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
                 // get unit
-                selectedUnit = currentPlayer->getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
+                selectedUnit = currentPlayer.getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
                 if (selectedUnit != nullptr){
                   // select unit on map
                   originalUnitPosition = currentIndex;
@@ -647,7 +649,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
               !currentMapTile.hasUnit) {
 
                 // check if there is space for a new unit
-                if (currentPlayer->units.isFull()) {
+                if (currentPlayer.units.isFull()) {
                   showDialog(LOCA_Unit_limit_reached);
                 }
                 else{
@@ -664,7 +666,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
                     newUnit.mapPosY = currentIndex.y;
                     newUnit.activated = GameUnit::UnitStateDisabled;
 
-                    currentPlayer->units.add(newUnit);
+                    currentPlayer.units.add(newUnit);
                     updateMapForPlayer(currentPlayer);
                   }
                 }
@@ -677,7 +679,7 @@ void AWGame::doRoundOfPlayer(AWPlayer *currentPlayer){
                   uint8_t selectedOption = showOptions(options, 2);
 
                   if (selectedOption == 0) {
-                    currentPlayer->cursorIndex = currentIndex;
+                    currentPlayer.cursorIndex = currentIndex;
                     return;
                   }
               }
@@ -881,7 +883,7 @@ int8_t AWGame::showOptions(char_P *options[], uint8_t count){
   }
 }
 
-UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aPlayer){
+UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aPlayer){
 
   // data for the shop
   int8_t menuCursorIDX = 0;
@@ -938,10 +940,10 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aP
       uint8_t unitCosts = GameUnit::costsOfUnit(unitToBuy);
 
       // check if user has enough money to buy
-      if (unitCosts <= aPlayer->money) {
+      if (unitCosts <= aPlayer.money) {
 
         // substract the amount from the players funds
-        aPlayer->money -= unitCosts;
+        aPlayer.money -= unitCosts;
 
         // return the unit
         return unitToBuy;
@@ -966,7 +968,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aP
 
       // get unit costs
       uint8_t unitCosts = GameUnit::costsOfUnit(unitToDraw);
-      bool canAffordUnit = (unitCosts <= aPlayer->money);
+      bool canAffordUnit = (unitCosts <= aPlayer.money);
 
       // calc draw position
       int8_t yPos = 14 + i*textPadding + yOffset;
@@ -1046,7 +1048,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer *aP
   return UnitType::None;
 }
 
-void AWGame::drawHudForPlayer(AWPlayer *aPlayer){
+void AWGame::drawHudForPlayer(AWPlayer &aPlayer){
   // Draw player, day and funds
   arduboy.fillRect(0, 0, 128, 7, BLACK);
   arduboy.fillRect(0, 0, 128, 6, WHITE);
@@ -1060,7 +1062,7 @@ void AWGame::drawHudForPlayer(AWPlayer *aPlayer){
   tinyfont.setCursor(86, 1);
   tinyfont.print(AsFlashString(LOCA_funds));
   tinyfont.setCursor(100, 1);
-  tinyfont.print(aPlayer->money*100);
+  tinyfont.print(aPlayer.money*100);
 }
 
 Point AWGame::calculateCameraPosition(Point forCursorPosition){
@@ -1183,12 +1185,12 @@ void AWGame::loadMap(unsigned const char *mapData){
       if (tileType == MapTileType::P1HQ){
         building.isOccupied = 1;
         building.belongsToPlayer = MapTile::BelongsToPlayer1;
-        player1->cursorIndex = currentIndex;
+        player1.cursorIndex = currentIndex;
       }
       else if (tileType == MapTileType::P2HQ){
         building.isOccupied = 1;
         building.belongsToPlayer = MapTile::BelongsToPlayer2;
-        player2->cursorIndex = currentIndex;
+        player2.cursorIndex = currentIndex;
       }
 
       // add building to our global buildings
@@ -1198,15 +1200,15 @@ void AWGame::loadMap(unsigned const char *mapData){
   }
 }
 
-void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
+void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
 
   // fill map with fog
   clearMap(true);
 
   // add the enemies units
-  AWPlayer *enemyPlayer = (aPlayer == player1)?player2:player1;
-  for (uint8_t i = 0; i < enemyPlayer->units.getCount(); i++) {
-    GameUnit unit = enemyPlayer->units[i];
+  AWPlayer &enemyPlayer = (aPlayer == player1)?player2:player1;
+  for (uint8_t i = 0; i < enemyPlayer.units.getCount(); i++) {
+    GameUnit unit = enemyPlayer.units[i];
 
     // get the corresponding map tile
     MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
@@ -1218,8 +1220,8 @@ void AWGame::updateMapForPlayer(AWPlayer *aPlayer){
   }
 
   // udpate the player units
-  for (uint8_t i = 0; i < aPlayer->units.getCount(); i++) {
-    GameUnit unit = aPlayer->units[i];
+  for (uint8_t i = 0; i < aPlayer.units.getCount(); i++) {
+    GameUnit unit = aPlayer.units[i];
 
     // get the corresponding map tile
     MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
@@ -1377,7 +1379,7 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
   }
 }
 
-void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer *attackingPlayer){
+void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer){
 
     // check if we are at the end
     if (distance <= 0) return;
@@ -1555,9 +1557,7 @@ const GameBuilding * AWGame::getBuildingAtCoordinate(Point coordinate){
   return nullptr;
 }
 
-void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer *aPlayer, bool seeThrough){
-
-
+void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer &aPlayer, bool seeThrough){
     // For the raycast to work we need to calculate every point which should
     // be tested around the perimeter of the unit. For that we use Bresenham's
     // circle algorithm to get every point on the perimeter and do a raycast to that point.
@@ -1580,7 +1580,7 @@ void AWGame::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AW
     } while (x < 0);
 }
 
-void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer * aPlayer, int8_t xEnd, int8_t yEnd) {
+void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t xEnd, int8_t yEnd) {
 
   // We are doing here a so called Raycast. It's called this way because
   // it mathematecally shots a "ray" from the origin to the destination Like
