@@ -263,6 +263,10 @@ public:
 
 // This class defines a Player which has Units, Buildings, Money and other Information.
 class AWPlayer{
+private:
+  // Internal helper for equivalence comparison
+  uint8_t playerID;
+
 public:
 
   // Stores the players Money. MAX 255
@@ -291,10 +295,6 @@ public:
 
   // operator compares the player ID
   bool operator==(const AWPlayer& other) const;
-
-private:
-  // Internal helper for equivalence comparison
-  uint8_t playerID;
 };
 
 // This class is used to tell the map drawing method what to draw.
