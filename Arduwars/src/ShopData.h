@@ -2,6 +2,7 @@
 #define SHOP_H
 #include <avr/pgmspace.h>
 #include "DataClasses.h"
+#include "ArrayUtils.h"
 
 // This file contains all data for the shop system
 // We store the data in progmem.
@@ -31,8 +32,7 @@ const uint8_t unitPrices[] PROGMEM = {
 };
 
 // All units obtainable at a factory
-constexpr static uint8_t NumberOfBuyableUnitsAtFactory = 10;
-const UnitType buyableUnitsAtFactory[NumberOfBuyableUnitsAtFactory] PROGMEM = {
+const UnitType buyableUnitsAtFactory[] PROGMEM = {
   UnitType::Soldier,
   UnitType::Mech,
   UnitType::SpecOps,
@@ -46,21 +46,22 @@ const UnitType buyableUnitsAtFactory[NumberOfBuyableUnitsAtFactory] PROGMEM = {
   UnitType::Rocket,
   UnitType::Missiles
 };
+constexpr static uint8_t NumberOfBuyableUnitsAtFactory = arrayLength(buyableUnitsAtFactory);
 
 // All units obtainable at an airport
-constexpr static uint8_t NumberOfBuyableUnitsAtAirport = 3;
 const UnitType buyableUnitsAtAirPort[] PROGMEM = {
   UnitType::Heli,
   UnitType::Fighter,
   UnitType::Bomber,
 };
+constexpr static uint8_t NumberOfBuyableUnitsAtAirport = arrayLength(buyableUnitsAtAirPort);
 
 // All units obtainable at a shipyard
-constexpr static uint8_t NumberOfBuyableUnitsAtShipyard = 3;
 const UnitType buyableUnitsAtShipyard[] PROGMEM = {
   UnitType::Transportship,
   UnitType::Cruiser,
   UnitType::Battleship
 };
+constexpr static uint8_t NumberOfBuyableUnitsAtShipyard = arrayLength(buyableUnitsAtShipyard);
 
 #endif
