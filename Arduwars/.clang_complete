@@ -1,7 +1,7 @@
 -IC:\Users\boton\.platformio\packages\framework-arduinoavr\cores\arduino
 -IC:\Users\boton\.platformio\packages\framework-arduinoavr\variants\leonardo
--IC:\Users\boton\Documents\Arduboy\ArduwarsEngine\lib\EngineBoy\src
--IC:\Users\boton\Documents\Arduboy\ArduwarsEngine\lib\SimpleArduinoUtilitiesAlpha2
+-IC:\Users\boton\Documents\Arduboy\Arduwars\Arduwars\lib\EngineBoy\src
+-IC:\Users\boton\Documents\Arduboy\Arduwars\Arduwars\lib\SimpleArduinoUtilitiesAlpha2
 -IC:\Users\boton\.platformio\lib\Arduboy-TinyFont_ID1585\src
 -IC:\Users\boton\.platformio\lib\Arduboy2_ID1227\src
 -IC:\Users\boton\.platformio\packages\framework-arduinoavr\libraries\__cores__\arduino\EEPROM\src
@@ -38,8 +38,8 @@
 -IC:\Users\boton\.platformio\packages\toolchain-atmelavr\lib\gcc\avr\5.4.0\include
 -IC:\Users\boton\.platformio\packages\toolchain-atmelavr\lib\gcc\avr\5.4.0\include-fixed
 -IC:\Users\boton\.platformio\packages\tool-unity
--IC:\Users\boton\Documents\Arduboy\ArduwarsEngine\include
--IC:\Users\boton\Documents\Arduboy\ArduwarsEngine\src
+-IC:\Users\boton\Documents\Arduboy\Arduwars\Arduwars\include
+-IC:\Users\boton\Documents\Arduboy\Arduwars\Arduwars\src
 -DPLATFORMIO=30602
 -DARDUINO_AVR_ARDUBOY
 -DARDUBOY_10
