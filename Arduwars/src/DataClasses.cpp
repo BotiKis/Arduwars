@@ -19,15 +19,18 @@ GameUnit::GameUnit(){
   payload = GameUnit::PayloadNone;
 }
 
-char_P* GameUnit::nameForUnitType(UnitType unitType){
+char_P* GameUnit::nameForUnitType(UnitType unitType)
+{
   return LOCA_Unit_Names[static_cast<uint8_t>(unitType)];
 }
 
-uint8_t GameUnit::costsOfUnit(UnitType unitType){
+uint8_t GameUnit::costsOfUnit(UnitType unitType)
+{
   return pgm_read_byte(unitPrices + static_cast<uint8_t>(unitType));
 }
 
-bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
+bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender)
+{
 
   // check for none
   if (attacker == UnitType::None || defender == UnitType::None) return false;
@@ -39,7 +42,8 @@ bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
   return (lutForAttacker & (0b1000000000000000 >> static_cast<uint16_t>(defender)) );
 }
 
-UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
+UnitTraits UnitTraits::traitsForUnitType(UnitType unitType)
+{
   UnitTraits traits;
 
   pgm_readAnything(&allUnitTraits[static_cast<uint8_t>(unitType)], traits);
@@ -50,7 +54,8 @@ UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
 // ====================================================
 // GameBuilding
 
-GameBuilding::GameBuilding(){
+GameBuilding::GameBuilding()
+{
   // By default it's plains
   buildingType = static_cast<uint8_t>(MapTileType::Plains);
 
@@ -63,7 +68,8 @@ GameBuilding::GameBuilding(){
   belongsToPlayer = 0;
 }
 
-GameBuilding::GameBuilding(MapTileType type){
+GameBuilding::GameBuilding(MapTileType type)
+{
   // Save the provided Type
   buildingType = static_cast<uint8_t>(type);
 
@@ -80,12 +86,14 @@ GameBuilding::GameBuilding(MapTileType type){
 // ====================================================
 // Player
 
-AWPlayer::AWPlayer(uint8_t aid){
+AWPlayer::AWPlayer(uint8_t aid)
+{
   this->playerID = aid;
   this->reset();
 }
 
-void AWPlayer::reset(){
+void AWPlayer::reset()
+{
   // default 30 money
   money = 30;
 
@@ -96,7 +104,8 @@ void AWPlayer::reset(){
   units.clear();
 }
 
-GameUnit * AWPlayer::getUnitForMapCoordinates(Point coordinates){
+GameUnit * AWPlayer::getUnitForMapCoordinates(Point coordinates)
+{
 
   // go through all units
   for (uint8_t i = 0; i < units.getCount(); i++) {
@@ -108,14 +117,16 @@ GameUnit * AWPlayer::getUnitForMapCoordinates(Point coordinates){
   return nullptr;
 }
 
-bool AWPlayer::operator==(const AWPlayer& other) const{
+bool AWPlayer::operator==(const AWPlayer& other) const
+{
     return this->playerID == other.playerID;
 }
 
 // ====================================================
 // MapTile
 
-MapTile::MapTile(void){
+MapTile::MapTile(void)
+{
   tileID = 0;
 
   buildingIsOccupied = 0;
@@ -132,7 +143,8 @@ MapTile::MapTile(void){
 }
 
 
-bool MapTile::canBeAccessedByUnit(UnitType unitType){
+bool MapTile::canBeAccessedByUnit(UnitType unitType)
+{
   // get correct entry from LUT for the unit
   uint8_t lut = 0;
   if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::SpecOps))
@@ -152,9 +164,10 @@ bool MapTile::canBeAccessedByUnit(UnitType unitType){
 }
 
 // Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
-uint8_t MapTile::lutMaskForMaptile(MapTileType mapTileType){
-  switch (mapTileType) {
-
+uint8_t MapTile::lutMaskForMaptile(MapTileType mapTileType)
+{
+  switch (mapTileType)
+  {
     // Water fields
     case MapTileType::Water:
     case MapTileType::Coast1:

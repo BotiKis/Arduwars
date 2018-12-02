@@ -1,5 +1,4 @@
-#ifndef DATA_H
-#define DATA_H
+#pragma once
 
 #include <Arduboy2.h>
 #include <List.h>
@@ -346,5 +345,3 @@ private:
   // returns a number from 0-7 at the position of the type in the LUT
   static uint8_t lutMaskForMaptile(MapTileType mapTileType);
 };
-
-#endif

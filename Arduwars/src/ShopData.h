@@ -1,5 +1,5 @@
-#ifndef SHOP_H
-#define SHOP_H
+#pragma once
+
 #include <avr/pgmspace.h>
 #include "DataClasses.h"
 #include "ArrayUtils.h"
@@ -63,5 +63,3 @@ const UnitType buyableUnitsAtShipyard[] PROGMEM = {
   UnitType::Battleship
 };
 constexpr static uint8_t NumberOfBuyableUnitsAtShipyard = arrayLength(buyableUnitsAtShipyard);
-
-#endif

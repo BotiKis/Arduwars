@@ -1,7 +1,8 @@
-#ifndef MAPDATA_H
-#define MAPDATA_H
+#pragma once
 
 #include <avr/pgmspace.h>
+
+#warning "rework these defines"
 
 #define MAPDATAOFFSET_Size 0
 #define MAPDATAOFFSET_Player1City 2
@@ -28,7 +29,19 @@
 //    The game will automaticaly place the right tile for you.
 // #2 Use a maximum of 24 Buildings. (Defined by BuildingType)
 
-const unsigned char PROGMEM mapData_1[] =
+enum class MapID
+{
+  None,
+  Map1,
+  Map2,
+  Map3
+};
+
+#warning "change back to type alias"
+// using RawMapData = const unsigned char; -> Linter throws error, changed to typedef
+typedef const unsigned char RawMapData;
+
+RawMapData PROGMEM mapData_1[] =
 {
   // Map size
   24, 16,
@@ -62,7 +75,7 @@ const unsigned char PROGMEM mapData_1[] =
   23,23,22,24,22,23,23,23,23,23,23,23,23,23,23,23,23,23,24,24,24,24,24,24,
 };
 
-const unsigned char PROGMEM mapData_2[] =
+RawMapData PROGMEM mapData_2[] =
 {
   // Map size
   20, 12,
@@ -92,7 +105,7 @@ const unsigned char PROGMEM mapData_2[] =
   24,30,24,24,23,22,3,0,8,24,24,3,0,8,22,23,24,24,31,24,
 };
 
-const unsigned char PROGMEM mapData_3[] =
+RawMapData PROGMEM mapData_3[] =
 {
   // Map size
   12, 12,
@@ -121,4 +134,3 @@ const unsigned char PROGMEM mapData_3[] =
   23,26,22,22,2,10,13,7,24,26,31,24,
   23,23,23,23,3,1,0,8,25,24,24,24,
 };
-#endif

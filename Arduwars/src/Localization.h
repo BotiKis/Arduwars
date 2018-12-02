@@ -1,5 +1,5 @@
-#ifndef LOCA_H
-#define LOCA_H
+#pragma once
+
 #include <avr/pgmspace.h>
 
 // This file contains all text used by the game
@@ -90,5 +90,3 @@ char_P* const LOCA_Unit_Names[] PROGMEM = {
   LOCA_Unit_Battleship,
   LOCA_Unit_Transportships
 };
-
-#endif

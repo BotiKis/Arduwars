@@ -1,5 +1,4 @@
-#ifndef POINTMATH_H
-#define POINTMATH_H
+#pragma once
 
 #include <Arduboy2.h>
 
@@ -34,5 +33,3 @@ namespace PointMath{
       return sqrt(vector.x*vector.x + vector.y*vector.y);
   }
 }
-
-#endif
