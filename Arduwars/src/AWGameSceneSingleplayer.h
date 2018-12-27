@@ -10,6 +10,6 @@ public:
 public:
     AWGameSceneSingleplayer();
 
-    void update(EngineBoy<GameContext, GameSceneID> & engine, uint32_t deltaTime) override;
+    void update(EngineBoy<GameContext, GameSceneID> & engine) override;
     void render(EngineBoy<GameContext, GameSceneID> & engine) override;
 };

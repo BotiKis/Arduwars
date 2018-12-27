@@ -40,7 +40,7 @@
 -IC:\Users\boton\.platformio\packages\tool-unity
 -IC:\Users\boton\Documents\Arduboy\Arduwars\Arduwars\include
 -IC:\Users\boton\Documents\Arduboy\Arduwars\Arduwars\src
--DPLATFORMIO=30602
+-DPLATFORMIO=40000
 -DARDUINO_AVR_ARDUBOY
 -DARDUBOY_10
 -DF_CPU=16000000L

@@ -9,7 +9,7 @@ AWGameSceneSingleplayer::AWGameSceneSingleplayer()
   this->gameSceneID = AWGameState::Playing;
 }
 
-void AWGameSceneSingleplayer::update(EngineBoy<GameContext, GameSceneID> & engine, uint32_t deltaTime)
+void AWGameSceneSingleplayer::update(EngineBoy<GameContext, GameSceneID> & engine)
 {
   if (engine.arduboy.justPressed(B_BUTTON))
     engine.changeToScene(AWGameState::Menu);

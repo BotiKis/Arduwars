@@ -8,49 +8,7 @@ template<typename GameContextType, typename GameSceneType>
 class EngineBoy;
 
 template<typename GameContextType, typename GameSceneType>
-class GameScene
-{
-public:
-	using GameSceneID = GameSceneType;
-	using GameContext = GameContextType;
-
-	// In the implementation set this to the correct ID
-	GameSceneID gameSceneID;
-
-public:
-
-    // Methods need to be implemented by subclass
-	virtual void update(EngineBoy<GameContext, GameSceneID> & engine, uint32_t deltaTime) = 0;
-	virtual void render(EngineBoy<GameContext, GameSceneID> & engine) = 0;
-
-    // Other methods
-	virtual ~GameScene(void) {};
-
-	virtual void willBecomeActive(EngineBoy<GameContext, GameSceneID> & engine)
-	{
-		// Get rid of 'unused parameter' warnings
-		(void)engine;
-	}
-
-	virtual void didBecomeActive(EngineBoy<GameContext, GameSceneID> & engine)
-	{
-		// Get rid of 'unused parameter' warnings
-		(void)engine;
-	}
-
-	virtual void willBecomeInactive(EngineBoy<GameContext, GameSceneID> & engine)
-	{
-		// Get rid of 'unused parameter' warnings
-		(void)engine;
-	}
-
-	virtual void didBecomeInActive(EngineBoy<GameContext, GameSceneID> & engine)
-	{
-		// Get rid of 'unused parameter' warnings
-		(void)engine;
-	}
-};
-
+class GameScene;
 
 //////////////////////////////
 // EngineBoy Engine
@@ -68,9 +26,12 @@ public:
 
 private:
     // Used to calculate deltatime
-    uint32_t lastUpdateTimestamp;
+    uint32_t _lastUpdateTimestamp = 0;
+		uint32_t _deltaTime = 0;
 
 public:
+
+	uint32_t deltaTime() {return _deltaTime;}
 
 	virtual GameContext & getContext(void) = 0;
 	virtual const GameContext & getContext(void) const = 0;
@@ -84,22 +45,23 @@ public:
 
         // init internal stuff
         currentScene = nullptr;
-        lastUpdateTimestamp = millis();
+        _lastUpdateTimestamp = millis();
     }
 
 	virtual void update(void){
         // calculate delta time
         uint32_t currentTime = millis();
+				_deltaTime = _lastUpdateTimestamp - currentTime;
 
         // Update arduboy
         arduboy.pollButtons();
 
         // Tell current scene to update
         if(currentScene != nullptr)
-            currentScene->update(*this, lastUpdateTimestamp-currentTime);
+            currentScene->update(*this);
 
         // save time
-        lastUpdateTimestamp = currentTime;
+				_lastUpdateTimestamp = currentTime;
     }
 
 	virtual void display(void)
@@ -149,5 +111,53 @@ protected:
 		// Get rid of 'unused parameter' warnings
 		(void)previousScene;
 		(void)nextScene;
+	}
+};
+
+
+//////////////////////////////
+// EngineBoy GameScene
+
+template<typename GameContextType, typename GameSceneType>
+class GameScene
+{
+public:
+	using GameSceneID = GameSceneType;
+	using GameContext = GameContextType;
+
+	// In the implementation set this to the correct ID
+	GameSceneID gameSceneID;
+
+public:
+
+    // Methods need to be implemented by subclass
+	virtual void update(EngineBoy<GameContext, GameSceneID> & engine) = 0;
+	virtual void render(EngineBoy<GameContext, GameSceneID> & engine) = 0;
+
+    // Other methods
+	virtual ~GameScene(void) {};
+
+	virtual void willBecomeActive(EngineBoy<GameContext, GameSceneID> & engine)
+	{
+		// Get rid of 'unused parameter' warnings
+		(void)engine;
+	}
+
+	virtual void didBecomeActive(EngineBoy<GameContext, GameSceneID> & engine)
+	{
+		// Get rid of 'unused parameter' warnings
+		(void)engine;
+	}
+
+	virtual void willBecomeInactive(EngineBoy<GameContext, GameSceneID> & engine)
+	{
+		// Get rid of 'unused parameter' warnings
+		(void)engine;
+	}
+
+	virtual void didBecomeInActive(EngineBoy<GameContext, GameSceneID> & engine)
+	{
+		// Get rid of 'unused parameter' warnings
+		(void)engine;
 	}
 };

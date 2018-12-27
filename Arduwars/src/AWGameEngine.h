@@ -26,7 +26,7 @@ public:
     {
       return this->context;
     }
-    
+
 private:
 
     GameScene<GameContext, GameSceneID>* gameSceneForSceneID(GameSceneID sceneID) override;

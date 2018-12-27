@@ -23,7 +23,7 @@ AWGameSceneMultiplayer::AWGameSceneMultiplayer(MapID mapID)
   this->currentplayer = &this->player1;
 }
 
-void AWGameSceneMultiplayer::update(EngineBoy<GameContext, GameSceneID> & engine, uint32_t deltaTime)
+void AWGameSceneMultiplayer::update(EngineBoy<GameContext, GameSceneID> & engine)
 {
 
 }

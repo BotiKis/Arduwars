@@ -9,7 +9,7 @@ AWGameSceneMenu::AWGameSceneMenu()
   this->gameSceneID = AWGameState::Menu;
 }
 
-void AWGameSceneMenu::update(EngineBoy<GameContext, GameSceneID> & engine, uint32_t deltaTime)
+void AWGameSceneMenu::update(EngineBoy<GameContext, GameSceneID> & engine)
 {
     // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
     if (engine.arduboy.justPressed(UP_BUTTON))

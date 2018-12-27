@@ -10,7 +10,7 @@ AWGameSceneMapSelect::AWGameSceneMapSelect()
   this->gameSceneID = AWGameState::MapSelection;
 }
 
-void AWGameSceneMapSelect::update(EngineBoy<GameContext, GameSceneID> & engine, uint32_t deltaTime)
+void AWGameSceneMapSelect::update(EngineBoy<GameContext, GameSceneID> & engine)
 {
   // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
   if (engine.arduboy.justPressed(UP_BUTTON))
