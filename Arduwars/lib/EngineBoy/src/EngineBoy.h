@@ -22,15 +22,17 @@ public:
 
 public:
 	Arduboy2 arduboy;
-  GameScene<GameContext, GameSceneID> *currentScene;
 
 private:
-    // Used to calculate deltatime
-    uint32_t _lastUpdateTimestamp = 0;
-		uint32_t _deltaTime = 0;
+  // Used to calculate deltatime
+  uint32_t _lastUpdateTimestamp = 0;
+	uint32_t _deltaTime = 0;
+
+protected:
+  GameScene<GameContext, GameSceneID> *_currentScene;
 
 public:
-
+	// getter fopr deltatime
 	uint32_t deltaTime() {return _deltaTime;}
 
 	virtual GameContext & getContext(void) = 0;
@@ -44,55 +46,57 @@ public:
         arduboy.setFrameRate(60);
 
         // init internal stuff
-        currentScene = nullptr;
+        _currentScene = nullptr;
         _lastUpdateTimestamp = millis();
     }
 
 	virtual void update(void){
-        // calculate delta time
-        uint32_t currentTime = millis();
-				_deltaTime = _lastUpdateTimestamp - currentTime;
+		// calculate delta time
+		uint32_t currentTime = millis();
+		_deltaTime = currentTime - _lastUpdateTimestamp;
+		_lastUpdateTimestamp = currentTime;
 
-        // Update arduboy
-        arduboy.pollButtons();
+		// Update arduboy
+		arduboy.pollButtons();
 
-        // Tell current scene to update
-        if(currentScene != nullptr)
-            currentScene->update(*this);
-
-        // save time
-				_lastUpdateTimestamp = currentTime;
-    }
+		// Tell current scene to update
+		if(_currentScene != nullptr)
+			_currentScene->update(*this);
+	}
 
 	virtual void display(void)
     {
         // Render current scene
         arduboy.clear();
-        if(currentScene)
-            currentScene->render(*this);
+        if(_currentScene)
+            _currentScene->render(*this);
         arduboy.display();
     }
 
 	void changeToScene(GameSceneID sceneID)
 	{
 	  // Remember old scene
-	  GameScene<GameContext, GameSceneID> *oldScene = currentScene;
+	  GameScene<GameContext, GameSceneID> *oldScene = _currentScene;
 
 	  // get new scene
 	  GameScene<GameContext, GameSceneID> *nextScene = this->gameSceneForSceneID(sceneID);
 
-	  // call callback for will change
+	  // call callbacks for will change
 	  this->willChangeToScene(oldScene, nextScene);
 	  if(oldScene != nullptr)
 	      oldScene->willBecomeInactive(*this);
+	  if(nextScene != nullptr)
+	      nextScene->willBecomeActive(*this);
 
 	  // store new scene
-	  currentScene = nextScene;
+	  _currentScene = nextScene;
 
-	  // call helper
-	  this->didChangeToScene(oldScene, nextScene);
+	  // call callbacks for didChange event
+		if(oldScene != nullptr)
+				oldScene->didBecomeInActive(*this);
 	  if(nextScene != nullptr)
 	      nextScene->didBecomeActive(*this);
+	  this->didChangeToScene(oldScene, nextScene);
 	}
 
 protected:
@@ -130,11 +134,11 @@ public:
 
 public:
 
-    // Methods need to be implemented by subclass
+  // Methods need to be implemented by subclass
 	virtual void update(EngineBoy<GameContext, GameSceneID> & engine) = 0;
 	virtual void render(EngineBoy<GameContext, GameSceneID> & engine) = 0;
 
-    // Other methods
+  // Other methods
 	virtual ~GameScene(void) {};
 
 	virtual void willBecomeActive(EngineBoy<GameContext, GameSceneID> & engine)

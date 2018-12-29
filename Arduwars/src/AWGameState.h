@@ -17,11 +17,3 @@ enum class AWGameMode : uint8_t
     Singleplayer,
     Multiplayer
 };
-
-// These states define the possible states during the turn of a player.
-enum class AWTurnState : uint8_t
-{
-  Default,
-  UnitSelected,
-  UnitAttack
-};

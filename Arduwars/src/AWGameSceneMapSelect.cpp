@@ -28,9 +28,9 @@ void AWGameSceneMapSelect::update(EngineBoy<GameContext, GameSceneID> & engine)
     MapID selectedMapID = MapID::None;
 
     switch (cursorIdx) {
-      case 0: selectedMapID = MapID::Map1; break;
+      case 0: selectedMapID = MapID::Map3; break;
       case 1: selectedMapID = MapID::Map2; break;
-      case 2: selectedMapID = MapID::Map3; break;
+      case 2: selectedMapID = MapID::Map1; break;
     }
 
     engine.getContext().selectedMap = selectedMapID;

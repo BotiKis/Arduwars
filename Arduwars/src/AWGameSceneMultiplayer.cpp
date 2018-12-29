@@ -11,21 +11,40 @@
 
 AWGameSceneMultiplayer::AWGameSceneMultiplayer(MapID mapID)
 {
+  // store map id
+  _mapID = mapID;
+}
+
+void AWGameSceneMultiplayer::willBecomeActive(EngineBoy<GameContext, GameSceneID> & engine)
+{
   this->gameSceneID = AWGameState::Playing;
 
   // reset players
   this->player1.reset();
   this->player2.reset();
 
-  // load map
-  this->loadMap(mapID);
-
   this->currentplayer = &this->player1;
+  this->roundState = AWGameCoreGameState::Default;
+
+  // load map
+  this->loadMap(_mapID);
+}
+
+void AWGameSceneMultiplayer::didBecomeInActive(EngineBoy<GameContext, GameSceneID> & engine)
+{
+
 }
 
 void AWGameSceneMultiplayer::update(EngineBoy<GameContext, GameSceneID> & engine)
 {
-
+  switch (this->roundState) {
+    case AWGameCoreGameState::Default: break;
+    case AWGameCoreGameState::GameMenu: break;
+    case AWGameCoreGameState::ShopMenu: break;
+    case AWGameCoreGameState::UnitAttack: break;
+    case AWGameCoreGameState::UnitMenu: break;
+    default: break;
+  }
 }
 
 void AWGameSceneMultiplayer::render(EngineBoy<GameContext, GameSceneID> & engine)
@@ -35,18 +54,24 @@ void AWGameSceneMultiplayer::render(EngineBoy<GameContext, GameSceneID> & engine
 
   // get Tinyfont
   auto tinyfont = gameContext.tinyfont;
-}
+  tinyfont.setTextColor(WHITE);
+  tinyfont.setCursor(0,0);
+  tinyfont.print("MULTIPLAYER");
 
-void AWGameSceneMultiplayer::didBecomeInActive(EngineBoy<GameContext, GameSceneID> & engine)
-{
-  // clean up
-  if (this->mapTileData != nullptr) {
-    delete this->mapTileData;
-    this->mapTileData = nullptr;
+  switch (this->roundState) {
+    case AWGameCoreGameState::GameMenu: break;
+    case AWGameCoreGameState::ShopMenu: break;
+    case AWGameCoreGameState::UnitAttack: break;
+    case AWGameCoreGameState::UnitMenu: break;
+    case AWGameCoreGameState::Default:
+    default: break;
   }
+
+  //this->drawMapAtPosition({0,0}, engine);
 }
 
-void AWGameSceneMultiplayer::loadMap(MapID mapID){
+void AWGameSceneMultiplayer::loadMap(MapID mapID)
+{
   RawMapData *mapData = nullptr;
 
   // get actual map data
@@ -56,7 +81,6 @@ void AWGameSceneMultiplayer::loadMap(MapID mapID){
     case MapID::Map2: mapData = mapData_2; break;
     case MapID::Map3: mapData = mapData_3; break;
     default: break;
-    #warning "handle no data error - don't think it's neccessary"
   }
 
   // handle map meta info
@@ -82,88 +106,83 @@ void AWGameSceneMultiplayer::loadMap(MapID mapID){
   player2StartWorkshopCoords.x = pgm_read_byte(mapData+MAPDATAOFFSET_Player2Workshop);
   player2StartWorkshopCoords.y = pgm_read_byte(mapData+MAPDATAOFFSET_Player2Workshop+1);
 
-  //// Load map data
+  // Load map data
   // Calculate map lenght
   uint16_t mapLenght = mapSize.x*mapSize.y;
 
-  // create new array of maptiles
-  this->mapTileData = new MapTile[mapLenght];
-
-  // The index in the loop will be stored here
-  Point currentIndex;
-
-  // Populate array from map data
-  for (uint16_t i = 0; i < mapLenght; i++) {
-
-    // get Tile Data
-    mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
-    mapTileData[i].buildingIsOccupied = 0;
-    mapTileData[i].buildingBelongsTo = 0;
-    mapTileData[i].hasUnit = 0;
-    mapTileData[i].unitBelongsTo = 0;
-
-    MapTileType tileType = static_cast<MapTileType>(mapTileData[i].tileID);
-
-    // calc index
-    currentIndex.x = i % mapSize.x;
-    currentIndex.y = i / mapSize.x;
-
-    // Check if it's a building
-    if (mapTileIndexIsBuilding(tileType)) {
-      GameBuilding building = GameBuilding();
-
-      // set upd building
-      building.mapPosX = currentIndex.x;
-      building.mapPosY = currentIndex.y;
-      building.isOccupied = 0;
-      building.belongsToPlayer = 0;
-      building.buildingType = mapTileData[i].tileID;
-
-      // Check for city
-      if (tileType == MapTileType::City) {
-        // check for ownership
-        if (currentIndex == player1StartCityCoords) {
-          building.isOccupied = 1;
-          building.belongsToPlayer = MapTile::BelongsToPlayer1;
-        }
-        else if (currentIndex == player2StartCityCoords) {
-          building.isOccupied = 1;
-          building.belongsToPlayer = MapTile::BelongsToPlayer2;
-        }
-      }
-
-      // Check for Factory
-      if (tileType == MapTileType::Factory) {
-        // check for ownership
-        if (currentIndex == player1StartWorkshopCoords) {
-          building.isOccupied = 1;
-          building.belongsToPlayer = MapTile::BelongsToPlayer1;
-        }
-        else if (currentIndex == player2StartWorkshopCoords) {
-          building.isOccupied = 1;
-          building.belongsToPlayer = MapTile::BelongsToPlayer2;
-        }
-      }
-
-      // Check for Headquarters
-      if (tileType == MapTileType::P1HQ){
-        building.isOccupied = 1;
-        building.belongsToPlayer = MapTile::BelongsToPlayer1;
-        player1.cursorIndex = currentIndex;
-      }
-      else if (tileType == MapTileType::P2HQ){
-        building.isOccupied = 1;
-        building.belongsToPlayer = MapTile::BelongsToPlayer2;
-        player2.cursorIndex = currentIndex;
-      }
-
-      // add building to our global buildings
-      gameBuildings.add(building);
-    }
-
-  }
+  // // The index in the loop will be stored here
+  // Point currentIndex;
+  //
+  // // Populate array from map data
+  // for (uint16_t i = 0; i < mapLenght; i++) {
+  //
+  //   // get Tile Data
+  //   mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
+  //   mapTileData[i].buildingIsOccupied = 0;
+  //   mapTileData[i].buildingBelongsTo = 0;
+  //   mapTileData[i].hasUnit = 0;
+  //   mapTileData[i].unitBelongsTo = 0;
+  //
+  //   MapTileType tileType = static_cast<MapTileType>(mapTileData[i].tileID);
+  //
+  //   // calc index
+  //   currentIndex.x = i % mapSize.x;
+  //   currentIndex.y = i / mapSize.x;
+  //
+  //   // Check if it's a building
+  //   if (mapTileIndexIsBuilding(tileType)) {
+  //     GameBuilding building = GameBuilding();
+  //
+  //     // set upd building
+  //     building.mapPosX = currentIndex.x;
+  //     building.mapPosY = currentIndex.y;
+  //     building.isOccupied = 0;
+  //     building.belongsToPlayer = 0;
+  //     building.buildingType = mapTileData[i].tileID;
+  //
+  //     // Check for city
+  //     if (tileType == MapTileType::City) {
+  //       // check for ownership
+  //       if (currentIndex == player1StartCityCoords) {
+  //         building.isOccupied = 1;
+  //         building.belongsToPlayer = MapTile::BelongsToPlayer1;
+  //       }
+  //       else if (currentIndex == player2StartCityCoords) {
+  //         building.isOccupied = 1;
+  //         building.belongsToPlayer = MapTile::BelongsToPlayer2;
+  //       }
+  //     }
+  //
+  //     // Check for Factory
+  //     if (tileType == MapTileType::Factory) {
+  //       // check for ownership
+  //       if (currentIndex == player1StartWorkshopCoords) {
+  //         building.isOccupied = 1;
+  //         building.belongsToPlayer = MapTile::BelongsToPlayer1;
+  //       }
+  //       else if (currentIndex == player2StartWorkshopCoords) {
+  //         building.isOccupied = 1;
+  //         building.belongsToPlayer = MapTile::BelongsToPlayer2;
+  //       }
+  //     }
+  //
+  //     // Check for Headquarters
+  //     if (tileType == MapTileType::P1HQ){
+  //       building.isOccupied = 1;
+  //       building.belongsToPlayer = MapTile::BelongsToPlayer1;
+  //       player1.cursorIndex = currentIndex;
+  //     }
+  //     else if (tileType == MapTileType::P2HQ){
+  //       building.isOccupied = 1;
+  //       building.belongsToPlayer = MapTile::BelongsToPlayer2;
+  //       player2.cursorIndex = currentIndex;
+  //     }
+  //
+  //     // add building to our global buildings
+  //     gameBuildings.add(building);
+  //   }
+  // }
 }
-
 
 void AWGameSceneMultiplayer::makeScreenTransition(void)
 {
@@ -195,7 +214,8 @@ void AWGameSceneMultiplayer::makeScreenTransition(void)
   }
 }
 
-void AWGameSceneMultiplayer::showDialog(char_P *titleText){
+void AWGameSceneMultiplayer::showDialog(char_P *titleText)
+{
 
   const uint8_t screenWidth = Arduboy2::width();
 
@@ -241,7 +261,6 @@ void AWGameSceneMultiplayer::showDialog(char_P *titleText){
   // }
 }
 
-
 void AWGameSceneMultiplayer::drawMapAtPosition(Point aPosition, EngineBoy<GameContext, GameSceneID> & engine)
 {
   // helpers
@@ -265,7 +284,7 @@ void AWGameSceneMultiplayer::drawMapAtPosition(Point aPosition, EngineBoy<GameCo
       if (drawPos.x <= -TILE_SIZE || drawPos.x >= screenWidth || drawPos.y <= -TILE_SIZE || drawPos.y >= (screenHeight+TILE_SIZE)) continue;
 
       // get the tile
-      const MapTile tile = mapTileData[y*mapSize.x+x];
+      const MapTile tile = this->mapTileData.getItem(x, y);
       const MapTileType tileType = static_cast<MapTileType>(tile.tileID);
 
       // draw maptile
@@ -273,7 +292,7 @@ void AWGameSceneMultiplayer::drawMapAtPosition(Point aPosition, EngineBoy<GameCo
 
       // check if tile below is the HQ
       if (y < mapSize.y-1) {
-        const MapTile tileBelow = mapTileData[((y+1)*mapSize.x)+x];
+        const MapTile tileBelow = this->mapTileData.getItem(x, y+1);
         const MapTileType tileTypeOfTileBelow = static_cast<MapTileType>(tileBelow.tileID);
 
         // If it's a headquarter draw upper half at the position above
@@ -336,5 +355,216 @@ void AWGameSceneMultiplayer::drawMapAtPosition(Point aPosition, EngineBoy<GameCo
       }
 
     }
+  }
+}
+
+void AWGameSceneMultiplayer::setActivePlayer(AWPlayer &aPlayer)
+{
+  // set current player
+  this->currentplayer = &aPlayer;
+
+  // activate all units
+  for (uint8_t i = 0; i < aPlayer.units.getCount(); i++) {
+    aPlayer.units[i].activated = GameUnit::UnitStateActive;
+  }
+
+  // Calculate Income for every City
+  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+    if(gameBuildings[i].buildingType == static_cast<uint8_t>(MapTileType::City) &&
+    gameBuildings[i].isOccupied &&
+    gameBuildings[i].belongsToPlayer == ((*this->currentplayer == this->player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2))
+    {
+      aPlayer.money += AWPlayer::BaseIncome;
+    }
+  }
+
+  // update player map
+  this->updateMapForPlayer(aPlayer);
+}
+
+void AWGameSceneMultiplayer::updateMapForPlayer(AWPlayer &aPlayer)
+{
+  // fill map with fog
+  this->clearMap(true);
+
+  // add the enemies units
+  AWPlayer &enemyPlayer = (aPlayer == this->player1)?this->player2:this->player1;
+  for (uint8_t i = 0; i < enemyPlayer.units.getCount(); i++) {
+    GameUnit unit = enemyPlayer.units[i];
+
+    // get the corresponding map tile
+    MapTile tile = this->mapTileData.getItem(unit.mapPosX, unit.mapPosY);
+    tile.hasUnit = 1;
+    tile.unitBelongsTo = (enemyPlayer == this->player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+    tile.unitSpriteID = unit.unitType;
+    tile.unitIsActive = GameUnit::UnitStateActive;
+  }
+
+  // udpate the player units
+  for (uint8_t i = 0; i < aPlayer.units.getCount(); i++) {
+    GameUnit unit = aPlayer.units[i];
+
+    // get the corresponding map tile
+    MapTile tile =  this->mapTileData.getItem(unit.mapPosX, unit.mapPosY);
+    tile.hasUnit = 1;
+    tile.unitBelongsTo = (aPlayer == this->player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+    tile.unitSpriteID = unit.unitType;
+    tile.unitIsActive = unit.activated;
+
+    // undo fog for units
+    // Units can see same far as they can move.
+    // get the traits of the unit
+    UnitType unitType = static_cast<UnitType>(unit.unitType);
+    UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+    uint8_t sightRadius = traits.moveDistance;
+
+    // add sight to unit if its on a mountain
+    // Only infantry units can be on hills and mountains and they get a sight boost.
+    if (tile.tileID == static_cast<uint8_t>(MapTileType::Mountain))
+      sightRadius +=1;
+
+    // remove the fog
+    // The fog for a unit gets removed accordingly to it's sight.
+    // Obstacles will conceal the things behind it so a unit can't
+    // see through the enviroment.
+    this->removeFogAtPositionRadiusAndPlayer({unit.mapPosX, unit.mapPosY}, sightRadius, aPlayer, false);
+  }
+
+  // udpate the  buildings
+  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+    GameBuilding building = gameBuildings[i];
+    uint8_t thisPlayer = (aPlayer == this->player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+
+    // get the corresponding map tile
+    MapTile tile = this->mapTileData.getItem(building.mapPosX, building.mapPosY);
+
+    // check if building belongs to current player
+    if (building.isOccupied) {
+      tile.buildingIsOccupied = 1;
+      tile.buildingBelongsTo = (building.belongsToPlayer == thisPlayer)?MapTile::BelongsToPlayer:MapTile::BelongsToEnemy;
+    }
+    else{
+      // not occupied
+      tile.buildingIsOccupied = 0;
+      tile.buildingBelongsTo = 0;
+    }
+
+    // check if building belongs to player, because now we remove the fog of war calculations
+    if (!(building.isOccupied && building.belongsToPlayer == thisPlayer)) continue;
+
+    // remove fog of war
+    this->removeFogAtPositionRadiusAndPlayer({building.mapPosX,building.mapPosY}, GameBuilding::buildingViewDistance, aPlayer, true);
+  }
+}
+
+void AWGameSceneMultiplayer::clearMap(bool withFog){
+  // go trough the whole map
+  for (int8_t y = 0; y < mapSize.y; y++) {
+    for (int8_t x = 0; x < mapSize.x; x++) {
+
+        // get the tile
+        MapTile tile = this->mapTileData.getItem(x, y);
+
+        // turn fog on
+        tile.showsFog = withFog?1:0;
+
+        // disable selection
+        tile.showSelection = 0;
+
+        // remove unit info
+        tile.hasUnit = 0;
+        tile.unitBelongsTo = 0;
+        tile.unitSpriteID = 0;
+    }
+  }
+}
+
+void AWGameSceneMultiplayer::removeFogAtPositionRadiusAndPlayer(Point origin, uint8_t radius, AWPlayer &aPlayer, bool seeThrough)
+{
+    // For the raycast to work we need to calculate every point which should
+    // be tested around the perimeter of the unit. For that we use Bresenham's
+    // circle algorithm to get every point on the perimeter and do a raycast to that point.
+    int8_t r = radius*2; // double the distance to avoid glitches
+    int8_t x = -r;
+    int8_t y = 0;
+    int8_t err = 2-2*r;
+    do {
+
+      // do a raycast in each quadrant of the circle.
+      castRayTo(origin, seeThrough, aPlayer, origin.x-x, origin.y+y); // 1st quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x-y, origin.y-x); // 2nd quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x+x, origin.y-y); // 3rd quadrant
+      castRayTo(origin, seeThrough, aPlayer, origin.x+y, origin.y+x); // 4th quadrant
+
+      // continue with bresenham
+      r = err;
+      if (r <= y) err += ++y*2+1;
+      if (r > x || err > y) err += ++x*2+1;
+    } while (x < 0);
+}
+
+void AWGameSceneMultiplayer::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t xEnd, int8_t yEnd)
+{
+
+  // We are doing here a so called Raycast. It's called this way because
+  // it mathematecally shots a "ray" from the origin to the destination Like
+  // a light ray. If it hits an obstacle it stops so you can't see through.
+  // it also stops if it reaches the sight radius.
+  //
+  // The algorithm which we use to cast the ray is called
+  // Bresenham's algorithm and is often used in computer graphics to draw
+  // lines and circles. Even the Arduboy library uses it for this purpose.
+
+  int8_t x0 = origin.x;
+  int8_t y0 = origin.y;
+  int8_t dx =  abs(xEnd-x0), sx = x0<xEnd ? 1 : -1;
+  int8_t dy = -abs(yEnd-y0), sy = y0<yEnd ? 1 : -1;
+  int8_t err = dx+dy, e2;
+  int8_t forestLimit = 2; // Unit can see through 2 forests
+
+  // half the distance, because the endppoint which comes from the circle-
+  // algorithm is in a doubled distance to avoid glitches.
+  int8_t r = (dx-dy)/2; // There might be rounding issues but for simplicity we don't care.
+
+  while(true){
+
+    // calc current disctance
+    uint8_t currentDistance = abs(origin.x-x0) + abs(origin.y-y0);
+
+    // check for bounds and remove fog
+    if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && currentDistance <= r) {
+
+      // get the corresponding map tile
+      MapTile tile = this->mapTileData.getItem(x0, y0);
+
+      // update tile data
+      if (forestLimit >= 0 || seeThrough)
+        tile.showsFog = 0;
+
+      // ignore the origin
+      if (currentDistance != 0 && !seeThrough){
+
+        // check if there is an Obstacle
+        if (mapTileIsOpaque(static_cast<MapTileType>(this->mapTileData.getItem(x0, y0).tileID)))
+            break;
+
+        // check if there is an enemy unit because we can't see through it
+        if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
+          break;
+
+        // check for forest
+        if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
+          forestLimit--;
+        }
+      }
+    }
+
+    // check for end
+    if ( x0==xEnd && y0==yEnd) break;
+
+    // update algorithm
+    e2 = 2*err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
   }
 }
