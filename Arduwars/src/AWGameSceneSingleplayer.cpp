@@ -6,7 +6,6 @@
 
 AWGameSceneSingleplayer::AWGameSceneSingleplayer()
 {
-  this->gameSceneID = AWGameState::Playing;
 }
 
 void AWGameSceneSingleplayer::update(EngineBoy<GameContext, GameSceneID> & engine)
@@ -18,10 +17,10 @@ void AWGameSceneSingleplayer::update(EngineBoy<GameContext, GameSceneID> & engin
 void AWGameSceneSingleplayer::render(EngineBoy<GameContext, GameSceneID> & engine)
 {
   // get game context
-  auto gameContext = engine.getContext();
+  auto & gameContext = engine.getContext();
 
   // get Tinyfont
-  auto tinyfont = gameContext.tinyfont;
+  auto & tinyfont = gameContext.tinyfont;
 
   // Here we draw the menu text
   tinyfont.setTextColor(WHITE);

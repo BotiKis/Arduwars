@@ -2,7 +2,6 @@
 
 #include "EngineBoy.h"
 #include "AWGameContext.h"
-#include "AWGameEngine.h"
 
 class AWGameSceneMenu : public GameScene<AWGameContext, AWGameState>{
 public:
@@ -11,7 +10,6 @@ public:
     int8_t cursorIdx = 0;
 
 public:
-    AWGameSceneMenu();
 
     void update(EngineBoy<GameContext, GameSceneID> & engine) override;
     void render(EngineBoy<GameContext, GameSceneID> & engine) override;

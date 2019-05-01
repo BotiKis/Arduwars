@@ -4,11 +4,6 @@
 #include "Localization.h"
 #include "FlashString.h"
 
-AWGameSceneMenu::AWGameSceneMenu()
-{
-  this->gameSceneID = AWGameState::Menu;
-}
-
 void AWGameSceneMenu::update(EngineBoy<GameContext, GameSceneID> & engine)
 {
     // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
@@ -26,19 +21,19 @@ void AWGameSceneMenu::update(EngineBoy<GameContext, GameSceneID> & engine)
       switch (cursorIdx) {
         case 0:
         {
-          engine.getContext().selectedGameMode = AWGameMode::Singleplayer;
+          engine.getContext().setSelectedGameMode(AWGameMode::Singleplayer);
           engine.changeToScene(AWGameState::MapSelection);
           break;
         }
         case 1:
         {
-          engine.getContext().selectedGameMode = AWGameMode::Multiplayer;
+          engine.getContext().setSelectedGameMode(AWGameMode::Multiplayer);
           engine.changeToScene(AWGameState::MapSelection);
           break;
         }
         default: // this default is not needed but it's safe to do this.
         {
-          engine.getContext().selectedGameMode = AWGameMode::NotSelected;
+          engine.getContext().setSelectedGameMode(AWGameMode::NotSelected);
           break;
         }
       }
@@ -50,10 +45,10 @@ void AWGameSceneMenu::render(EngineBoy<GameContext, GameSceneID> & engine)
     static constexpr uint8_t yOffset = 44;
 
     // get game context
-    auto gameContext = engine.getContext();
+    auto & gameContext = engine.getContext();
 
     // get Tinyfont
-    auto tinyfont = gameContext.tinyfont;
+    auto & tinyfont = gameContext.tinyfont;
 
     // draw title logo
     gameContext.sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);

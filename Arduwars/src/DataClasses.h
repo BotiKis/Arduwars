@@ -290,7 +290,7 @@ public:
   GameUnit * getUnitForMapCoordinates(Point coordinates);
 
   // Default income for one building
-  static constexpr uint8_t BaseIncome = 10;
+  constexpr static const uint8_t BaseIncome = 10;
 
   // operator compares the player ID
   bool operator==(const AWPlayer& other) const;

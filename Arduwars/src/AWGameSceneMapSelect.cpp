@@ -7,7 +7,7 @@
 
 AWGameSceneMapSelect::AWGameSceneMapSelect()
 {
-  this->gameSceneID = AWGameState::MapSelection;
+  
 }
 
 void AWGameSceneMapSelect::update(EngineBoy<GameContext, GameSceneID> & engine)
@@ -33,7 +33,11 @@ void AWGameSceneMapSelect::update(EngineBoy<GameContext, GameSceneID> & engine)
       case 2: selectedMapID = MapID::Map1; break;
     }
 
-    engine.getContext().selectedMap = selectedMapID;
+    // get game context
+    auto & gameContext = engine.getContext();
+
+    // Set selected map
+    gameContext.setSelectedMap(selectedMapID);
 
     // Safety check then change scene
     if(selectedMapID != MapID::None)
@@ -53,10 +57,10 @@ void AWGameSceneMapSelect::render(EngineBoy<GameContext, GameSceneID> & engine)
   static constexpr uint8_t yOffset = 44;
 
   // get game context
-  auto gameContext = engine.getContext();
+  auto & gameContext = engine.getContext();
 
   // get Tinyfont
-  auto tinyfont = gameContext.tinyfont;
+  auto & tinyfont = gameContext.tinyfont;
 
   // draw title logo
   gameContext.sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
@@ -65,11 +69,11 @@ void AWGameSceneMapSelect::render(EngineBoy<GameContext, GameSceneID> & engine)
   tinyfont.setTextColor(WHITE);
 
   // Draw the menu
-  if (gameContext.selectedGameMode == AWGameMode::Singleplayer) {
+  if (gameContext.selectedGameMode() == AWGameMode::Singleplayer) {
     tinyfont.setCursor(44, 20);
     tinyfont.print(AsFlashString(LOCA_SinglePlayer));
   }
-  else if (gameContext.selectedGameMode == AWGameMode::Multiplayer) {
+  else if (gameContext.selectedGameMode() == AWGameMode::Multiplayer) {
     tinyfont.setCursor(36, 20);
     tinyfont.print(AsFlashString(LOCA_MultiPlayer));
   }

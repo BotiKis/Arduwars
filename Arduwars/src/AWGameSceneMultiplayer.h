@@ -2,7 +2,6 @@
 
 #include "EngineBoy.h"
 #include "AWGameContext.h"
-#include "AWGameEngine.h"
 
 #include "MapData.h"
 #include "Localization.h"
@@ -40,6 +39,7 @@ private:
   Grid<MapTile, 24, 16> mapTileData;
   Point mapSize = {0, 0}; // Mapsize is in Maptile coordinates and not in screen coordinates.
   static constexpr uint8_t mapOffsetY = 8;
+  //999
 
 public:
     // constructor
@@ -48,8 +48,8 @@ public:
     void update(EngineBoy<GameContext, GameSceneID> & engine) override;
     void render(EngineBoy<GameContext, GameSceneID> & engine) override;
 
-    void willBecomeActive(EngineBoy<GameContext, GameSceneID> & engine) override;
-    void didBecomeInActive(EngineBoy<GameContext, GameSceneID> & engine) override;
+    void didAppear(EngineBoy<GameContext, GameSceneID> & engine) override;
+    void willDisappear(EngineBoy<GameContext, GameSceneID> & engine) override;
 
 private:
     void loadMap(MapID mapID);

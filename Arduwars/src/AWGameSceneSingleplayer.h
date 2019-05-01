@@ -2,7 +2,6 @@
 
 #include "EngineBoy.h"
 #include "AWGameContext.h"
-#include "AWGameEngine.h"
 
 class AWGameSceneSingleplayer : public GameScene<AWGameContext, AWGameState>{
 public:

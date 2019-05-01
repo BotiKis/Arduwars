@@ -1,9 +1,7 @@
 #include "AWGameEngine.h"
+#include "MemoryFree.h"
+#include "PlacementNew.h"
 
-#include "AWGameSceneMenu.h"
-#include "AWGameSceneMapSelect.h"
-#include "AWGameSceneMultiplayer.h"
-#include "AWGameSceneSingleplayer.h"
 
 void AWGameEngine::setup(void)
 {
@@ -11,48 +9,68 @@ void AWGameEngine::setup(void)
     EngineBoy::setup();
 
     // Set up text
-    context.tinyfont.setTextColor(BLACK);
+    this->getContext().tinyfont.setTextColor(BLACK);
 
     // Init information
-    context.selectedGameMode = AWGameMode::NotSelected;
-    context.selectedMap = MapID::None;
+    this->getContext().setSelectedGameMode(AWGameMode::NotSelected);
+    this->getContext().setSelectedMap(MapID::None);
 
     // Show menu
     this->changeToScene(AWGameState::Menu);
 }
 
-void AWGameEngine::didChangeToScene(GameScene<GameContext, GameSceneID> *previousScene, GameScene<GameContext, GameSceneID> *nextScene)
+void AWGameEngine::_render(void)
 {
-    // Clean up
-    if(previousScene != nullptr)
-      delete previousScene;
+  // get Tinyfont
+  auto & tinyfont = this->getContext().tinyfont;
 
-    if (nextScene == nullptr)
-      {
-        context.selectedGameMode = AWGameMode::NotSelected;
-        context.selectedMap = MapID::None;
-      }
-    else if (1) {
-      /* code */
-    }
+  tinyfont.setTextColor(WHITE);
+
+  this->arduboy.fillRect(82, 57, 48, 8, WHITE);
+  this->arduboy.fillRect(83, 58, 47, 6, BLACK);
+
+  tinyfont.setCursor(84,59);
+  tinyfont.print(F("Free:"));
+  tinyfont.setCursor(84+24,59);
+  tinyfont.print(freeMemory());
+
+  tinyfont.setTextColor(BLACK);
+}
+
+void AWGameEngine::willShowScene(GameScene<GameContext, GameSceneID> *nextScene)
+{
+  if (nextScene == nullptr)
+  {
+    context.setSelectedGameMode(AWGameMode::NotSelected);
+    context.setSelectedMap(MapID::None);
+  }
+}
+
+void AWGameEngine::didDismissScene(GameScene<GameContext, GameSceneID> *previousScene)
+{
+	// Clean up
+	if(previousScene != nullptr)
+	{
+		previousScene->~GameScene();
+	}
 }
 
 GameScene<AWGameEngine::GameContext, AWGameEngine::GameSceneID>* AWGameEngine::gameSceneForSceneID(GameSceneID sceneID)
 {
     switch(sceneID)
     {
-        case AWGameState::MapSelection: return new AWGameSceneMapSelect;
+        case AWGameState::MapSelection: return new (&this->_gameScenes[0]) AWGameSceneMapSelect();
         case AWGameState::Playing:
         {
-          switch (context.selectedGameMode) {
-            case AWGameMode::Multiplayer:   return new AWGameSceneMultiplayer(this->context.selectedMap);
-            case AWGameMode::Singleplayer:  return new AWGameSceneSingleplayer;
-            default:                        return new AWGameSceneMenu;
+          switch (context.selectedGameMode()) {
+            case AWGameMode::Multiplayer:   return new (&this->_gameScenes[0]) AWGameSceneMultiplayer(this->getContext().selectedMap());
+            case AWGameMode::Singleplayer:  return new (&this->_gameScenes[0]) AWGameSceneSingleplayer();
+            default:                        return new (&this->_gameScenes[0]) AWGameSceneMenu();
           }
         }
 
         // default to menu
         case AWGameState::Menu:
-        default:  return new AWGameSceneMenu;
+        default:  return new (&this->_gameScenes[0]) AWGameSceneMenu();
     }
 }

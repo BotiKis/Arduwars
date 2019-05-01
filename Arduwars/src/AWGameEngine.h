@@ -4,6 +4,11 @@
 #include "AWGameState.h"
 #include "AWGameContext.h"
 
+#include "AWGameSceneMenu.h"
+#include "AWGameSceneMapSelect.h"
+#include "AWGameSceneMultiplayer.h"
+#include "AWGameSceneSingleplayer.h"
+
 // Global variables
 constexpr uint8_t SCROLLSPEED_NORMAL = 1;
 constexpr uint8_t SCROLLSPEED_FAST = 3;
@@ -30,5 +35,19 @@ public:
 private:
 
     GameScene<GameContext, GameSceneID>* gameSceneForSceneID(GameSceneID sceneID) override;
-    void didChangeToScene(GameScene<GameContext, GameSceneID> *previousScene, GameScene<GameContext, GameSceneID> *nextScene) final;
+    void willShowScene(GameScene<GameContext, GameSceneID> *nextScene) final;
+    void didDismissScene(GameScene<GameContext, GameSceneID> *previousScene) final;
+
+    // For debug and internal stuff
+  	void _render(void) override;
+
+    union GameScenes
+    {
+      AWGameSceneMenu gameSceneMenu;
+      AWGameSceneMapSelect gameSceneMapSelect;
+      AWGameSceneMultiplayer gameSceneMultiplayer;
+      AWGameSceneSingleplayer gameSceneSingleplayer;
+    };
+
+    char _gameScenes[sizeof(GameScenes)];
 };
