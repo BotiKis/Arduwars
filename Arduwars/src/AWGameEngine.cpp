@@ -1,5 +1,4 @@
 #include "AWGameEngine.h"
-#include "MemoryFree.h"
 #include "PlacementNew.h"
 
 
@@ -21,20 +20,7 @@ void AWGameEngine::setup(void)
 
 void AWGameEngine::_render(void)
 {
-  // get Tinyfont
-  auto & tinyfont = this->getContext().tinyfont;
-
-  tinyfont.setTextColor(WHITE);
-
-  this->arduboy.fillRect(82, 57, 48, 8, WHITE);
-  this->arduboy.fillRect(83, 58, 47, 6, BLACK);
-
-  tinyfont.setCursor(84,59);
-  tinyfont.print(F("Free:"));
-  tinyfont.setCursor(84+24,59);
-  tinyfont.print(freeMemory());
-
-  tinyfont.setTextColor(BLACK);
+  // empty
 }
 
 void AWGameEngine::willShowScene(GameScene<GameContext, GameSceneID> *nextScene)
