@@ -39,6 +39,25 @@ bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
   return (lutForAttacker & (0b1000000000000000 >> static_cast<uint16_t>(defender)) );
 }
 
+uint8_t GameUnit::calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile){
+
+  if (!canUnitAttackUnit(attacker, defender)) return 0;
+
+  UnitTraits attackerTraits = UnitTraits::traitsForUnitType(attacker);
+  UnitTraits defenderTraits = UnitTraits::traitsForUnitType(defender);
+
+  // Raw damage is twice the attack power, scaled by the attackers health
+  // (rounded up so a hurt unit still hits).
+  uint8_t damage = (attackerTraits.attackPower*2*attackerHealth + UnitDefaultHealth-1) / UnitDefaultHealth;
+
+  // Defense of the unit plus cover. Air units get no cover from terrain.
+  uint8_t reduction = defenderTraits.defense;
+  if (!isAir(defender)) reduction += mapTileDefenseBonus(defenderTile);
+
+  // Every successful attack deals at least 1 damage.
+  return (damage > reduction) ? (damage - reduction) : 1;
+}
+
 UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   UnitTraits traits;
 

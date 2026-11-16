@@ -89,6 +89,18 @@ static inline bool mapTileIsStreet(MapTileType mapTileidx){
   return (mapTileidx >= MapTileType::Street1 && mapTileidx <= MapTileType::Street6);
 }
 
+// Helper function returns the defense bonus a tile gives to ground units.
+static inline uint8_t mapTileDefenseBonus(MapTileType mapTileidx){
+  switch (mapTileidx) {
+    case MapTileType::Forest:   return 1;
+    case MapTileType::Hill:     return 2;
+    case MapTileType::Mountain: return 3;
+    case MapTileType::P1HQ:
+    case MapTileType::P2HQ:     return 3;
+    default: return mapTileIndexIsBuilding(mapTileidx) ? 2 : 0;
+  }
+}
+
 
 
 // ====================================================
@@ -188,6 +200,18 @@ public:
 
   // Static method tells if a unit can attack another one.
   static bool canUnitAttackUnit(UnitType attacker, UnitType defender);
+
+  // Returns the damage an attacker with the given health deals to a defender
+  // standing on the given tile. Always at least 1 if the attack is possible.
+  static uint8_t calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile);
+
+  // Unit categories
+  static inline bool isInfantry(UnitType unitType){
+    return unitType >= UnitType::Soldier && unitType <= UnitType::SpecOps;
+  }
+  static inline bool isAir(UnitType unitType){
+    return unitType >= UnitType::Heli && unitType <= UnitType::Bomber;
+  }
 };
 
 class UnitTraits{
@@ -255,6 +279,10 @@ public:
 
   // attribute is the global viewdistance for all buildings
   static constexpr uint8_t buildingViewDistance = 3;
+
+  // healthPoints doubles as capture points: infantry reduce it by their own
+  // health each turn and take the building when it reaches 0.
+  static constexpr uint8_t CapturePoints = 10;
 };
 
 

@@ -234,8 +234,9 @@ const unsigned char * AWGame::showMapSelection(AWGameState aState){
 }
 
 void AWGame::startNewSinglePlayerGame(){
-  // reset day count;
+  // reset day count and result
   daysPlayed = 0;
+  winner = NoWinner;
 
   // reset players
   player1.reset();
@@ -277,8 +278,9 @@ void AWGame::runSinglePlayerGame(){
 }
 
 void AWGame::startNewMultiplayerPlayerGame(){
-  // reset day count;
+  // reset day count and result
   daysPlayed = 0;
+  winner = NoWinner;
 
   // reset players
   player1.reset();
@@ -313,6 +315,9 @@ void AWGame::runMultiPlayerGame(){
     for (uint8_t i = 0; i < currentPlayer->units.getCount(); i++) {
       currentPlayer->units[i].activated = GameUnit::UnitStateActive;
     }
+
+    // capture progress is lost when the capturing unit left or was destroyed
+    resetAbandonedCaptures();
 
     // Calculate Income for every City
     for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
@@ -350,8 +355,14 @@ void AWGame::runMultiPlayerGame(){
     doRoundOfPlayer(*currentPlayer);
 
     // check for win condition
-    if (daysPlayed == 255) {
-      #warning implement win condition
+    if (winner != NoWinner) {
+      showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_player1Wins : LOCA_player2Wins);
+      return;
+    }
+
+    // after 255 days the game ends in a draw
+    if (daysPlayed == 255 && *currentPlayer == player2) {
+      showDialog(LOCA_draw);
       return;
     }
 
@@ -425,7 +436,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             case AWTurnState::UnitAttack:{
               // get next marked Pos if it exists
               Point nextPos = nextMarkedMapPosition(currentIndex, 1);
-              if (nextPos.x > 0) { // This check if enough to verify a correct position
+              if (nextPos.x >= 0) { // {-1,-1} means no marked position
                 // move camera to tile
                 cursorPosition = nextPos*TILE_SIZE;
                 cursorPosition.x -= 8;
@@ -450,7 +461,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             case AWTurnState::UnitAttack:{
               // get next marked Pos if it exists
               Point nextPos = nextMarkedMapPosition(currentIndex, -1);
-              if (nextPos.x > 0) { // This check if enough to verify a correct position
+              if (nextPos.x >= 0) { // {-1,-1} means no marked position
                 // move camera to tile
                 cursorPosition = nextPos*TILE_SIZE;
                 cursorPosition.x -= 8;
@@ -475,7 +486,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             case AWTurnState::UnitAttack:{
               // get next marked Pos if it exists
               Point nextPos = nextMarkedMapPosition(currentIndex, -1);
-              if (nextPos.x > 0) { // This check if enough to verify a correct position
+              if (nextPos.x >= 0) { // {-1,-1} means no marked position
                 // move camera to tile
                 cursorPosition = nextPos*TILE_SIZE;
                 cursorPosition.x -= 8;
@@ -501,7 +512,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             case AWTurnState::UnitAttack:{
               // get next marked Pos if it exists
               Point nextPos = nextMarkedMapPosition(currentIndex, 1);
-              if (nextPos.x > 0) { // This check if enough to verify a correct position
+              if (nextPos.x >= 0) { // {-1,-1} means no marked position
                 // move camera to tile
                 cursorPosition = nextPos*TILE_SIZE;
                 cursorPosition.x -= 8;
@@ -695,13 +706,46 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
               // only continue if unit can move here
               if (currentTile.showSelection && selectedUnit != nullptr){
 
-                // show options box
-                char_P* options[3] = {LOCA_move, LOCA_attack, LOCA_cancel};
-                switch (showOptions(options, 3)) {
+                // Build the options for this unit and destination.
+                // actions[] remembers what each visible option does.
+                constexpr uint8_t ActionMove = 0;
+                constexpr uint8_t ActionAttack = 1;
+                constexpr uint8_t ActionCapture = 2;
+                constexpr uint8_t ActionCancel = 3;
+
+                UnitType unitType = static_cast<UnitType>(selectedUnit->unitType);
+                UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+                bool hasMoved = !(currentIndex == originalUnitPosition);
+
+                char_P* options[4];
+                uint8_t actions[4];
+                uint8_t numberOfOptions = 0;
+
+                options[numberOfOptions] = LOCA_move;
+                actions[numberOfOptions++] = ActionMove;
+
+                // Indirect units (range > 1) can't move and attack in the same turn.
+                if (traits.attackPower > 0 && !(traits.attackRange > 1 && hasMoved)) {
+                  options[numberOfOptions] = LOCA_attack;
+                  actions[numberOfOptions++] = ActionAttack;
+                }
+
+                if (canUnitCaptureAtPosition(selectedUnit, currentIndex, currentPlayer)) {
+                  options[numberOfOptions] = LOCA_capture;
+                  actions[numberOfOptions++] = ActionCapture;
+                }
+
+                options[numberOfOptions] = LOCA_cancel;
+                actions[numberOfOptions++] = ActionCancel;
+
+                int8_t selectedOption = showOptions(options, numberOfOptions);
+                uint8_t action = (selectedOption < 0) ? ActionCancel : actions[selectedOption];
+
+                switch (action) {
 
                   ///////
                   // MOVE
-                  case 0:{
+                  case ActionMove:{
                     // unmark unit
                     unmarkUnitOnMap(selectedUnit);
 
@@ -721,7 +765,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
 
                   /////////
                   // ATTACK
-                  case 1:{
+                  case ActionAttack:{
                     // prepare for attack
                     turnState = AWTurnState::UnitAttack;
 
@@ -735,26 +779,56 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                     // update map
                     updateMapForPlayer(currentPlayer);
 
-                    // get units traits
-                    UnitType unitType = static_cast<UnitType>(selectedUnit->unitType);
-                    UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-
                     // mark attack positions
-                    markPositionForAttack({selectedUnit->mapPosX,selectedUnit->mapPosY}, traits.attackRange+1, static_cast<UnitType>(selectedUnit->unitType), currentPlayer);
+                    markPositionForAttack({selectedUnit->mapPosX,selectedUnit->mapPosY}, traits.attackRange, unitType, currentPlayer);
 
-                    // get first marked position if it exists
-                    Point nextPos = nextMarkedMapPosition(currentIndex);
-                    if (nextPos.x > 0) { // This check if enough to verify a correct position
+                    // get first marked position if it exists (search from the start of the map)
+                    Point nextPos = nextMarkedMapPosition({-1, 0});
+                    if (nextPos.x >= 0) {
                       // move camera to tile
                       cursorPosition = nextPos*TILE_SIZE;
                       cursorPosition.x -= 8;
                       cursorPosition.y -= 8;
                     }
+                    else {
+                      // nothing in range: tell the player and go back to the selection
+                      showDialog(LOCA_noTarget);
+                      selectedUnit->mapPosX = originalUnitPosition.x;
+                      selectedUnit->mapPosY = originalUnitPosition.y;
+                      updateMapForPlayer(currentPlayer);
+                      markUnitOnMap(selectedUnit);
+                      turnState = AWTurnState::UnitSelected;
+                    }
                   }
+                  break;
+
+                  //////////
+                  // CAPTURE
+                  case ActionCapture:{
+                    // unmark unit
+                    unmarkUnitOnMap(selectedUnit);
+
+                    // move unit onto the building and end its turn
+                    selectedUnit->mapPosX = currentIndex.x;
+                    selectedUnit->mapPosY = currentIndex.y;
+                    selectedUnit->activated = GameUnit::UnitStateDisabled;
+
+                    captureBuildingWithUnit(selectedUnit, currentPlayer);
+
+                    updateMapForPlayer(currentPlayer);
+                    selectedUnit = nullptr;
+                    turnState = AWTurnState::Default;
+
+                    // capturing the enemy HQ ends the game
+                    if (winner != NoWinner) {
+                      currentPlayer.cursorIndex = currentIndex;
+                      return;
+                    }
+                  }
+                  break;
 
                   /////////////////
                   // CANCEL ACTION
-                  break;
                   default:{
                     turnState = AWTurnState::Default;
 
@@ -774,6 +848,26 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             // A Unit is attacking
             case AWTurnState::UnitAttack:{
 
+              // only attack marked targets
+              MapTile targetTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+              if (!targetTile.showSelection || selectedUnit == nullptr) break;
+
+              // the attacking unit is done for this turn
+              selectedUnit->activated = GameUnit::UnitStateDisabled;
+
+              // Note: selectedUnit may be destroyed by the counterattack,
+              // so it must not be used after this call.
+              attackUnitAtPosition(selectedUnit, currentIndex, currentPlayer);
+              selectedUnit = nullptr;
+
+              updateMapForPlayer(currentPlayer);
+              turnState = AWTurnState::Default;
+
+              // destroying the last enemy unit ends the game
+              if (winner != NoWinner) {
+                currentPlayer.cursorIndex = currentIndex;
+                return;
+              }
             }
             break;
 
@@ -989,7 +1083,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
       // to the first character and not the whole string. A pointer takes up 2 bytes which
       // is called a word and that's why we use pgm_read_word() to read it from there.
       // Now that we have the string we can pass it as a FlashString.
-      tinyfont.print(AsFlashString(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitToDraw)]))));
+      tinyfont.print(AsFlashString(reinterpret_cast<char_P*>(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitToDraw)])))));
 
       // if unit is not affordable draw a x as a hint
       if (!canAffordUnit) {
@@ -1381,41 +1475,34 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
 
 void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer){
 
-    // check if we are at the end
-    if (distance <= 0) return;
-
     // check player
-    uint8_t thisPlayer = (attackingPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
+    uint8_t thisPlayer = playerIndex(attackingPlayer);
 
-    // check for bounds
-    if (position.x < 0 || position.x >= mapSize.x || position.y < 0 || position.y >= mapSize.y ) return;
+    // Walk every tile within the attack range (a diamond around the unit)
+    for (int8_t dy = -distance; dy <= distance; dy++) {
+      int8_t span = distance - abs(dy);
+      for (int8_t dx = -span; dx <= span; dx++) {
+        int8_t x = position.x + dx;
+        int8_t y = position.y + dy;
 
-    // get the tile
-    MapTile tile = mapTileData[position.y*mapSize.x+position.x];
+        // check for bounds
+        if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) continue;
 
-    // chek if there is an enemy unit
-    if (!tile.showsFog && tile.hasUnit && tile.unitBelongsTo != thisPlayer) {
-      tile.showSelection = 1;
-      mapTileData[position.y*mapSize.x+position.x] = tile;
+        // mark visible enemy units this unit is able to attack
+        MapTile &tile = mapTileData[y*mapSize.x+x];
+        if (!tile.showsFog && tile.hasUnit && tile.unitBelongsTo != thisPlayer &&
+            GameUnit::canUnitAttackUnit(unit, static_cast<UnitType>(tile.unitSpriteID))) {
+          tile.showSelection = 1;
+        }
+      }
     }
-
-    // shorten the distance for every step.
-    distance--;
-
-    // recursively call this method for every orientation
-    markPositionForAttack({position.x+1, position.y}, distance, unit, attackingPlayer);
-    markPositionForAttack({position.x, position.y-1}, distance, unit, attackingPlayer);
-    markPositionForAttack({position.x-1, position.y}, distance, unit, attackingPlayer);
-    markPositionForAttack({position.x, position.y+1}, distance, unit, attackingPlayer);
-
-    return;
 }
 
 
 Point AWGame::nextMarkedMapPosition(Point currentPosition, int8_t direction){
 
     // iterate through the map
-    for (int8_t i = (currentPosition.x+currentPosition.y*mapSize.x)+direction; i < (mapSize.x*mapSize.y) && i >= 0; i += direction) {
+    for (int16_t i = (currentPosition.x+currentPosition.y*mapSize.x)+direction; i < (mapSize.x*mapSize.y) && i >= 0; i += direction) {
 
       // get maptile
       const MapTile tile = mapTileData[i];
@@ -1512,6 +1599,16 @@ void AWGame::drawMapAtPosition(Point pos){
           sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 2);
         }
 
+        // Show remaining health in the bottom right corner once a unit is hurt
+        AWPlayer &owner = (tile.unitBelongsTo == MapTile::BelongsToPlayer1) ? player1 : player2;
+        const GameUnit *unit = owner.getUnitForMapCoordinates({x, y});
+        if (unit != nullptr && unit->healthPoints < GameUnit::UnitDefaultHealth) {
+          arduboy.fillRect(drawPos.x+10, drawPos.y+9, 6, 7, BLACK);
+          arduboy.fillRect(drawPos.x+11, drawPos.y+10, 5, 6, WHITE);
+          tinyfont.setCursor(drawPos.x+12, drawPos.y+11);
+          tinyfont.print(unit->healthPoints);
+        }
+
       }
 
     }
@@ -1545,7 +1642,7 @@ void AWGame::makeScreenTransition(){
   }
 }
 
-const GameBuilding * AWGame::getBuildingAtCoordinate(Point coordinate){
+GameBuilding * AWGame::getBuildingAtCoordinate(Point coordinate){
 
   // go through all buildings
   for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
@@ -1627,13 +1724,12 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t 
             break;
 
         // check if there is an enemy unit because we can't see through it
-        if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1)){
+        if (tile.hasUnit && tile.unitBelongsTo == ((aPlayer == player1) ? MapTile::BelongsToPlayer2 : MapTile::BelongsToPlayer1))
           break;
 
         // check for forest
         if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
           forestLimit--;
-        }
       }
     }
 
@@ -1644,5 +1740,102 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t 
     e2 = 2*err;
     if (e2 >= dy) { err += dy; x0 += sx; }
     if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+
+// ====================================================
+// Combat and capturing
+
+void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer){
+
+  AWPlayer &defendingPlayer = (attackingPlayer == player1) ? player2 : player1;
+  GameUnit *defender = defendingPlayer.getUnitForMapCoordinates(target);
+  if (attacker == nullptr || defender == nullptr) return;
+
+  UnitType attackerType = static_cast<UnitType>(attacker->unitType);
+  UnitType defenderType = static_cast<UnitType>(defender->unitType);
+  MapTileType defenderTile = static_cast<MapTileType>(mapTileData[target.y*mapSize.x+target.x].tileID);
+  MapTileType attackerTile = static_cast<MapTileType>(mapTileData[attacker->mapPosY*mapSize.x+attacker->mapPosX].tileID);
+
+  // short flash so the player sees the hit
+  arduboy.invert(true);
+  delay(60);
+  arduboy.invert(false);
+
+  uint8_t damage = GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile);
+
+  if (damage >= defender->healthPoints) {
+    // defender destroyed
+    defendingPlayer.units.removeAt(defender - defendingPlayer.units.getData());
+    if (defendingPlayer.units.isEmpty()) winner = playerIndex(attackingPlayer);
+    return;
+  }
+  defender->healthPoints -= damage;
+
+  // Counterattack: only between direct units that are next to each other.
+  UnitTraits attackerTraits = UnitTraits::traitsForUnitType(attackerType);
+  UnitTraits defenderTraits = UnitTraits::traitsForUnitType(defenderType);
+  uint8_t distance = abs(target.x - attacker->mapPosX) + abs(target.y - attacker->mapPosY);
+
+  if (distance != 1 || attackerTraits.attackRange > 1 || defenderTraits.attackRange > 1) return;
+
+  damage = GameUnit::calculateDamage(defenderType, defender->healthPoints, attackerType, attackerTile);
+  if (damage == 0) return; // defender can't hit this unit type
+
+  if (damage >= attacker->healthPoints) {
+    // attacker destroyed by the counterattack
+    attackingPlayer.units.removeAt(attacker - attackingPlayer.units.getData());
+    if (attackingPlayer.units.isEmpty()) winner = playerIndex(defendingPlayer);
+    return;
+  }
+  attacker->healthPoints -= damage;
+}
+
+bool AWGame::canUnitCaptureAtPosition(const GameUnit *unit, Point position, AWPlayer &aPlayer){
+  if (unit == nullptr || !GameUnit::isInfantry(static_cast<UnitType>(unit->unitType))) return false;
+
+  GameBuilding *building = getBuildingAtCoordinate(position);
+  if (building == nullptr) return false;
+
+  // can't capture what we already own
+  return !(building->isOccupied && building->belongsToPlayer == playerIndex(aPlayer));
+}
+
+void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPlayer){
+  Point position = {unit->mapPosX, unit->mapPosY};
+  if (!canUnitCaptureAtPosition(unit, position, capturingPlayer)) return;
+
+  GameBuilding *building = getBuildingAtCoordinate(position);
+
+  // a hurt unit captures slower
+  if (unit->healthPoints < building->healthPoints) {
+    building->healthPoints -= unit->healthPoints;
+    return;
+  }
+
+  // building taken
+  building->isOccupied = 1;
+  building->belongsToPlayer = playerIndex(capturingPlayer);
+  building->healthPoints = GameBuilding::CapturePoints;
+
+  MapTileType type = static_cast<MapTileType>(building->buildingType);
+  if (type == MapTileType::P1HQ || type == MapTileType::P2HQ) {
+    winner = playerIndex(capturingPlayer);
+  }
+  else {
+    showDialog(LOCA_captured);
+  }
+}
+
+void AWGame::resetAbandonedCaptures(){
+  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+    GameBuilding &building = gameBuildings[i];
+    if (building.healthPoints >= GameBuilding::CapturePoints) continue;
+
+    Point position = {building.mapPosX, building.mapPosY};
+    if (player1.getUnitForMapCoordinates(position) == nullptr &&
+        player2.getUnitForMapCoordinates(position) == nullptr) {
+      building.healthPoints = GameBuilding::CapturePoints;
+    }
   }
 }
