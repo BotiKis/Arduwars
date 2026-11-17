@@ -107,8 +107,10 @@ private:
     // The enemy AI's turn
     void doRoundOfAI(AWPlayer &ai);
     void aiMoveUnit(GameUnit *unit, AWPlayer &ai);
-    uint8_t aiBestTargetFrom(const GameUnit *unit, Point position, AWPlayer &enemy, Point &target);
 #endif
+
+    // Adds a new unit with full health that can act from the next turn on.
+    void addNewUnit(AWPlayer &owner, UnitType unitType, Point position);
 
     // Units sold at a building. Returns the count, 0 if it is not a shop.
     static uint8_t shopListForBuilding(MapTileType building, const UnitType *&buyableUnits);
@@ -177,7 +179,10 @@ private:
     void animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point camera, bool onlyVisible);
 
     // This method marks the maptiles, where an enemy unit is which can be attacked.
-    void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer);
+    // Looks at every enemy the unit could attack from position. Returns the
+    // best damage (0 = nothing in range) and that enemy's tile in target.
+    // With markVisible, the targets the player can see are marked on the map.
+    uint8_t scanTargets(const GameUnit *unit, Point position, AWPlayer &attackingPlayer, Point &target, bool markVisible);
 
     // returns the position of the next marked tile.
     // Arguments:

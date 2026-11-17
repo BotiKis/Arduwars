@@ -22,7 +22,6 @@ void AWGame::run(void){
   arduboy.boot();
   arduboy.flashlight();
   arduboy.setFrameRate(60);
-  arduboy.initRandomSeed();
   arduboy.audio.begin();
 
   // Set up text
@@ -122,9 +121,6 @@ AWGameState AWGame::showMainMenu(){
   while (true) {
     char_P* items[3] = {LOCA_SinglePlayer, LOCA_MultiPlayer, arduboy.audio.enabled() ? LOCA_Sound_on : LOCA_Sound_off};
     cursorIdx = showTitleMenu(items, 3, nullptr, cursorIdx);
-
-    // We do this here for random numbers we need later.
-    arduboy.initRandomSeed();
 
     if (cursorIdx == 0) return AWGameState::playSinglePlayer;
     if (cursorIdx == 1) return AWGameState::playMultiPlayer;
@@ -494,15 +490,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
 
                   // react to the users choice if he buys a unit
                   if(selectedUnit != UnitType::None){
-                    GameUnit newUnit = GameUnit();
-
-                    // init unit
-                    newUnit.unitType = static_cast<uint8_t>(selectedUnit);
-                    newUnit.mapPosX = currentIndex.x;
-                    newUnit.mapPosY = currentIndex.y;
-                    newUnit.activated = GameUnit::UnitStateDisabled;
-
-                    currentPlayer.units.add(newUnit);
+                    addNewUnit(currentPlayer, selectedUnit, currentIndex);
                     updateMapForPlayer(currentPlayer);
                   }
                 }
@@ -607,7 +595,8 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                     updateMapForPlayer(currentPlayer);
 
                     // mark attack positions
-                    markPositionForAttack({selectedUnit->mapPosX,selectedUnit->mapPosY}, traits.attackRange, unitType, currentPlayer);
+                    Point unusedTarget;
+                    scanTargets(selectedUnit, {selectedUnit->mapPosX,selectedUnit->mapPosY}, currentPlayer, unusedTarget, true);
 
                     // get first marked position if it exists (search from the start of the map)
                     Point nextPos = nextMarkedMapPosition({-1, 0});
@@ -1021,9 +1010,10 @@ void AWGame::loadMap(const unsigned char *newMapData){
 
     // Check if it's a building
     if (mapTileIndexIsBuilding(tileType)) {
-      GameBuilding building = GameBuilding();
+      GameBuilding building;
 
       // set upd building
+      building.healthPoints = GameBuilding::CapturePoints;
       building.mapPosX = currentIndex.x;
       building.mapPosY = currentIndex.y;
       building.isOccupied = 0;
@@ -1153,25 +1143,18 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
 
 void AWGame::clearMap(bool withFog){
   // go trough the whole map
-  for (int8_t y = 0; y < mapSize.y; y++) {
-    for (int8_t x = 0; x < mapSize.x; x++) {
+  for (uint16_t i = 0; i < mapSize.x*mapSize.y; i++) {
+    MapTile &tile = mapTileData[i];
 
-        // get the tile
-        MapTile tile = mapTileData[y*mapSize.x+x];
+    // turn fog on
+    tile.showsFog = withFog?1:0;
 
-        // turn fog on
-        tile.showsFog = withFog?1:0;
+    // disable selection
+    tile.showSelection = 0;
 
-        // disable selection
-        tile.showSelection = 0;
-
-        // remove unit info
-        tile.hasUnit = 0;
-        tile.unitBelongsTo = 0;
-
-        // update tile
-         mapTileData[y*mapSize.x+x] = tile;
-    }
+    // remove unit info
+    tile.hasUnit = 0;
+    tile.unitBelongsTo = 0;
   }
 }
 
@@ -1358,40 +1341,43 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
   }
 
   // go trough the whole map and remove selection
-  for (int8_t y = 0; y < mapSize.y; y++) {
-    for (int8_t x = 0; x < mapSize.x; x++) {
-        // get the tile
-        mapTileData[y*mapSize.x+x].showSelection = 0;
-    }
-  }
+  for (uint16_t i = 0; i < mapSize.x*mapSize.y; i++)
+    mapTileData[i].showSelection = 0;
 }
 
-void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer){
+uint8_t AWGame::scanTargets(const GameUnit *unit, Point position, AWPlayer &attackingPlayer, Point &target, bool markVisible){
+  AWPlayer &enemy = (attackingPlayer == player1) ? player2 : player1;
+  UnitType unitType = static_cast<UnitType>(unit->unitType);
+  int8_t range = UnitTraits::traitsForUnitType(unitType).attackRange;
+  uint8_t bestDamage = 0;
 
-    // check player
-    uint8_t thisPlayer = playerIndex(attackingPlayer);
-    AWPlayer &enemyPlayer = (attackingPlayer == player1) ? player2 : player1;
+  // Walk every tile within the attack range (a diamond around the position)
+  for (int8_t dy = -range; dy <= range; dy++) {
+    int8_t span = range - abs(dy);
+    for (int8_t dx = -span; dx <= span; dx++) {
+      Point tile = {(int16_t)(position.x + dx), (int16_t)(position.y + dy)};
+      if (tile.x < 0 || tile.x >= mapSize.x || tile.y < 0 || tile.y >= mapSize.y) continue;
 
-    // Walk every tile within the attack range (a diamond around the unit)
-    for (int8_t dy = -distance; dy <= distance; dy++) {
-      int8_t span = distance - abs(dy);
-      for (int8_t dx = -span; dx <= span; dx++) {
-        int8_t x = position.x + dx;
-        int8_t y = position.y + dy;
+      const GameUnit *enemyUnit = enemy.getUnitForMapCoordinates(tile);
+      if (enemyUnit == nullptr) continue;
 
-        // check for bounds
-        if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) continue;
+      // 0 means this unit can't attack that unit type
+      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileTypeAt(tile.x, tile.y));
+      if (damage == 0) continue;
 
-        // mark visible enemy units this unit is able to attack
-        MapTile &tile = mapTileData[y*mapSize.x+x];
-        if (tile.showsFog || !tile.hasUnit || tile.unitBelongsTo == thisPlayer) continue;
+      // the player can only target what they can see
+      MapTile &mapTile = mapTileData[tile.y*mapSize.x+tile.x];
+      if (markVisible && !mapTile.showsFog) mapTile.showSelection = 1;
 
-        const GameUnit *target = enemyPlayer.getUnitForMapCoordinates({x, y});
-        if (target != nullptr && GameUnit::canUnitAttackUnit(unit, static_cast<UnitType>(target->unitType))) {
-          tile.showSelection = 1;
-        }
+      // finishing a unit off is worth more
+      if (damage >= enemyUnit->healthPoints) damage += 5;
+      if (damage > bestDamage) {
+        bestDamage = damage;
+        target = tile;
       }
     }
+  }
+  return bestDamage;
 }
 
 
@@ -1792,32 +1778,6 @@ uint8_t AWGame::shopListForBuilding(MapTileType building, const UnitType *&buyab
 // The AI sees the whole map; the player only sees its moves where player 1
 // has vision.
 
-// Finds the enemy in attack range of position that takes the most damage.
-// Returns the damage (0 if nothing can be attacked) and the target in target.
-uint8_t AWGame::aiBestTargetFrom(const GameUnit *unit, Point position, AWPlayer &enemy, Point &target){
-  UnitType unitType = static_cast<UnitType>(unit->unitType);
-  int8_t range = UnitTraits::traitsForUnitType(unitType).attackRange;
-  uint8_t bestDamage = 0;
-
-  for (int8_t dy = -range; dy <= range; dy++) {
-    int8_t span = range - abs(dy);
-    for (int8_t dx = -span; dx <= span; dx++) {
-      Point tile = {(int16_t)(position.x + dx), (int16_t)(position.y + dy)};
-      const GameUnit *enemyUnit = enemy.getUnitForMapCoordinates(tile);
-      if (enemyUnit == nullptr) continue;
-
-      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileTypeAt(tile.x, tile.y));
-      // finishing a unit off is worth more
-      if (damage >= enemyUnit->healthPoints) damage += 5;
-      if (damage > bestDamage) {
-        bestDamage = damage;
-        target = tile;
-      }
-    }
-  }
-  return bestDamage;
-}
-
 void AWGame::aiMoveUnit(GameUnit *unit, AWPlayer &ai){
   AWPlayer &enemy = (ai == player1) ? player2 : player1;
   UnitType unitType = static_cast<UnitType>(unit->unitType);
@@ -1864,7 +1824,7 @@ void AWGame::aiMoveUnit(GameUnit *unit, AWPlayer &ai){
     // attack (indirect units only without moving)
     Point target = {-1, -1};
     if (!indirect || isStart) {
-      uint8_t damage = aiBestTargetFrom(unit, tile, enemy, target);
+      uint8_t damage = scanTargets(unit, tile, ai, target, false);
       if (damage > 0) score += 100 + 10*damage;
     }
 
@@ -1939,15 +1899,22 @@ void AWGame::doRoundOfAI(AWPlayer &ai){
     }
     if (choice == UnitType::None) continue;
 
-    GameUnit newUnit = GameUnit();
-    newUnit.unitType = static_cast<uint8_t>(choice);
-    newUnit.mapPosX = position.x;
-    newUnit.mapPosY = position.y;
-    newUnit.activated = GameUnit::UnitStateDisabled;
-    ai.units.add(newUnit);
+    addNewUnit(ai, choice, position);
     ai.money -= choicePrice;
     if (GameUnit::isInfantry(choice)) infantry++;
   }
   updateMapForPlayer(player1);
 }
 #endif
+
+void AWGame::addNewUnit(AWPlayer &owner, UnitType unitType, Point position){
+  // A freshly built unit has full health and waits until the next turn.
+  GameUnit newUnit;
+  newUnit.unitType = static_cast<uint8_t>(unitType);
+  newUnit.healthPoints = GameUnit::UnitDefaultHealth;
+  newUnit.mapPosX = position.x;
+  newUnit.mapPosY = position.y;
+  newUnit.activated = GameUnit::UnitStateDisabled;
+  newUnit.payload = GameUnit::PayloadNone;
+  owner.units.add(newUnit);
+}

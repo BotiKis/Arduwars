@@ -5,20 +5,6 @@
 // ====================================================
 // GameUnit
 
-GameUnit::GameUnit(){
-  // Save the provided Type
-  unitType = static_cast<uint8_t>(UnitType::Soldier);
-
-  // Every unit has default 10 HP
-  healthPoints = GameUnit::UnitDefaultHealth;
-
-  // set active
-  activated = GameUnit::UnitStateActive;
-
-  // set the payload
-  payload = GameUnit::PayloadNone;
-}
-
 char_P* GameUnit::nameForUnitType(UnitType unitType){
   return LOCA_Unit_Names[static_cast<uint8_t>(unitType)];
 }
@@ -69,39 +55,12 @@ UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
 // ====================================================
 // GameBuilding
 
-GameBuilding::GameBuilding(){
-  // By default it's plains
-  buildingType = static_cast<uint8_t>(MapTileType::Plains);
-
-  // Every Building has default 10 HP
-  healthPoints = 10;
-
-  // Set the coordinates to 0
-  mapPosX = mapPosY = 0;
-  isOccupied = 0;
-  belongsToPlayer = 0;
-}
-
-GameBuilding::GameBuilding(MapTileType type){
-  // Save the provided Type
-  buildingType = static_cast<uint8_t>(type);
-
-  // Every Building has default 10 HP
-  healthPoints = 10;
-
-  // Set the coordinates to 0
-  mapPosX = mapPosY = 0;
-  isOccupied = 0;
-  belongsToPlayer = 0;
-}
-
-
 // ====================================================
 // Player
 
 AWPlayer::AWPlayer(uint8_t aid){
+  // reset() runs when a game starts
   this->playerID = aid;
-  this->reset();
 }
 
 void AWPlayer::reset(){
