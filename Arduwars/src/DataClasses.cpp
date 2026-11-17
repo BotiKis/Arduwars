@@ -134,24 +134,7 @@ bool AWPlayer::operator==(const AWPlayer& other) const{
 // ====================================================
 // MapTile
 
-MapTile::MapTile(void){
-  tileID = 0;
-
-  buildingIsOccupied = 0;
-  buildingBelongsTo = 0;
-
-  hasUnit = 0;
-  unitBelongsTo = 0;
-
-  showSelection = 0;
-  showsFog = 0;
-
-  unitIsActive = GameUnit::UnitStateActive;
-  unitSpriteID = 0;
-}
-
-
-bool MapTile::canBeAccessedByUnit(UnitType unitType){
+bool MapTile::canBeAccessedByUnit(MapTileType mapTileType, UnitType unitType){
   // get correct entry from LUT for the unit
   uint8_t lut = 0;
   if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::SpecOps))
@@ -166,8 +149,7 @@ bool MapTile::canBeAccessedByUnit(UnitType unitType){
   const uint8_t movement = pgm_read_byte(moveLookupTable+lut); // reuse the variable
 
   // get the correct value from lut end return the result
-  MapTileType type = static_cast<MapTileType>(this->tileID);
-  return (movement & MapTile::lutMaskForMaptile(type)) != 0;
+  return (movement & MapTile::lutMaskForMaptile(mapTileType)) != 0;
 }
 
 // Ground,Water,Street,Hill,Mountain,Forest,Reef,Building

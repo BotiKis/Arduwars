@@ -15,8 +15,12 @@
 // This method starts the actual game and is called in the Arduwars.ino file.
 void AWGame::run(void){
 
-  // First we need to initialize our Arduboy instance by calling the usual methods.
-  arduboy.begin();
+  // First we need to initialize our Arduboy instance.
+  // boot() instead of begin() skips the ARDUBOY boot logo to save flash.
+  // flashlight() keeps the safe mode: hold UP while turning on to be able
+  // to upload a new sketch even if the current one misbehaves.
+  arduboy.boot();
+  arduboy.flashlight();
   arduboy.setFrameRate(60);
   arduboy.initRandomSeed();
   arduboy.audio.begin();
@@ -427,105 +431,29 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
         // Handle Button Inputs
         arduboy.pollButtons();
 
-        if (arduboy.pressed(DOWN_BUTTON)){
-          // state machine
-          switch (turnState) {
+        if (turnState == AWTurnState::UnitAttack) {
+          // Step through the possible targets, one per button press:
+          // right/down go forward, left/up go backward.
+          int8_t direction = 0;
+          if (arduboy.justPressed(RIGHT_BUTTON) || arduboy.justPressed(DOWN_BUTTON)) direction = 1;
+          if (arduboy.justPressed(LEFT_BUTTON) || arduboy.justPressed(UP_BUTTON)) direction = -1;
 
-            /////
-            // Go through possible attack locations when unit is attacking
-            case AWTurnState::UnitAttack:{
-              // get next marked Pos if it exists
-              Point nextPos = nextMarkedMapPosition(currentIndex, 1);
-              if (nextPos.x >= 0) { // {-1,-1} means no marked position
-                // move camera to tile
-                cursorPosition = nextPos*TILE_SIZE;
-                cursorPosition.x -= 8;
-                cursorPosition.y -= 8;
-              }
-            }
-            break;
-
-            ////
-            // Default state, Normal Scroll map
-            default:{
-              cursorPosition.y += scrollMultiplier;
+          if (direction != 0) {
+            Point nextPos = nextMarkedMapPosition(currentIndex, direction);
+            if (nextPos.x >= 0) { // {-1,-1} means no marked position
+              // move camera to tile
+              cursorPosition = nextPos*TILE_SIZE;
+              cursorPosition.x -= 8;
+              cursorPosition.y -= 8;
             }
           }
         }
-        if (arduboy.pressed(UP_BUTTON)){
-          // state machine
-          switch (turnState) {
-
-            /////
-            // Go through possible attack locations when unit is attacking
-            case AWTurnState::UnitAttack:{
-              // get next marked Pos if it exists
-              Point nextPos = nextMarkedMapPosition(currentIndex, -1);
-              if (nextPos.x >= 0) { // {-1,-1} means no marked position
-                // move camera to tile
-                cursorPosition = nextPos*TILE_SIZE;
-                cursorPosition.x -= 8;
-                cursorPosition.y -= 8;
-              }
-            }
-            break;
-
-            ////
-            // Default state, Normal Scroll map
-            default:{
-              cursorPosition.y -= scrollMultiplier;
-            }
-          }
-        }
-        if (arduboy.pressed(LEFT_BUTTON)){
-          // state machine
-          switch (turnState) {
-
-            /////
-            // Go through possible attack locations when unit is attacking
-            case AWTurnState::UnitAttack:{
-              // get next marked Pos if it exists
-              Point nextPos = nextMarkedMapPosition(currentIndex, -1);
-              if (nextPos.x >= 0) { // {-1,-1} means no marked position
-                // move camera to tile
-                cursorPosition = nextPos*TILE_SIZE;
-                cursorPosition.x -= 8;
-                cursorPosition.y -= 8;
-              }
-
-            }
-            break;
-
-            ////
-            // Default state, Normal Scroll map
-            default:{
-              cursorPosition.x -= scrollMultiplier;
-            }
-          }
-        }
-        if (arduboy.pressed(RIGHT_BUTTON)){
-          // state machine
-          switch (turnState) {
-
-            /////
-            // Go through possible attack locations when unit is attacking
-            case AWTurnState::UnitAttack:{
-              // get next marked Pos if it exists
-              Point nextPos = nextMarkedMapPosition(currentIndex, 1);
-              if (nextPos.x >= 0) { // {-1,-1} means no marked position
-                // move camera to tile
-                cursorPosition = nextPos*TILE_SIZE;
-                cursorPosition.x -= 8;
-                cursorPosition.y -= 8;
-              }
-            }
-            break;
-
-            // Default state, Normal Scroll map
-            default:{
-              cursorPosition.x += scrollMultiplier;
-            }
-          }
+        else {
+          // Scroll the map
+          if (arduboy.pressed(DOWN_BUTTON))  cursorPosition.y += scrollMultiplier;
+          if (arduboy.pressed(UP_BUTTON))    cursorPosition.y -= scrollMultiplier;
+          if (arduboy.pressed(LEFT_BUTTON))  cursorPosition.x -= scrollMultiplier;
+          if (arduboy.pressed(RIGHT_BUTTON)) cursorPosition.x += scrollMultiplier;
         }
         if (arduboy.pressed(A_BUTTON)){
           scrollMultiplier = SCROLLSPEED_FAST;
@@ -633,23 +561,20 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             case AWTurnState::Default:{
               // check for tile
               MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
-              MapTileType currentTileType = static_cast<MapTileType>(currentMapTile.tileID);
+              MapTileType currentTileType = tileTypeAt(currentIndex.x, currentIndex.y);
+              GameUnit *unitAtCursor = currentPlayer.getUnitForMapCoordinates(currentIndex);
 
               /////
-              // check first for Unit
-              if (currentMapTile.hasUnit &&
-                currentMapTile.unitBelongsTo == ((currentPlayer == player1) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2) &&
-                currentMapTile.unitIsActive == GameUnit::UnitStateActive) {
-                // get unit
-                selectedUnit = currentPlayer.getUnitForMapCoordinates({currentIndex.x,currentIndex.y});
-                if (selectedUnit != nullptr){
-                  // select unit on map
-                  originalUnitPosition = currentIndex;
-                  markUnitOnMap(selectedUnit);
+              // check first for one of our units that hasn't acted yet
+              if (unitAtCursor != nullptr && unitAtCursor->activated == GameUnit::UnitStateActive) {
+                selectedUnit = unitAtCursor;
 
-                  // update state
-                  turnState = AWTurnState::UnitSelected;
-                }
+                // select unit on map
+                originalUnitPosition = currentIndex;
+                markUnitOnMap(selectedUnit);
+
+                // update state
+                turnState = AWTurnState::UnitSelected;
               }
 
               /////
@@ -1178,21 +1103,24 @@ Point AWGame::calculateCameraPosition(Point forCursorPosition){
   return cameraPosition;
 }
 
-void AWGame::loadMap(const unsigned char *mapData){
+void AWGame::loadMap(const unsigned char *newMapData){
 
-  // clear old map Data
-  if (mapTileData != nullptr) {
-    delete [] mapTileData;
-    mapTileData = nullptr;
-  }
+  static_assert(MapDataHeaderSize == MAPDATAOFFSET_Main, "map header size mismatch");
 
   // Reset Buildings
   gameBuildings.clear();
 
   // handle map meta info
   // get size
-  mapSize.x  = pgm_read_byte(mapData+MAPDATAOFFSET_Size);
-  mapSize.y  = pgm_read_byte(mapData+MAPDATAOFFSET_Size+1);
+  mapSize.x  = pgm_read_byte(newMapData+MAPDATAOFFSET_Size);
+  mapSize.y  = pgm_read_byte(newMapData+MAPDATAOFFSET_Size+1);
+
+  // refuse maps larger than the fixed buffer
+  if (mapSize.x > MaxMapWidth || mapSize.y > MaxMapHeight) {
+    mapSize = {0, 0};
+    return;
+  }
+  mapData = newMapData;
 
   // p1 meta Data
   Point player1StartCityCoords;
@@ -1216,23 +1144,16 @@ void AWGame::loadMap(const unsigned char *mapData){
   // Calculate map lenght
   uint16_t mapLenght = mapSize.x*mapSize.y;
 
-  // create new array of maptiles
-  mapTileData = new MapTile[mapLenght];
+  // reset all tile state
+  memset(mapTileData, 0, sizeof(mapTileData));
 
   // The index in the loop will be stored here
   Point currentIndex;
 
-  // Populate array from map data
+  // Find the buildings
   for (uint16_t i = 0; i < mapLenght; i++) {
 
-    // get Tile Data
-    mapTileData[i].tileID = pgm_read_byte(mapData+MAPDATAOFFSET_Main+i);
-    mapTileData[i].buildingIsOccupied = 0;
-    mapTileData[i].buildingBelongsTo = 0;
-    mapTileData[i].hasUnit = 0;
-    mapTileData[i].unitBelongsTo = 0;
-
-    MapTileType tileType = static_cast<MapTileType>(mapTileData[i].tileID);
+    MapTileType tileType = tileTypeAtIndex(i);
 
     // calc index
     currentIndex.x = i % mapSize.x;
@@ -1247,7 +1168,7 @@ void AWGame::loadMap(const unsigned char *mapData){
       building.mapPosY = currentIndex.y;
       building.isOccupied = 0;
       building.belongsToPlayer = 0;
-      building.buildingType = mapTileData[i].tileID;
+      building.buildingType = static_cast<uint8_t>(tileType);
 
       // Check for city
       if (tileType == MapTileType::City) {
@@ -1308,8 +1229,6 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
     MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
     tile.hasUnit = 1;
     tile.unitBelongsTo = (enemyPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
-    tile.unitSpriteID = unit.unitType;
-    tile.unitIsActive = GameUnit::UnitStateActive;
     mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
   }
 
@@ -1321,8 +1240,6 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
     MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
     tile.hasUnit = 1;
     tile.unitBelongsTo = (aPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
-    tile.unitSpriteID = unit.unitType;
-    tile.unitIsActive = unit.activated;
     mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
 
     // undo fog for units
@@ -1334,7 +1251,7 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
 
     // add sight to unit if its on a mountain
     // Only infantry units can be on hills and mountains and they get a sight boost.
-    if (tile.tileID == static_cast<uint8_t>(MapTileType::Mountain))
+    if (tileTypeAt(unit.mapPosX, unit.mapPosY) == MapTileType::Mountain)
       sightRadius +=1;
 
     // remove the fog
@@ -1391,7 +1308,6 @@ void AWGame::clearMap(bool withFog){
         // remove unit info
         tile.hasUnit = 0;
         tile.unitBelongsTo = 0;
-        tile.unitSpriteID = 0;
 
         // update tile
          mapTileData[y*mapSize.x+x] = tile;
@@ -1406,54 +1322,67 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   uint8_t moveDistance = traits.moveDistance+1;
 
   // check if maptile is a street and give a small bonus
-  MapTile tile = mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX];
-  if (mapTileIsStreet(static_cast<MapTileType>(tile.tileID)))
+  if (mapTileIsStreet(tileTypeAt(aUnit->mapPosX, aUnit->mapPosY)))
     moveDistance += 1;
 
   // hide unit on map since it follow the cursor
-  mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX].hasUnit = 0;
+  uint16_t startIndex = aUnit->mapPosY*mapSize.x+aUnit->mapPosX;
+  mapTileData[startIndex].hasUnit = 0;
 
-  markPositionAsSelectedForUnit({aUnit->mapPosX, aUnit->mapPosY}, moveDistance, unitType);
-}
+  // Movement range as a flood fill. remaining[i] is the most movement left
+  // when entering tile i (0 = not reachable). It is kept in the screen buffer,
+  // which is safe because this runs after display() and the next frame starts
+  // with clear(). This replaces a recursive search whose stack use grew with
+  // the movement distance.
+  uint8_t *remaining = arduboy.getBuffer();
+  uint16_t mapLength = mapSize.x*mapSize.y;
+  memset(remaining, 0, mapLength);
 
-void AWGame::markPositionAsSelectedForUnit(Point position, int8_t distance, UnitType unit){
+  if (MapTile::canBeAccessedByUnit(tileTypeAtIndex(startIndex), unitType))
+    remaining[startIndex] = moveDistance;
 
-  // check if we are at the end
-  if (distance <= 0) return;
+  bool changed = true;
+  while (changed) {
+    changed = false;
 
-  // check for bounds
-  if (position.x < 0 || position.x >= mapSize.x || position.y < 0 || position.y >= mapSize.y ) return;
+    for (uint16_t i = 0; i < mapLength; i++) {
+      int8_t left = remaining[i];
+      if (left <= 0) continue;
 
-  // get the tile
-  MapTile tile = mapTileData[position.y*mapSize.x+position.x];
+      // movement malus for leaving this tile
+      MapTileType type = tileTypeAtIndex(i);
+      if (type == MapTileType::Forest || type == MapTileType::Hill)
+        left--;
+      else if (type == MapTileType::Mountain)
+        left = min(2, left);
 
-  // check if unit can move to the field
-  if (!tile.canBeAccessedByUnit(unit)) return;
+      // every step costs one
+      left--;
+      if (left <= 0) continue;
 
-  // set maptile to show the selection if there is no other unit
-  if (!tile.hasUnit) {
-    tile.showSelection = 1;
-    mapTileData[position.y*mapSize.x+position.x] = tile;
+      int8_t x = i % mapSize.x;
+      int8_t y = i / mapSize.x;
+
+      // right, up, left, down
+      for (uint8_t direction = 0; direction < 4; direction++) {
+        int8_t nx = x + (direction == 0) - (direction == 2);
+        int8_t ny = y + (direction == 3) - (direction == 1);
+        if (nx < 0 || nx >= mapSize.x || ny < 0 || ny >= mapSize.y) continue;
+
+        uint16_t neighbour = ny*mapSize.x+nx;
+        if (left > remaining[neighbour] && MapTile::canBeAccessedByUnit(tileTypeAtIndex(neighbour), unitType)) {
+          remaining[neighbour] = left;
+          changed = true;
+        }
+      }
+    }
   }
 
-  // check for movement malus
-  if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
-    distance--;
-  else if (static_cast<MapTileType>(tile.tileID) == MapTileType::Hill)
-    distance--;
-  else if (static_cast<MapTileType>(tile.tileID) == MapTileType::Mountain)
-    distance = min(2, distance);
-
-  // shorten the distance for every step.
-  distance--;
-
-  // recursively call this method for every orientation
-  markPositionAsSelectedForUnit({position.x+1, position.y}, distance, unit);
-  markPositionAsSelectedForUnit({position.x, position.y-1}, distance, unit);
-  markPositionAsSelectedForUnit({position.x-1, position.y}, distance, unit);
-  markPositionAsSelectedForUnit({position.x, position.y+1}, distance, unit);
-
-  return;
+  // show every reachable tile that has no other unit on it
+  for (uint16_t i = 0; i < mapLength; i++) {
+    if (remaining[i] && !mapTileData[i].hasUnit)
+      mapTileData[i].showSelection = 1;
+  }
 }
 
 void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
@@ -1477,6 +1406,7 @@ void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType uni
 
     // check player
     uint8_t thisPlayer = playerIndex(attackingPlayer);
+    AWPlayer &enemyPlayer = (attackingPlayer == player1) ? player2 : player1;
 
     // Walk every tile within the attack range (a diamond around the unit)
     for (int8_t dy = -distance; dy <= distance; dy++) {
@@ -1490,8 +1420,10 @@ void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType uni
 
         // mark visible enemy units this unit is able to attack
         MapTile &tile = mapTileData[y*mapSize.x+x];
-        if (!tile.showsFog && tile.hasUnit && tile.unitBelongsTo != thisPlayer &&
-            GameUnit::canUnitAttackUnit(unit, static_cast<UnitType>(tile.unitSpriteID))) {
+        if (tile.showsFog || !tile.hasUnit || tile.unitBelongsTo == thisPlayer) continue;
+
+        const GameUnit *target = enemyPlayer.getUnitForMapCoordinates({x, y});
+        if (target != nullptr && GameUnit::canUnitAttackUnit(unit, static_cast<UnitType>(target->unitType))) {
           tile.showSelection = 1;
         }
       }
@@ -1532,15 +1464,14 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // get the tile
       const MapTile tile = mapTileData[y*mapSize.x+x];
-      const MapTileType tileType = static_cast<MapTileType>(tile.tileID);
+      const MapTileType tileType = tileTypeAt(x, y);
 
       // draw maptile
-      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, tile.tileID);
+      sprites.drawSelfMasked(drawPos.x, drawPos.y, worldSprite, static_cast<uint8_t>(tileType));
 
       // check if tile below is the HQ
       if (y < mapSize.y-1) {
-        const MapTile tileBelow = mapTileData[((y+1)*mapSize.x)+x];
-        const MapTileType tileTypeOfTileBelow = static_cast<MapTileType>(tileBelow.tileID);
+        const MapTileType tileTypeOfTileBelow = tileTypeAt(x, y+1);
 
         // If it's a headquarter draw upper half at the position above
         if (tileTypeOfTileBelow == MapTileType::P1HQ || tileTypeOfTileBelow == MapTileType::P2HQ) {
@@ -1575,42 +1506,37 @@ void AWGame::drawMapAtPosition(Point pos){
 
       // Draw Unit
       if(tile.hasUnit && !tile.showsFog){
-        // unitSprite
-        const unsigned char *unitSprite = nullptr;
+        // look up the unit for its type, state and health
+        AWPlayer &owner = (tile.unitBelongsTo == MapTile::BelongsToPlayer1) ? player1 : player2;
+        const GameUnit *unit = owner.getUnitForMapCoordinates({x, y});
+        if (unit == nullptr) continue;
 
         // get correct sprite
-        if(tile.unitBelongsTo == MapTile::BelongsToPlayer1)
-          unitSprite = unitsA_plus_mask;
-        else if(tile.unitBelongsTo == MapTile::BelongsToPlayer2)
-          unitSprite = unitsB_plus_mask;
+        const unsigned char *unitSprite = (tile.unitBelongsTo == MapTile::BelongsToPlayer1) ? unitsA_plus_mask : unitsB_plus_mask;
 
         // Check if unit is active
-        if (tile.unitIsActive == GameUnit::UnitStateActive) {
+        if (unit->activated == GameUnit::UnitStateActive) {
           // Draw sprite
           // The *2 is because every unit in the spritesheet has two frames
           // The +(arduboy.frameCount/10)%2 part switches between these two frames
           // based on the current framecount.
-          sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID*2+(arduboy.frameCount/10)%2);
+          sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, unit->unitType*2+(arduboy.frameCount/10)%2);
         }
         else{
           // Don't animate if not active and draw a badge to top right.
           // The *2 is because every unit in the spritesheet has two frames
-          sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, tile.unitSpriteID*2);
+          sprites.drawPlusMask(drawPos.x, drawPos.y, unitSprite, unit->unitType*2);
           sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 2);
         }
 
         // Show remaining health in the bottom right corner once a unit is hurt
-        AWPlayer &owner = (tile.unitBelongsTo == MapTile::BelongsToPlayer1) ? player1 : player2;
-        const GameUnit *unit = owner.getUnitForMapCoordinates({x, y});
-        if (unit != nullptr && unit->healthPoints < GameUnit::UnitDefaultHealth) {
+        if (unit->healthPoints < GameUnit::UnitDefaultHealth) {
           arduboy.fillRect(drawPos.x+10, drawPos.y+9, 6, 7, BLACK);
           arduboy.fillRect(drawPos.x+11, drawPos.y+10, 5, 6, WHITE);
           tinyfont.setCursor(drawPos.x+12, drawPos.y+11);
           tinyfont.print(unit->healthPoints);
         }
-
       }
-
     }
   }
 }
@@ -1720,7 +1646,7 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t 
       if (currentDistance != 0 && !seeThrough){
 
         // check if there is an Obstacle
-        if (mapTileIsOpaque(static_cast<MapTileType>(mapTileData[x0+y0*mapSize.x].tileID)))
+        if (mapTileIsOpaque(tileTypeAt(x0, y0)))
             break;
 
         // check if there is an enemy unit because we can't see through it
@@ -1728,7 +1654,7 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t 
           break;
 
         // check for forest
-        if (static_cast<MapTileType>(tile.tileID) == MapTileType::Forest)
+        if (tileTypeAt(x0, y0) == MapTileType::Forest)
           forestLimit--;
       }
     }
@@ -1754,8 +1680,8 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
 
   UnitType attackerType = static_cast<UnitType>(attacker->unitType);
   UnitType defenderType = static_cast<UnitType>(defender->unitType);
-  MapTileType defenderTile = static_cast<MapTileType>(mapTileData[target.y*mapSize.x+target.x].tileID);
-  MapTileType attackerTile = static_cast<MapTileType>(mapTileData[attacker->mapPosY*mapSize.x+attacker->mapPosX].tileID);
+  MapTileType defenderTile = tileTypeAt(target.x, target.y);
+  MapTileType attackerTile = tileTypeAt(attacker->mapPosX, attacker->mapPosY);
 
   // short flash so the player sees the hit
   arduboy.invert(true);

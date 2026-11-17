@@ -2,7 +2,7 @@
 #define DATA_H
 
 #include <Arduboy2.h>
-#include <List.h>
+#include "List.h"
 #include "Localization.h"
 
 // Documentation:
@@ -351,28 +351,27 @@ public:
   static constexpr uint8_t BelongsToPlayer  = 0;
   static constexpr uint8_t BelongsToEnemy   = 1;
 
-  // constructor
-  MapTile(void);
-
   // members
-  uint8_t tileID:5;              // Holds the ID of the Tile in the Tilesheet
+  // The terrain itself is not stored here: it is read straight from the map
+  // data in PROGMEM (see AWGame::tileTypeAt). Unit type and active state are
+  // looked up from the players' unit lists when needed.
   uint8_t buildingIsOccupied:1;  // 0 if building is not occupied
   uint8_t buildingBelongsTo:1;   // Tells to whom the building belongs (if it's a building).
   uint8_t hasUnit:1;             // 0... No unit, 1... Contains a unit
   uint8_t unitBelongsTo:1;       // Tells, if there is a unit and to which player it belongs.
   uint8_t showSelection:1;       // When 1, it displays the selection Animation
   uint8_t showsFog:1;            // When 1, it shows fog.
-  uint8_t unitIsActive:1;        // Default GameUnit::UnitStateActive.
-  uint8_t unitSpriteID:4;        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
-  // 2 bytes in total
-  // with a 24x16 array this makes 768 Bytes in RAM. This is about 50% of the available RAM.
+  // 1 byte in total
+  // with a 24x16 map this makes 384 Bytes in RAM.
 
-  // Returns true if the provided unit can enter the maptile
-  bool canBeAccessedByUnit(UnitType unitType);
+  // Returns true if the provided unit can enter a tile of the given type
+  static bool canBeAccessedByUnit(MapTileType mapTileType, UnitType unitType);
 
 private:
   // returns a number from 0-7 at the position of the type in the LUT
   static uint8_t lutMaskForMaptile(MapTileType mapTileType);
 };
+
+static_assert(sizeof(MapTile) == 1, "MapTile must stay one byte");
 
 #endif
