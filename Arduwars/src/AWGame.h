@@ -166,7 +166,11 @@ private:
     uint8_t * floodMovement(const GameUnit *aUnit);
 
     // Flood fill from any tile with the given movement into remaining.
-    uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining);
+    // Tiles with units of the other side (not mover) can't be entered.
+    uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining, uint8_t mover);
+
+    // Which player a unit belongs to (BelongsToPlayer1/2)
+    uint8_t ownerOf(const GameUnit *aUnit);
 
     // Movement left after leaving a tile of the given type
     static int8_t movementLeftAfter(MapTileType type, int8_t left);

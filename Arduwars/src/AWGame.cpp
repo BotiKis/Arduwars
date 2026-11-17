@@ -1182,10 +1182,10 @@ uint8_t * AWGame::floodMovement(const GameUnit *aUnit){
 
   // The result is kept in the screen buffer: callers must run between
   // display() and the next clear().
-  return floodFrom({aUnit->mapPosX, aUnit->mapPosY}, unitType, moveDistance, arduboy.getBuffer());
+  return floodFrom({aUnit->mapPosX, aUnit->mapPosY}, unitType, moveDistance, arduboy.getBuffer(), ownerOf(aUnit));
 }
 
-uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining){
+uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining, uint8_t mover){
   // remaining[i] is the most movement left when entering tile i
   // (0 = not reachable). The start tile is always seeded, even if the unit
   // type couldn't stand there (the AI floods outward from enemy positions).
@@ -1213,7 +1213,10 @@ uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_
         if (nx < 0 || nx >= mapSize.x || ny < 0 || ny >= mapSize.y) continue;
 
         uint16_t neighbour = ny*mapSize.x+nx;
-        if (left > remaining[neighbour] && MapTile::canBeAccessedByUnit(tileTypeAtIndex(neighbour), unitType)) {
+        // Units can pass their own side's units, but enemy units block the way
+        const MapTile &tile = mapTileData[neighbour];
+        bool enemyThere = tile.hasUnit && tile.unitBelongsTo != mover;
+        if (left > remaining[neighbour] && !enemyThere && MapTile::canBeAccessedByUnit(tileTypeAtIndex(neighbour), unitType)) {
           remaining[neighbour] = left;
           changed = true;
         }
@@ -1801,7 +1804,7 @@ void AWGame::aiMoveUnit(GameUnit *unit, AWPlayer &ai){
   // Goal: the closest enemy unit, or for infantry also the closest building
   // it could capture - closest by an actual route over terrain this unit can
   // cross, so land units don't head for targets across the water.
-  floodFrom(start, unitType, FarAway, field);
+  floodFrom(start, unitType, FarAway, field, playerIndex(ai));
   Point goal = start;
   uint8_t goalCloseness = 0;
   uint8_t candidates = enemy.units.getCount() + gameBuildings.getCount();
@@ -1829,7 +1832,7 @@ void AWGame::aiMoveUnit(GameUnit *unit, AWPlayer &ai){
   }
 
   // Route distance from every tile to the goal
-  floodFrom(goal, unitType, FarAway, field);
+  floodFrom(goal, unitType, FarAway, field, playerIndex(ai));
 
   // Score every reachable free tile
   uint8_t *remaining = floodMovement(unit);
@@ -1990,4 +1993,10 @@ void AWGame::flashScreen(uint8_t times){
     arduboy.invert(false);
     delay(70);
   }
+}
+
+uint8_t AWGame::ownerOf(const GameUnit *aUnit){
+  // units live in their player's list
+  const GameUnit *first = player1.units.getData();
+  return (aUnit >= first && aUnit < first + player1.units.getCount()) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2;
 }
