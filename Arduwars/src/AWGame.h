@@ -169,6 +169,13 @@ private:
     // Tiles with units of the other side (not mover) can't be entered.
     uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining, uint8_t mover);
 
+    // Where the unit is after the first steps of pathDirections
+    Point pathPosition(const GameUnit *aUnit, uint8_t steps);
+
+    // If the path runs into a (hidden) enemy, shortens it to stop on the
+    // last free tile before it, sets stopAt and returns true.
+    bool cutPathAtAmbush(const GameUnit *aUnit, Point &stopAt);
+
     // Which player a unit belongs to (BelongsToPlayer1/2)
     uint8_t ownerOf(const GameUnit *aUnit);
 

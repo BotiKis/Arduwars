@@ -525,6 +525,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                 constexpr uint8_t ActionAttack = 1;
                 constexpr uint8_t ActionCapture = 2;
                 constexpr uint8_t ActionCancel = 3;
+                constexpr uint8_t ActionAmbushed = 4;
 
                 UnitType unitType = static_cast<UnitType>(selectedUnit->unitType);
                 UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
@@ -554,7 +555,27 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                 int8_t selectedOption = showOptions(options, numberOfOptions);
                 uint8_t action = (selectedOption < 0) ? ActionCancel : actions[selectedOption];
 
+                // Ambush: the path runs into an enemy hidden in the fog.
+                // The unit stops before it and its turn is over.
+                Point stopAt;
+                if (action != ActionCancel && cutPathAtAmbush(selectedUnit, stopAt)) {
+                  unmarkUnitOnMap(nullptr);
+                  animateUnitAlongPath(selectedUnit, currentPlayer, cameraPosition, false);
+                  selectedUnit->mapPosX = stopAt.x;
+                  selectedUnit->mapPosY = stopAt.y;
+                  selectedUnit->activated = GameUnit::UnitStateDisabled;
+                  updateMapForPlayer(currentPlayer);
+                  showDialog(LOCA_ambush);
+                  selectedUnit = nullptr;
+                  turnState = AWTurnState::Default;
+                  action = ActionAmbushed;
+                }
+
                 switch (action) {
+
+                  // handled above
+                  case ActionAmbushed:
+                    break;
 
                   ///////
                   // MOVE
@@ -1213,9 +1234,10 @@ uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_
         if (nx < 0 || nx >= mapSize.x || ny < 0 || ny >= mapSize.y) continue;
 
         uint16_t neighbour = ny*mapSize.x+nx;
-        // Units can pass their own side's units, but enemy units block the way
+        // Units can pass their own side's units, but enemy units block the way.
+        // Enemies hidden in the fog don't: running into one is an ambush.
         const MapTile &tile = mapTileData[neighbour];
-        bool enemyThere = tile.hasUnit && tile.unitBelongsTo != mover;
+        bool enemyThere = tile.hasUnit && tile.unitBelongsTo != mover && !tile.showsFog;
         if (left > remaining[neighbour] && !enemyThere && MapTile::canBeAccessedByUnit(tileTypeAtIndex(neighbour), unitType)) {
           remaining[neighbour] = left;
           changed = true;
@@ -1232,10 +1254,12 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
 
   uint8_t *remaining = floodMovement(aUnit);
 
-  // show every reachable tile that has no other unit on it
+  // show every reachable tile with no visible unit on it
+  // (a tile with a hidden enemy looks free, as the player can't tell)
   uint16_t mapLength = mapSize.x*mapSize.y;
   for (uint16_t i = 0; i < mapLength; i++) {
-    if (remaining[i] && !mapTileData[i].hasUnit)
+    const MapTile &tile = mapTileData[i];
+    if (remaining[i] && !(tile.hasUnit && !tile.showsFog))
       mapTileData[i].showSelection = 1;
   }
 }
@@ -1999,4 +2023,36 @@ uint8_t AWGame::ownerOf(const GameUnit *aUnit){
   // units live in their player's list
   const GameUnit *first = player1.units.getData();
   return (aUnit >= first && aUnit < first + player1.units.getCount()) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2;
+}
+
+Point AWGame::pathPosition(const GameUnit *aUnit, uint8_t steps){
+  // where the unit is after walking the first steps of pathDirections
+  Point position = {aUnit->mapPosX, aUnit->mapPosY};
+  for (uint8_t i = 0; i < steps; i++) {
+    uint8_t direction = pathDirections[i];
+    position.x += (direction == 0) - (direction == 2);
+    position.y += (direction == 3) - (direction == 1);
+  }
+  return position;
+}
+
+bool AWGame::cutPathAtAmbush(const GameUnit *aUnit, Point &stopAt){
+  uint8_t mover = ownerOf(aUnit);
+  for (uint8_t i = 1; i <= pathLength; i++) {
+    Point position = pathPosition(aUnit, i);
+    const MapTile &tile = mapTileData[position.y*mapSize.x+position.x];
+    if (!tile.hasUnit || tile.unitBelongsTo == mover) continue;
+
+    // An enemy on the way (visible ones are never on a path, so it was
+    // hidden). Stop on the last tile before it that nobody stands on.
+    pathLength = i-1;
+    while (pathLength > 0) {
+      Point stop = pathPosition(aUnit, pathLength);
+      if (!mapTileData[stop.y*mapSize.x+stop.x].hasUnit) break;
+      pathLength--;
+    }
+    stopAt = pathPosition(aUnit, pathLength);
+    return true;
+  }
+  return false;
 }
