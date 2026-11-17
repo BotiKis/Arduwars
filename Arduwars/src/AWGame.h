@@ -138,6 +138,22 @@ private:
     // clears the units marker
     void unmarkUnitOnMap(const GameUnit *aUnit);
 
+    // Movement range flood fill. Returns the scratch array (in the screen
+    // buffer) with the most movement left on entering each tile, 0 = unreachable.
+    uint8_t * floodMovement(const GameUnit *aUnit);
+
+    // Movement left after leaving a tile of the given type
+    static int8_t movementLeftAfter(MapTileType type, int8_t left);
+
+    // Finds a shortest path for the unit to target and stores it in pathDirections.
+    void buildPathTo(const GameUnit *aUnit, Point target);
+
+    // Draws the movement arrow along pathDirections.
+    void drawPath(const GameUnit *aUnit, Point camera);
+
+    // Slides the unit sprite along pathDirections, then clears the path.
+    void animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point camera);
+
     // This method marks the maptiles, where an enemy unit is which can be attacked.
     void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer);
 
@@ -210,6 +226,11 @@ private:
     // A day passes if both players has ended their rounds.
     // The game ends with a draw when it reaches 255 days.
     uint8_t daysPlayed;
+
+    // Movement path (0 right, 1 up, 2 left, 3 down) from the selected unit to the cursor
+    static constexpr uint8_t MaxPathLength = 10;
+    uint8_t pathDirections[MaxPathLength];
+    uint8_t pathLength = 0;
 
     // Set when a game is decided. NoWinner while the game is running.
     static constexpr uint8_t NoWinner = 0xFF;
