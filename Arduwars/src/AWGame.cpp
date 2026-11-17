@@ -64,58 +64,27 @@ void AWGame::run(void){
 }
 
 
-// This method displays the Main menu to the player.
-AWGameState AWGame::showMainMenu(){
-
-  // In this variable we will store the index of the cursor so
-  // we know what the player has selected.
-  int8_t cursorIdx = 0;
+// Title screen with a vertical menu below the logo.
+// With a subtitle the menu can be left with A (returns -1) and shows a hint.
+int8_t AWGame::showTitleMenu(char_P * const items[], uint8_t count, char_P *subtitle, int8_t cursorIdx){
   constexpr uint8_t yOffset = 44;
 
-  // Again a Game loop
   while(true){
 
     // wait for next frame since we don't want to do things more than that.
-    // There may be isntances where we would do stuff between frames (e.g. smmulations, calculations, etc.)
-    // but for this project we stick with this.
     if(!arduboy.nextFrame()) continue;
 
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
-    // Here we limit and wrap the cursor so it cannot be larger than 2 nor smaller then 0.
-    if (arduboy.justPressed(UP_BUTTON)){
-      if(cursorIdx > 0)
-        cursorIdx--;
-      else
-        cursorIdx = 2;
-    }
-    if (arduboy.justPressed(DOWN_BUTTON)){
-      if(cursorIdx < 2)
-        cursorIdx++;
-      else
-        cursorIdx = 0;
-    }
-    if (arduboy.justPressed(B_BUTTON)){
+    // move and wrap the cursor
+    if (arduboy.justPressed(UP_BUTTON)) cursorIdx--;
+    if (arduboy.justPressed(DOWN_BUTTON)) cursorIdx++;
+    if (cursorIdx < 0) cursorIdx = count-1;
+    if (cursorIdx >= count) cursorIdx = 0;
 
-      // We do this here for random numbers we need later.
-      // Random numbers are a complicated topic and won't be explained further here.
-      arduboy.initRandomSeed();
-
-      // React to users choice
-      switch (cursorIdx) {
-        case 0: return AWGameState::playSinglePlayer;
-        case 1: return AWGameState::playMultiPlayer;
-        case 2: {
-          // toggle sound
-          arduboy.audio.toggle();
-          break;
-        }
-        default: return AWGameState::showMainMenu; // this default is not needed but it's safe to do this.
-      }
-    }
-
-    // Now we start drawing the menu to the screen
+    if (arduboy.justPressed(B_BUTTON)) return cursorIdx;
+    if (subtitle != nullptr && arduboy.justPressed(A_BUTTON)) return -1;
 
     // This clears the dispaly and makes everything black.
     arduboy.clear();
@@ -123,17 +92,19 @@ AWGameState AWGame::showMainMenu(){
     // draw title logo
     sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
 
-    // Here we draw the menu text
     tinyfont.setTextColor(WHITE);
 
-    tinyfont.setCursor(10, yOffset);
-    tinyfont.print(AsFlashString(LOCA_SinglePlayer));
+    if (subtitle != nullptr) {
+      tinyfont.setCursor((arduboy.width() - strlen_P(subtitle)*5)/2, 20);
+      tinyfont.print(AsFlashString(subtitle));
+      tinyfont.setCursor(2, yOffset-8);
+      tinyfont.print(AsFlashString(LOCA_BackWithA));
+    }
 
-    tinyfont.setCursor(10, yOffset+8);
-    tinyfont.print(AsFlashString(LOCA_MultiPlayer));
-
-    tinyfont.setCursor(10, yOffset+16);
-    tinyfont.print(AsFlashString(arduboy.audio.enabled()?LOCA_Sound_on:LOCA_Sound_off));
+    for (uint8_t i = 0; i < count; i++) {
+      tinyfont.setCursor(10, yOffset + 8*i);
+      tinyfont.print(AsFlashString(items[i]));
+    }
 
     tinyfont.setCursor(2, yOffset + 8*cursorIdx);
     tinyfont.print(AsFlashString(LOCA_Cursor));
@@ -142,98 +113,36 @@ AWGameState AWGame::showMainMenu(){
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
+  }
+}
 
-    // Now this loop wraps around and keeps repeating until the user selects
-    // an menu item.
+// This method displays the Main menu to the player.
+AWGameState AWGame::showMainMenu(){
+  int8_t cursorIdx = 0;
+  while (true) {
+    char_P* items[3] = {LOCA_SinglePlayer, LOCA_MultiPlayer, arduboy.audio.enabled() ? LOCA_Sound_on : LOCA_Sound_off};
+    cursorIdx = showTitleMenu(items, 3, nullptr, cursorIdx);
+
+    // We do this here for random numbers we need later.
+    arduboy.initRandomSeed();
+
+    if (cursorIdx == 0) return AWGameState::playSinglePlayer;
+    if (cursorIdx == 1) return AWGameState::playMultiPlayer;
+
+    // toggle sound and stay in the menu
+    arduboy.audio.toggle();
   }
 }
 
 // This method displays the map selection menu to the player.
+// It returns the selected map in progmem, nullptr if cancelled.
 const unsigned char * AWGame::showMapSelection(AWGameState aState){
-  // In this variable we will store the index of the cursor so
-  // we know what the player has selected.
-  int8_t cursorIdx = 0;
-  constexpr uint8_t yOffset = 44;
-
-  // Again a Game loop
-  while(true){
-
-    // Skip the frame
-    if(!arduboy.nextFrame()) continue;
-
-    // Now we handle the button input of the arduboy
-    arduboy.pollButtons();
-
-    if (arduboy.justPressed(UP_BUTTON)){
-      cursorIdx--;
-    }
-    if (arduboy.justPressed(DOWN_BUTTON)){
-      cursorIdx++;
-    }
-    if (arduboy.justPressed(B_BUTTON)){
-
-      // select map to users choice
-      switch (cursorIdx) {
-        case 0:{
-          return mapData_3;
-          break;
-        }
-        case 1:{
-          return mapData_2;
-          break;
-        }
-        case 2:{
-          return mapData_1;
-          break;
-        }
-        default: return nullptr;
-      }
-    }
-    if (arduboy.justPressed(A_BUTTON)) {
-      // When the A Button is pressed return nothing.
-      return nullptr;
-    }
-
-    // Limit and wrap the index
-    cursorIdx = (cursorIdx<0)?2:cursorIdx;
-    cursorIdx = cursorIdx%3;
-
-    // This clears the dispaly and makes everything black.
-    arduboy.clear();
-
-    // draw title logo
-    sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
-
-    // Set textcolor
-    tinyfont.setTextColor(WHITE);
-
-    // Draw the menu
-    if (aState == AWGameState::playSinglePlayer) {
-      tinyfont.setCursor(44, 20);
-      tinyfont.print(AsFlashString(LOCA_SinglePlayer));
-    }
-    else if (aState == AWGameState::playMultiPlayer) {
-      tinyfont.setCursor(36, 20);
-      tinyfont.print(AsFlashString(LOCA_MultiPlayer));
-    }
-
-    tinyfont.setCursor(2, yOffset-8);
-    tinyfont.print(AsFlashString(LOCA_BackWithA));
-
-    tinyfont.setCursor(10, yOffset);
-    tinyfont.print(AsFlashString(LOCA_mapSmall));
-    tinyfont.setCursor(10, yOffset+8);
-    tinyfont.print(AsFlashString(LOCA_mapMedium));
-    tinyfont.setCursor(10, yOffset+16);
-    tinyfont.print(AsFlashString(LOCA_mapBig));
-
-    tinyfont.setCursor(2, yOffset + 8*cursorIdx);
-    tinyfont.print(AsFlashString(LOCA_Cursor));
-
-    tinyfont.setTextColor(BLACK);
-
-    // this one draws everything we have drawn to the actual screen.
-    arduboy.display();
+  char_P* items[3] = {LOCA_mapSmall, LOCA_mapMedium, LOCA_mapBig};
+  switch (showTitleMenu(items, 3, (aState == AWGameState::playSinglePlayer) ? LOCA_SinglePlayer : LOCA_MultiPlayer, 0)) {
+    case 0: return mapData_3;
+    case 1: return mapData_2;
+    case 2: return mapData_1;
+    default: return nullptr;
   }
 }
 
@@ -339,9 +248,7 @@ void AWGame::runMultiPlayerGame(){
     arduboy.clear();
 
     // Calculate camera Position
-    Point cursorPosition = currentPlayer->cursorIndex*TILE_SIZE;
-    cursorPosition.x -= 8;
-    cursorPosition.y -= 8;
+    Point cursorPosition = cursorForTile(currentPlayer->cursorIndex);
 
     // Calculate camera position
     Point cameraPosition = calculateCameraPosition(cursorPosition);
@@ -386,9 +293,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
   // Store cursor data
   // cursorPosition always sits on a tile (snap to grid). drawCursor is where
   // the cursor is drawn and eases toward cursorPosition for smooth movement.
-  Point cursorPosition = currentPlayer.cursorIndex*TILE_SIZE;
-  cursorPosition.x -= 8;
-  cursorPosition.y -= 8;
+  Point cursorPosition = cursorForTile(currentPlayer.cursorIndex);
   Point drawCursor = cursorPosition;
   uint8_t holdFrames = 0;
   Point cameraPosition = {0, 0};
@@ -422,9 +327,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
     selectedUnit = nullptr;
 
     // reset camera
-    cursorPosition = originalUnitPosition*TILE_SIZE;
-    cursorPosition.x -= 8;
-    cursorPosition.y -= 8;
+    cursorPosition = cursorForTile(originalUnitPosition);
   };
 
   // moves a value halfway toward its target each frame
@@ -453,9 +356,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             Point nextPos = nextMarkedMapPosition(currentIndex, direction);
             if (nextPos.x >= 0) { // {-1,-1} means no marked position
               // move camera to tile
-              cursorPosition = nextPos*TILE_SIZE;
-              cursorPosition.x -= 8;
-              cursorPosition.y -= 8;
+              cursorPosition = cursorForTile(nextPos);
             }
           }
         }
@@ -741,9 +642,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                     Point nextPos = nextMarkedMapPosition({-1, 0});
                     if (nextPos.x >= 0) {
                       // move camera to tile
-                      cursorPosition = nextPos*TILE_SIZE;
-                      cursorPosition.x -= 8;
-                      cursorPosition.y -= 8;
+                      cursorPosition = cursorForTile(nextPos);
                     }
                     else {
                       // nothing in range: tell the player and go back to the selection
@@ -834,55 +733,32 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
 }
 
 void AWGame::showDialog(char_P *titleText){
-
-  // frame for the dialog
-  Rect frame;
-
-  frame.width = strlen_P(titleText)*5+8;
-  frame.height = 16;
-  frame.x = (arduboy.width() - frame.width)/2;
-  frame.y = 24;
-
-  Point textPos;
-  textPos.x = (arduboy.width() - strlen_P(titleText)*5)/2;
-  textPos.y = frame.y+6;
-
-  // dialog loop
-  while (true) {
-
-    // wait for next frame
-    if(!arduboy.nextFrame()) continue;
-
-    // Get input
-    arduboy.pollButtons();
-
-    // Exit on B
-    if (arduboy.justPressed(B_BUTTON)){
-      return;
-    }
-
-    // Drawing
-    // Infobox
-    arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
-    arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
-
-    // OK Button
-    tinyfont.setCursor(textPos.x, textPos.y);
-    tinyfont.print(AsFlashString(titleText));
-
-    arduboy.display();
-  }
+  showBox(&titleText, 1, true);
 }
 
 int8_t AWGame::showOptions(char_P *options[], uint8_t count){
+  return showBox(options, count, false);
+}
 
-  // frame for the dialog
+int8_t AWGame::showBox(char_P * const options[], uint8_t count, bool isDialog){
+
+  // frame for the box: a dialog is centered and closes with B only,
+  // an option list sits top right and has a cursor.
   Rect frame;
-
-  frame.width = 54;
-  frame.height = 6+count*7;
-  frame.x = arduboy.width() - frame.width - 4;
-  frame.y = 10;
+  if (isDialog) {
+    frame.width = strlen_P(options[0])*5+8;
+    frame.height = 16;
+    frame.x = (arduboy.width() - frame.width)/2;
+    frame.y = 24;
+  }
+  else {
+    frame.width = 54;
+    frame.height = 6+count*7;
+    frame.x = arduboy.width() - frame.width - 4;
+    frame.y = 10;
+  }
+  uint8_t textX = frame.x + (isDialog ? 4 : 9);
+  uint8_t textY = frame.y + (isDialog ? 6 : 4);
 
   // selected Index
   int8_t selectedIndex = 0;
@@ -896,23 +772,19 @@ int8_t AWGame::showOptions(char_P *options[], uint8_t count){
     // Get input
     arduboy.pollButtons();
 
-    // Cancel
-    if (arduboy.justPressed(A_BUTTON)){
-      return -1;
+    // Close and return with selected index
+    if (arduboy.justPressed(B_BUTTON)) return selectedIndex;
+
+    if (!isDialog) {
+      // Cancel
+      if (arduboy.justPressed(A_BUTTON)) return -1;
+      if (arduboy.justPressed(DOWN_BUTTON)) selectedIndex++;
+      if (arduboy.justPressed(UP_BUTTON)) selectedIndex--;
+
+      // wrap and limit index
+      if (selectedIndex < 0) selectedIndex = count-1;
+      if (selectedIndex >= count) selectedIndex = 0;
     }
-    // Close dialog and return with selected index
-    if (arduboy.justPressed(B_BUTTON)){
-      return selectedIndex;
-    }
-    if (arduboy.justPressed(DOWN_BUTTON)){
-      selectedIndex++;
-    }  // Exit on button press
-    if (arduboy.justPressed(UP_BUTTON)){
-      selectedIndex--;
-    }
-    // wrap and limit index
-    selectedIndex = (selectedIndex<0)?(count-1):selectedIndex;
-    selectedIndex = selectedIndex%count;
 
     // Drawing
     // Infobox
@@ -921,13 +793,15 @@ int8_t AWGame::showOptions(char_P *options[], uint8_t count){
 
     // options
     for (uint8_t i = 0; i < count; i++) {
-      tinyfont.setCursor(frame.x + 9, frame.y + 4 + 7*i);
+      tinyfont.setCursor(textX, textY + 7*i);
       tinyfont.print(AsFlashString(options[i]));
     }
 
     // cursor
-    tinyfont.setCursor(frame.x + 4, frame.y + 4 + 7*selectedIndex);
-    tinyfont.print(AsFlashString(LOCA_Cursor));
+    if (!isDialog) {
+      tinyfont.setCursor(frame.x + 4, textY + 7*selectedIndex);
+      tinyfont.print(AsFlashString(LOCA_Cursor));
+    }
 
     arduboy.display();
   }
@@ -1078,19 +952,19 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
     tinyfont.setCursor(76, 34);
     tinyfont.print(AsFlashString(LOCA_funds));
     tinyfont.setCursor(100 - ((unitPrice>100)?5:0), 34);
-    tinyfont.print(unitPrice*100); // Times 100 makes the value look larger but we still can store it in a byte :)
+    printNumber(unitPrice*100); // Times 100 makes the value look larger but we still can store it in a byte :)
 
     // Attack
     tinyfont.setCursor(76, 42);
     tinyfont.print(AsFlashString(LOCA_Trait_attack));
     tinyfont.setCursor(115, 42);
-    tinyfont.print(traits.attackPower);
+    printNumber(traits.attackPower);
 
     // Speed
     tinyfont.setCursor(76, 50);
     tinyfont.print(AsFlashString(LOCA_Trait_speed));
     tinyfont.setCursor(115, 50);
-    tinyfont.print(traits.moveDistance);
+    printNumber(traits.moveDistance);
 
     arduboy.display();
   }
@@ -1108,11 +982,11 @@ void AWGame::drawHudForPlayer(AWPlayer &aPlayer){
   tinyfont.setCursor(46, 1);
   tinyfont.print(AsFlashString(LOCA_day));
   tinyfont.setCursor(66, 1);
-  tinyfont.print(daysPlayed);
+  printNumber(daysPlayed);
   tinyfont.setCursor(86, 1);
   tinyfont.print(AsFlashString(LOCA_funds));
   tinyfont.setCursor(100, 1);
-  tinyfont.print(aPlayer.money*100);
+  printNumber(aPlayer.money*100);
 }
 
 Point AWGame::calculateCameraPosition(Point forCursorPosition){
@@ -1662,7 +1536,7 @@ void AWGame::drawMapAtPosition(Point pos){
           arduboy.fillRect(drawPos.x+10, drawPos.y+9, 6, 7, BLACK);
           arduboy.fillRect(drawPos.x+11, drawPos.y+10, 5, 6, WHITE);
           tinyfont.setCursor(textX, textY);
-          tinyfont.print(unit->healthPoints);
+          printNumber(unit->healthPoints);
         }
       }
     }
@@ -1892,4 +1766,31 @@ void AWGame::resetAbandonedCaptures(){
       building.healthPoints = GameBuilding::CapturePoints;
     }
   }
+}
+
+// ====================================================
+// Small helpers. Kept out of line on purpose: they are called from many
+// places and inlining them everywhere costs more flash than the calls.
+
+void AWGame::printNumber(uint16_t number){
+  char digits[5];
+  uint8_t count = 0;
+  do {
+    digits[count++] = '0' + number % 10;
+    number /= 10;
+  } while (number > 0);
+  while (count > 0) tinyfont.print(digits[--count]);
+}
+
+MapTileType AWGame::tileTypeAtIndex(uint16_t index){
+  return static_cast<MapTileType>(pgm_read_byte(mapData+MapDataHeaderSize+index));
+}
+
+MapTileType AWGame::tileTypeAt(int16_t x, int16_t y){
+  return tileTypeAtIndex(y*mapSize.x+x);
+}
+
+Point AWGame::cursorForTile(Point tile){
+  // the 32x32 cursor is centered on the 16x16 tile
+  return {(int16_t)(tile.x*TILE_SIZE-8), (int16_t)(tile.y*TILE_SIZE-8)};
 }

@@ -84,6 +84,10 @@ private:
     // Game methods
     AWGameState showMainMenu();  // Displays the menu
 
+    // Title screen menu shared by the main menu and the map selection.
+    // Returns the selected index, -1 if cancelled (only with a subtitle).
+    int8_t showTitleMenu(char_P * const items[], uint8_t count, char_P *subtitle, int8_t cursorIdx);
+
     // Displays map selection
     // It returns a pointer to the selected map in progmem. nullptr if none was selected
     // Attribute is the current state, only multi/singleplayer is relevant.
@@ -109,6 +113,9 @@ private:
     // Returns the index of the selected option.
     // Returns -1 if cancelled with A_BUTTON.
     int8_t showOptions(char_P *options[], uint8_t count);
+
+    // Shared drawing and input for dialogs and option lists
+    int8_t showBox(char_P * const options[], uint8_t count, bool isDialog);
 
     // shows the shop UI for the given Building.
     // Will isntantly return UnitType::None if the building
@@ -250,12 +257,14 @@ private:
     Point mapSize = {0, 0}; // Mapsize is in Maptile coordinates and not in screen coordinates.
 
     // Terrain lookup straight from PROGMEM
-    MapTileType tileTypeAtIndex(uint16_t index){
-      return static_cast<MapTileType>(pgm_read_byte(mapData+MapDataHeaderSize+index));
-    }
-    MapTileType tileTypeAt(int16_t x, int16_t y){
-      return tileTypeAtIndex(y*mapSize.x+x);
-    }
+    __attribute__((noinline)) MapTileType tileTypeAtIndex(uint16_t index);
+    __attribute__((noinline)) MapTileType tileTypeAt(int16_t x, int16_t y);
+
+    // Cursor pixel position for a map tile
+    __attribute__((noinline)) static Point cursorForTile(Point tile);
+
+    // Prints a number with tinyfont at the current cursor
+    void printNumber(uint16_t number);
     static constexpr uint8_t mapOffsetY = 8;
 };
 #endif
