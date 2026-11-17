@@ -9,6 +9,10 @@
 #include "DataClasses.h"
 #include "Localization.h"
 
+// Single player enemy AI. Comment this out if the sketch doesn't fit:
+// single player then becomes pass-and-play like multiplayer.
+#define ARDUWARS_AI
+
 // Documentation
 // This files contains our Main game class which defines the base of the game
 // and other relevant things.
@@ -93,11 +97,21 @@ private:
     // Attribute is the current state, only multi/singleplayer is relevant.
     const unsigned char * showMapSelection(AWGameState aState);
 
-    void startNewSinglePlayerGame();  // Starts a new singleplayer game
-    void runSinglePlayerGame();       // Place where the singleplayer game runs
+    // Starts a new single player (against the AI) or multiplayer game
+    void startNewGame(AWGameState mode);
 
-    void startNewMultiplayerPlayerGame();  // Starts a new multiplayer game
-    void runMultiPlayerGame();       // Place where the multiplayer game runs
+    // Place where a game runs. With againstAI the AI plays player 2.
+    void runGame(bool againstAI);
+
+#ifdef ARDUWARS_AI
+    // The enemy AI's turn
+    void doRoundOfAI(AWPlayer &ai);
+    void aiMoveUnit(GameUnit *unit, AWPlayer &ai);
+    uint8_t aiBestTargetFrom(const GameUnit *unit, Point position, AWPlayer &enemy, Point &target);
+#endif
+
+    // Units sold at a building. Returns the count, 0 if it is not a shop.
+    static uint8_t shopListForBuilding(MapTileType building, const UnitType *&buyableUnits);
 
     void doRoundOfPlayer(AWPlayer &currentPlayer);
 
@@ -159,7 +173,8 @@ private:
     void drawPath(const GameUnit *aUnit, Point camera);
 
     // Slides the unit sprite along pathDirections, then clears the path.
-    void animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point camera);
+    // With onlyVisible, steps player 1 can't see are skipped.
+    void animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point camera, bool onlyVisible);
 
     // This method marks the maptiles, where an enemy unit is which can be attacked.
     void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer);
