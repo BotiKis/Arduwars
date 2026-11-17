@@ -16,7 +16,7 @@
    limitations under the License.
 */
 
-#include <utility.h>
+#include "Utility.h"
 #include <stdint.h>
 
 #include "TypeTraits.h"
@@ -277,7 +277,6 @@ void Deque<Type, Capacity>::unappend(void)
 
 	--this->next;
 	this->items[this->next].~ValueType();
-	return true;
 }
 
 // O(1)
@@ -291,7 +290,6 @@ void Deque<Type, Capacity>::unprepend(void)
 	for (IndexType i = 0; i < this->next; ++i)
 			this->items[i] = stdlib::move(this->items[i + 1]);
 	this->items[this->next].~ValueType();
-	return true;
 }
 
 // O(N)

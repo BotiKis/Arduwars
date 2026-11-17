@@ -2,7 +2,7 @@
 #define DATA_H
 
 #include <Arduboy2.h>
-#include <List.h>
+#include "List.h"
 #include "Localization.h"
 
 // Documentation:
@@ -89,6 +89,18 @@ static inline bool mapTileIsStreet(MapTileType mapTileidx){
   return (mapTileidx >= MapTileType::Street1 && mapTileidx <= MapTileType::Street6);
 }
 
+// Helper function returns the defense bonus a tile gives to ground units.
+static inline uint8_t mapTileDefenseBonus(MapTileType mapTileidx){
+  switch (mapTileidx) {
+    case MapTileType::Forest:   return 1;
+    case MapTileType::Hill:     return 2;
+    case MapTileType::Mountain: return 3;
+    case MapTileType::P1HQ:
+    case MapTileType::P2HQ:     return 3;
+    default: return mapTileIndexIsBuilding(mapTileidx) ? 2 : 0;
+  }
+}
+
 
 
 // ====================================================
@@ -164,9 +176,9 @@ public:
   // 3 Bytes in total.
   // Every Player can have 24 Units. That makes 144 Bytes in RAM.
 
-  // Constructor
-  // Default constructor initializes an all 0 filled UnitType::Soldier Unit.
-  GameUnit();
+  // No constructor on purpose: the unit lists hold 24 slots per player and a
+  // constructor would run for every slot. New units are set up in
+  // AWGame::addNewUnit.
 
   // returns the name of a certain UnitType
   static char_P* nameForUnitType(UnitType unitType);
@@ -188,6 +200,18 @@ public:
 
   // Static method tells if a unit can attack another one.
   static bool canUnitAttackUnit(UnitType attacker, UnitType defender);
+
+  // Returns the damage an attacker with the given health deals to a defender
+  // standing on the given tile. Always at least 1 if the attack is possible.
+  static uint8_t calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile);
+
+  // Unit categories
+  static inline bool isInfantry(UnitType unitType){
+    return unitType >= UnitType::Soldier && unitType <= UnitType::SpecOps;
+  }
+  static inline bool isAir(UnitType unitType){
+    return unitType >= UnitType::Heli && unitType <= UnitType::Bomber;
+  }
 };
 
 class UnitTraits{
@@ -246,15 +270,14 @@ public:
   uint8_t others          :2; // reserved for future use
   // 3 Bytes in total.
 
-  // Constructor
-  // Default constructor initializes an all 0 filled BuildingType::None Building.
-  GameBuilding();
-
-  // initializes with corresponding data
-  GameBuilding(MapTileType type);
+  // No constructor on purpose (see GameUnit). Buildings are set up in AWGame::loadMap.
 
   // attribute is the global viewdistance for all buildings
   static constexpr uint8_t buildingViewDistance = 3;
+
+  // healthPoints doubles as capture points: infantry reduce it by their own
+  // health each turn and take the building when it reaches 0.
+  static constexpr uint8_t CapturePoints = 10;
 };
 
 
@@ -323,28 +346,27 @@ public:
   static constexpr uint8_t BelongsToPlayer  = 0;
   static constexpr uint8_t BelongsToEnemy   = 1;
 
-  // constructor
-  MapTile(void);
-
   // members
-  uint8_t tileID:5;              // Holds the ID of the Tile in the Tilesheet
+  // The terrain itself is not stored here: it is read straight from the map
+  // data in PROGMEM (see AWGame::tileTypeAt). Unit type and active state are
+  // looked up from the players' unit lists when needed.
   uint8_t buildingIsOccupied:1;  // 0 if building is not occupied
   uint8_t buildingBelongsTo:1;   // Tells to whom the building belongs (if it's a building).
   uint8_t hasUnit:1;             // 0... No unit, 1... Contains a unit
   uint8_t unitBelongsTo:1;       // Tells, if there is a unit and to which player it belongs.
   uint8_t showSelection:1;       // When 1, it displays the selection Animation
   uint8_t showsFog:1;            // When 1, it shows fog.
-  uint8_t unitIsActive:1;        // Default GameUnit::UnitStateActive.
-  uint8_t unitSpriteID:4;        // If field has a Unit, this contains the sprite ID in the Units Spritesheet.
-  // 2 bytes in total
-  // with a 24x16 array this makes 768 Bytes in RAM. This is about 50% of the available RAM.
+  // 1 byte in total
+  // with a 24x16 map this makes 384 Bytes in RAM.
 
-  // Returns true if the provided unit can enter the maptile
-  bool canBeAccessedByUnit(UnitType unitType);
+  // Returns true if the provided unit can enter a tile of the given type
+  static bool canBeAccessedByUnit(MapTileType mapTileType, UnitType unitType);
 
 private:
   // returns a number from 0-7 at the position of the type in the LUT
   static uint8_t lutMaskForMaptile(MapTileType mapTileType);
 };
+
+static_assert(sizeof(MapTile) == 1, "MapTile must stay one byte");
 
 #endif

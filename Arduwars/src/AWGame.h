@@ -4,10 +4,14 @@
 #include <Arduboy2.h>
 #include <Tinyfont.h>
 #include <Sprites.h>
-#include <List.h>
+#include "List.h"
 
 #include "DataClasses.h"
 #include "Localization.h"
+
+// Single player enemy AI. Comment this out if the sketch doesn't fit:
+// single player then becomes pass-and-play like multiplayer.
+#define ARDUWARS_AI
 
 // Documentation
 // This files contains our Main game class which defines the base of the game
@@ -84,16 +88,32 @@ private:
     // Game methods
     AWGameState showMainMenu();  // Displays the menu
 
+    // Title screen menu shared by the main menu and the map selection.
+    // Returns the selected index, -1 if cancelled (only with a subtitle).
+    int8_t showTitleMenu(char_P * const items[], uint8_t count, char_P *subtitle, int8_t cursorIdx);
+
     // Displays map selection
     // It returns a pointer to the selected map in progmem. nullptr if none was selected
     // Attribute is the current state, only multi/singleplayer is relevant.
     const unsigned char * showMapSelection(AWGameState aState);
 
-    void startNewSinglePlayerGame();  // Starts a new singleplayer game
-    void runSinglePlayerGame();       // Place where the singleplayer game runs
+    // Starts a new single player (against the AI) or multiplayer game
+    void startNewGame(AWGameState mode);
 
-    void startNewMultiplayerPlayerGame();  // Starts a new multiplayer game
-    void runMultiPlayerGame();       // Place where the multiplayer game runs
+    // Place where a game runs. With againstAI the AI plays player 2.
+    void runGame(bool againstAI);
+
+#ifdef ARDUWARS_AI
+    // The enemy AI's turn
+    void doRoundOfAI(AWPlayer &ai);
+    void aiMoveUnit(GameUnit *unit, AWPlayer &ai);
+#endif
+
+    // Adds a new unit with full health that can act from the next turn on.
+    void addNewUnit(AWPlayer &owner, UnitType unitType, Point position);
+
+    // Units sold at a building. Returns the count, 0 if it is not a shop.
+    static uint8_t shopListForBuilding(MapTileType building, const UnitType *&buyableUnits);
 
     void doRoundOfPlayer(AWPlayer &currentPlayer);
 
@@ -109,6 +129,9 @@ private:
     // Returns the index of the selected option.
     // Returns -1 if cancelled with A_BUTTON.
     int8_t showOptions(char_P *options[], uint8_t count);
+
+    // Shared drawing and input for dialogs and option lists
+    int8_t showBox(char_P * const options[], uint8_t count, bool isDialog);
 
     // shows the shop UI for the given Building.
     // Will isntantly return UnitType::None if the building
@@ -134,13 +157,46 @@ private:
 
     // Marks the given unit on the map by showing it's movement radius
     void markUnitOnMap(const GameUnit *aUnit);
-    void markPositionAsSelectedForUnit(Point position, int8_t distance, UnitType unit);
 
     // clears the units marker
     void unmarkUnitOnMap(const GameUnit *aUnit);
 
+    // Movement range flood fill. Returns the scratch array (in the screen
+    // buffer) with the most movement left on entering each tile, 0 = unreachable.
+    uint8_t * floodMovement(const GameUnit *aUnit);
+
+    // Flood fill from any tile with the given movement into remaining.
+    // Tiles with units of the other side (not mover) can't be entered.
+    uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining, uint8_t mover);
+
+    // Where the unit is after the first steps of pathDirections
+    Point pathPosition(const GameUnit *aUnit, uint8_t steps);
+
+    // If the path runs into a (hidden) enemy, shortens it to stop on the
+    // last free tile before it, sets stopAt and returns true.
+    bool cutPathAtAmbush(const GameUnit *aUnit, Point &stopAt);
+
+    // Which player a unit belongs to (BelongsToPlayer1/2)
+    uint8_t ownerOf(const GameUnit *aUnit);
+
+    // Movement left after leaving a tile of the given type
+    static int8_t movementLeftAfter(MapTileType type, int8_t left);
+
+    // Finds a shortest path for the unit to target and stores it in pathDirections.
+    void buildPathTo(const GameUnit *aUnit, Point target);
+
+    // Draws the movement arrow along pathDirections.
+    void drawPath(const GameUnit *aUnit, Point camera);
+
+    // Slides the unit sprite along pathDirections, then clears the path.
+    // With onlyVisible, steps player 1 can't see are skipped.
+    void animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point camera, bool onlyVisible);
+
     // This method marks the maptiles, where an enemy unit is which can be attacked.
-    void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer);
+    // Looks at every enemy the unit could attack from position. Returns the
+    // best damage (0 = nothing in range) and that enemy's tile in target.
+    // With markVisible, the targets the player can see are marked on the map.
+    uint8_t scanTargets(const GameUnit *unit, Point position, AWPlayer &attackingPlayer, Point &target, bool markVisible);
 
     // returns the position of the next marked tile.
     // Arguments:
@@ -162,7 +218,34 @@ private:
     // Helper method to get a Pointer to the Gamebuilding for a certain location on the map
     // The parameter position is in map coordinates.
     // returns nullptr if there is no building at the Location
-    const GameBuilding * getBuildingAtCoordinate(Point coordinate);
+    GameBuilding * getBuildingAtCoordinate(Point coordinate);
+
+    // Resolves an attack of the given unit on the enemy unit at target,
+    // including the counterattack. Removes destroyed units and sets winner.
+    void attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer);
+
+    // About one second of animation centred on focus: blinking frames around
+    // focus and other, or (flickerUnit) the unit on focus flickering.
+    void playEffect(Point focus, Point other, AWPlayer &hudPlayer, bool flickerUnit);
+
+    // One animation frame: map, optional cursors on two tiles, optional sprite, HUD.
+    void drawEffectFrame(Point camera, AWPlayer &hudPlayer, const Point *highlight, const unsigned char *sprite, Point spritePosition, uint8_t spriteFrame);
+
+    // Inverts the screen briefly the given number of times (a hit).
+    void flashScreen(uint8_t times);
+
+    // Infantry on a building lowers its capture points; takes it at 0.
+    // Capturing the enemy HQ sets winner.
+    void captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPlayer);
+
+    // Resets capture progress on buildings nobody is standing on anymore.
+    void resetAbandonedCaptures();
+
+    // Returns true if the given unit could start or continue capturing at position.
+    bool canUnitCaptureAtPosition(const GameUnit *unit, Point position, AWPlayer &aPlayer);
+
+    // Returns the BelongsToPlayer1/2 value for a player.
+    uint8_t playerIndex(AWPlayer &aPlayer){ return (aPlayer == player1) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2; }
 
     // ======================
     // Data
@@ -195,12 +278,37 @@ private:
     // The game ends with a draw when it reaches 255 days.
     uint8_t daysPlayed;
 
+    // Movement path (0 right, 1 up, 2 left, 3 down) from the selected unit to the cursor
+    static constexpr uint8_t MaxPathLength = 10;
+    uint8_t pathDirections[MaxPathLength];
+    uint8_t pathLength = 0;
+
+    // Set when a game is decided. NoWinner while the game is running.
+    static constexpr uint8_t NoWinner = 0xFF;
+    uint8_t winner = NoWinner; // BelongsToPlayer1 or BelongsToPlayer2 when decided
+
     // In this attribute we store the buildings on the map - max 16.
     List<GameBuilding, 24> gameBuildings;
 
     // Map data
-    MapTile *mapTileData = nullptr;
+    // The largest map is 24x16. The state is kept in a fixed array so its RAM
+    // use shows up in the compiler's size report (no runtime allocation).
+    static constexpr uint8_t MaxMapWidth = 24;
+    static constexpr uint8_t MaxMapHeight = 16;
+    MapTile mapTileData[MaxMapWidth*MaxMapHeight];
+    const unsigned char *mapData = nullptr; // terrain of the current map in PROGMEM
+    static constexpr uint8_t MapDataHeaderSize = 10; // same as MAPDATAOFFSET_Main in MapData.h
     Point mapSize = {0, 0}; // Mapsize is in Maptile coordinates and not in screen coordinates.
+
+    // Terrain lookup straight from PROGMEM
+    __attribute__((noinline)) MapTileType tileTypeAtIndex(uint16_t index);
+    __attribute__((noinline)) MapTileType tileTypeAt(int16_t x, int16_t y);
+
+    // Cursor pixel position for a map tile
+    __attribute__((noinline)) static Point cursorForTile(Point tile);
+
+    // Prints a number with tinyfont at the current cursor
+    void printNumber(uint16_t number);
     static constexpr uint8_t mapOffsetY = 8;
 };
 #endif

@@ -6,6 +6,13 @@
 // this pointer.
 AWGame game = AWGame();
 
+// Leave out the USB stack: it frees about 2.7KB of flash, which pays for the
+// battle, death and capture animations on the original Arduboy.
+// The catch: an uploader can no longer reset the Arduboy by itself.
+// To upload a new sketch, hold DOWN while switching the Arduboy on; it then
+// starts the bootloader and waits for the upload.
+ARDUBOY_NO_USB
+
 // ---------------------------------------------------
 // Setup function
 // This is the first code the Arduboy will run.

@@ -35,7 +35,13 @@ char_P LOCA_move[] PROGMEM                = "MOVE";
 char_P LOCA_cancel[] PROGMEM              = "CANCEL";
 char_P LOCA_load[] PROGMEM                = "LOAD";
 char_P LOCA_loadout[] PROGMEM             = "L. OUT";
-char_P LOCA_capture[] PROGMEM             = "CAP";
+char_P LOCA_capture[] PROGMEM             = "CAPTURE";
+char_P LOCA_noTarget[] PROGMEM            = "NO TARGET";
+char_P LOCA_captured[] PROGMEM            = "CAPTURED";
+char_P LOCA_ambush[] PROGMEM              = "AMBUSH!";
+char_P LOCA_player1Wins[] PROGMEM         = "PLAYER 1 WINS";
+char_P LOCA_player2Wins[] PROGMEM         = "PLAYER 2 WINS";
+char_P LOCA_draw[] PROGMEM                = "DRAW";
 
 // Unit Traits
 char_P LOCA_Trait_attack[] PROGMEM   = "ATK";

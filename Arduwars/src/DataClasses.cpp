@@ -5,20 +5,6 @@
 // ====================================================
 // GameUnit
 
-GameUnit::GameUnit(){
-  // Save the provided Type
-  unitType = static_cast<uint8_t>(UnitType::Soldier);
-
-  // Every unit has default 10 HP
-  healthPoints = GameUnit::UnitDefaultHealth;
-
-  // set active
-  activated = GameUnit::UnitStateActive;
-
-  // set the payload
-  payload = GameUnit::PayloadNone;
-}
-
 char_P* GameUnit::nameForUnitType(UnitType unitType){
   return LOCA_Unit_Names[static_cast<uint8_t>(unitType)];
 }
@@ -39,6 +25,25 @@ bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
   return (lutForAttacker & (0b1000000000000000 >> static_cast<uint16_t>(defender)) );
 }
 
+uint8_t GameUnit::calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile){
+
+  if (!canUnitAttackUnit(attacker, defender)) return 0;
+
+  UnitTraits attackerTraits = UnitTraits::traitsForUnitType(attacker);
+  UnitTraits defenderTraits = UnitTraits::traitsForUnitType(defender);
+
+  // Raw damage is twice the attack power, scaled by the attackers health
+  // (rounded up so a hurt unit still hits).
+  uint8_t damage = (attackerTraits.attackPower*2*attackerHealth + UnitDefaultHealth-1) / UnitDefaultHealth;
+
+  // Defense of the unit plus cover. Air units get no cover from terrain.
+  uint8_t reduction = defenderTraits.defense;
+  if (!isAir(defender)) reduction += mapTileDefenseBonus(defenderTile);
+
+  // Every successful attack deals at least 1 damage.
+  return (damage > reduction) ? (damage - reduction) : 1;
+}
+
 UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
   UnitTraits traits;
 
@@ -50,39 +55,12 @@ UnitTraits UnitTraits::traitsForUnitType(UnitType unitType){
 // ====================================================
 // GameBuilding
 
-GameBuilding::GameBuilding(){
-  // By default it's plains
-  buildingType = static_cast<uint8_t>(MapTileType::Plains);
-
-  // Every Building has default 10 HP
-  healthPoints = 10;
-
-  // Set the coordinates to 0
-  mapPosX = mapPosY = 0;
-  isOccupied = 0;
-  belongsToPlayer = 0;
-}
-
-GameBuilding::GameBuilding(MapTileType type){
-  // Save the provided Type
-  buildingType = static_cast<uint8_t>(type);
-
-  // Every Building has default 10 HP
-  healthPoints = 10;
-
-  // Set the coordinates to 0
-  mapPosX = mapPosY = 0;
-  isOccupied = 0;
-  belongsToPlayer = 0;
-}
-
-
 // ====================================================
 // Player
 
 AWPlayer::AWPlayer(uint8_t aid){
+  // reset() runs when a game starts
   this->playerID = aid;
-  this->reset();
 }
 
 void AWPlayer::reset(){
@@ -115,24 +93,7 @@ bool AWPlayer::operator==(const AWPlayer& other) const{
 // ====================================================
 // MapTile
 
-MapTile::MapTile(void){
-  tileID = 0;
-
-  buildingIsOccupied = 0;
-  buildingBelongsTo = 0;
-
-  hasUnit = 0;
-  unitBelongsTo = 0;
-
-  showSelection = 0;
-  showsFog = 0;
-
-  unitIsActive = GameUnit::UnitStateActive;
-  unitSpriteID = 0;
-}
-
-
-bool MapTile::canBeAccessedByUnit(UnitType unitType){
+bool MapTile::canBeAccessedByUnit(MapTileType mapTileType, UnitType unitType){
   // get correct entry from LUT for the unit
   uint8_t lut = 0;
   if (static_cast<int8_t>(unitType) <= static_cast<int8_t>(UnitType::SpecOps))
@@ -147,8 +108,7 @@ bool MapTile::canBeAccessedByUnit(UnitType unitType){
   const uint8_t movement = pgm_read_byte(moveLookupTable+lut); // reuse the variable
 
   // get the correct value from lut end return the result
-  MapTileType type = static_cast<MapTileType>(this->tileID);
-  return (movement & MapTile::lutMaskForMaptile(type)) != 0;
+  return (movement & MapTile::lutMaskForMaptile(mapTileType)) != 0;
 }
 
 // Ground,Water,Street,Hill,Mountain,Forest,Reef,Building
