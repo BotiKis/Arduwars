@@ -627,6 +627,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                     selectedUnit->mapPosX = currentIndex.x;
                     selectedUnit->mapPosY = currentIndex.y;
                     selectedUnit->activated = GameUnit::UnitStateDisabled;
+                    updateMapForPlayer(currentPlayer);
 
                     captureBuildingWithUnit(selectedUnit, currentPlayer);
 
@@ -1302,7 +1303,7 @@ void AWGame::animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point 
   const unsigned char *unitSprite = (owner == player1) ? unitsA_plus_mask : unitsB_plus_mask;
   Point position = {(int16_t)(aUnit->mapPosX*TILE_SIZE - camera.x), (int16_t)(aUnit->mapPosY*TILE_SIZE - camera.y)};
 
-  // 2 pixels per frame: 8 frames per tile
+  // 1 pixel per frame: 16 frames (about a quarter second) per tile
   int8_t x = aUnit->mapPosX;
   int8_t y = aUnit->mapPosY;
   for (uint8_t i = 0; i < pathLength; i++) {
@@ -1319,16 +1320,10 @@ void AWGame::animateUnitAlongPath(const GameUnit *aUnit, AWPlayer &owner, Point 
       continue;
     }
 
-    for (uint8_t step = 0; step < TILE_SIZE/2; step++) {
-      while (!arduboy.nextFrame()) {}
-      position.x += 2*((direction == 0) - (direction == 2));
-      position.y += 2*((direction == 3) - (direction == 1));
-
-      arduboy.clear();
-      drawMapAtPosition(camera * -1);
-      sprites.drawPlusMask(position.x, position.y, unitSprite, aUnit->unitType*2+(arduboy.frameCount/4)%2);
-      drawHudForPlayer(owner);
-      arduboy.display();
+    for (uint8_t step = 0; step < TILE_SIZE; step++) {
+      position.x += (direction == 0) - (direction == 2);
+      position.y += (direction == 3) - (direction == 1);
+      drawEffectFrame(camera, owner, nullptr, unitSprite, position, aUnit->unitType*2+(arduboy.frameCount/8)%2);
     }
   }
   pathLength = 0;
@@ -1642,15 +1637,17 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
   MapTileType defenderTile = tileTypeAt(target.x, target.y);
   MapTileType attackerTile = tileTypeAt(attacker->mapPosX, attacker->mapPosY);
 
-  // short flash so the player sees the hit
-  arduboy.invert(true);
-  delay(60);
-  arduboy.invert(false);
+  Point attackerPosition = {attacker->mapPosX, attacker->mapPosY};
+
+  // show who fights whom, then the hit
+  playEffect(target, attackerPosition, attackingPlayer, false);
+  flashScreen(3);
 
   uint8_t damage = GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile);
 
   if (damage >= defender->healthPoints) {
-    // defender destroyed
+    // defender destroyed: it flickers, then it's gone
+    playEffect(target, target, attackingPlayer, true);
     defendingPlayer.units.removeAt(defender - defendingPlayer.units.getData());
     if (defendingPlayer.units.isEmpty()) winner = playerIndex(attackingPlayer);
     return;
@@ -1667,8 +1664,12 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
   damage = GameUnit::calculateDamage(defenderType, defender->healthPoints, attackerType, attackerTile);
   if (damage == 0) return; // defender can't hit this unit type
 
+  // the counterattack hits
+  flashScreen(2);
+
   if (damage >= attacker->healthPoints) {
     // attacker destroyed by the counterattack
+    playEffect(attackerPosition, attackerPosition, attackingPlayer, true);
     attackingPlayer.units.removeAt(attacker - attackingPlayer.units.getData());
     if (attackingPlayer.units.isEmpty()) winner = playerIndex(defendingPlayer);
     return;
@@ -1691,6 +1692,10 @@ void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPl
   if (!canUnitCaptureAtPosition(unit, position, capturingPlayer)) return;
 
   GameBuilding *building = getBuildingAtCoordinate(position);
+
+  // the building blinks while it is being taken over
+  if (!mapTileData[position.y*mapSize.x+position.x].showsFog)
+    playEffect(position, position, capturingPlayer, false);
 
   // a hurt unit captures slower
   if (unit->healthPoints < building->healthPoints) {
@@ -1943,4 +1948,46 @@ void AWGame::addNewUnit(AWPlayer &owner, UnitType unitType, Point position){
   newUnit.activated = GameUnit::UnitStateDisabled;
   newUnit.payload = GameUnit::PayloadNone;
   owner.units.add(newUnit);
+}
+
+void AWGame::playEffect(Point focus, Point other, AWPlayer &hudPlayer, bool flickerUnit){
+  // About one second centred on focus: either the cursor blinking on focus
+  // and other, or the unit on focus flickering (before it is removed).
+  Point camera = calculateCameraPosition(cursorForTile(focus));
+  camera.y -= mapOffsetY;
+  MapTile &tile = mapTileData[focus.y*mapSize.x+focus.x];
+
+  for (uint8_t frame = 0; frame < 60; frame++) {
+    bool on = (frame / 10) % 2 == 0;
+    if (flickerUnit) tile.hasUnit = on;
+
+    Point highlight[2] = {focus, other};
+    drawEffectFrame(camera, hudPlayer, (on && !flickerUnit) ? highlight : nullptr, nullptr, {0, 0}, 0);
+  }
+}
+
+void AWGame::drawEffectFrame(Point camera, AWPlayer &hudPlayer, const Point *highlight, const unsigned char *sprite, Point spritePosition, uint8_t spriteFrame){
+  // One frame of an animation: the map, optional cursors on two tiles,
+  // an optional sprite (a walking unit), the HUD.
+  while (!arduboy.nextFrame()) {}
+  arduboy.clear();
+  drawMapAtPosition(camera * -1);
+  if (highlight != nullptr) {
+    for (uint8_t i = 0; i < 2; i++) {
+      Point cursor = cursorForTile(highlight[i]);
+      sprites.drawPlusMask(cursor.x - camera.x, cursor.y - camera.y + 1, gameCursorAnimation_plus_mask, 0);
+    }
+  }
+  if (sprite != nullptr) sprites.drawPlusMask(spritePosition.x, spritePosition.y, sprite, spriteFrame);
+  drawHudForPlayer(hudPlayer);
+  arduboy.display();
+}
+
+void AWGame::flashScreen(uint8_t times){
+  while (times--) {
+    arduboy.invert(true);
+    delay(70);
+    arduboy.invert(false);
+    delay(70);
+  }
 }

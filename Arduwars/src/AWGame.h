@@ -213,6 +213,16 @@ private:
     // including the counterattack. Removes destroyed units and sets winner.
     void attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer);
 
+    // About one second of animation centred on focus: blinking frames around
+    // focus and other, or (flickerUnit) the unit on focus flickering.
+    void playEffect(Point focus, Point other, AWPlayer &hudPlayer, bool flickerUnit);
+
+    // One animation frame: map, optional cursors on two tiles, optional sprite, HUD.
+    void drawEffectFrame(Point camera, AWPlayer &hudPlayer, const Point *highlight, const unsigned char *sprite, Point spritePosition, uint8_t spriteFrame);
+
+    // Inverts the screen briefly the given number of times (a hit).
+    void flashScreen(uint8_t times);
+
     // Infantry on a building lowers its capture points; takes it at 0.
     // Capturing the enemy HQ sets winner.
     void captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPlayer);
