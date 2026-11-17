@@ -1179,16 +1179,18 @@ uint8_t * AWGame::floodMovement(const GameUnit *aUnit){
   if (mapTileIsStreet(tileTypeAt(aUnit->mapPosX, aUnit->mapPosY)))
     moveDistance += 1;
 
-  // remaining[i] is the most movement left when entering tile i
-  // (0 = not reachable). It is kept in the screen buffer: callers must run
-  // between display() and the next clear().
-  uint8_t *remaining = arduboy.getBuffer();
-  uint16_t mapLength = mapSize.x*mapSize.y;
-  uint16_t startIndex = aUnit->mapPosY*mapSize.x+aUnit->mapPosX;
-  memset(remaining, 0, mapLength);
+  // The result is kept in the screen buffer: callers must run between
+  // display() and the next clear().
+  return floodFrom({aUnit->mapPosX, aUnit->mapPosY}, unitType, moveDistance, arduboy.getBuffer());
+}
 
-  if (MapTile::canBeAccessedByUnit(tileTypeAtIndex(startIndex), unitType))
-    remaining[startIndex] = moveDistance;
+uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining){
+  // remaining[i] is the most movement left when entering tile i
+  // (0 = not reachable). The start tile is always seeded, even if the unit
+  // type couldn't stand there (the AI floods outward from enemy positions).
+  uint16_t mapLength = mapSize.x*mapSize.y;
+  memset(remaining, 0, mapLength);
+  remaining[start.y*mapSize.x+start.x] = moves;
 
   bool changed = true;
   while (changed) {
@@ -1785,20 +1787,44 @@ void AWGame::aiMoveUnit(GameUnit *unit, AWPlayer &ai){
   bool indirect = UnitTraits::traitsForUnitType(unitType).attackRange > 1;
   Point start = {unit->mapPosX, unit->mapPosY};
 
-  // Goal: the nearest enemy unit, or for infantry also the nearest building
-  // it could capture.
+  // Distance fields live in the second half of the screen buffer; the
+  // first half holds this turn's movement range. A field value is the
+  // movement left after travelling there, so higher means closer.
+  uint8_t *field = arduboy.getBuffer() + MaxMapWidth*MaxMapHeight;
+  constexpr int8_t FarAway = 127;
+
+  // Goal: the closest enemy unit, or for infantry also the closest building
+  // it could capture - closest by an actual route over terrain this unit can
+  // cross, so land units don't head for targets across the water.
+  floodFrom(start, unitType, FarAway, field);
   Point goal = start;
-  uint8_t goalDistance = 255;
-  for (uint8_t i = 0; i < enemy.units.getCount(); i++) {
-    uint8_t distance = abs(enemy.units[i].mapPosX - start.x) + abs(enemy.units[i].mapPosY - start.y);
-    if (distance < goalDistance) { goalDistance = distance; goal = {enemy.units[i].mapPosX, enemy.units[i].mapPosY}; }
+  uint8_t goalCloseness = 0;
+  uint8_t candidates = enemy.units.getCount() + gameBuildings.getCount();
+  for (uint8_t i = 0; i < candidates; i++) {
+    Point position;
+    if (i < enemy.units.getCount()) {
+      position = {enemy.units[i].mapPosX, enemy.units[i].mapPosY};
+    }
+    else {
+      GameBuilding &building = gameBuildings[i - enemy.units.getCount()];
+      position = {building.mapPosX, building.mapPosY};
+      if (!infantry || !canUnitCaptureAtPosition(unit, position, ai)) continue;
+    }
+
+    // a target counts as reachable if we can get onto it or next to it
+    for (uint8_t direction = 0; direction < 5; direction++) {
+      int8_t x = position.x + (direction == 0) - (direction == 2);
+      int8_t y = position.y + (direction == 3) - (direction == 1);
+      if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) continue;
+      if (field[y*mapSize.x+x] > goalCloseness) {
+        goalCloseness = field[y*mapSize.x+x];
+        goal = position;
+      }
+    }
   }
-  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
-    Point position = {gameBuildings[i].mapPosX, gameBuildings[i].mapPosY};
-    if (!infantry || !canUnitCaptureAtPosition(unit, position, ai)) continue;
-    uint8_t distance = abs(position.x - start.x) + abs(position.y - start.y);
-    if (distance < goalDistance) { goalDistance = distance; goal = position; }
-  }
+
+  // Route distance from every tile to the goal
+  floodFrom(goal, unitType, FarAway, field);
 
   // Score every reachable free tile
   uint8_t *remaining = floodMovement(unit);
@@ -1812,8 +1838,8 @@ void AWGame::aiMoveUnit(GameUnit *unit, AWPlayer &ai){
     bool isStart = (tile == start);
     if (!isStart && mapTileData[i].hasUnit) continue;
 
-    // get closer to the goal, prefer cover
-    int16_t score = -4*(abs(goal.x - tile.x) + abs(goal.y - tile.y)) + mapTileDefenseBonus(tileTypeAtIndex(i));
+    // get closer to the goal along a real route, prefer cover
+    int16_t score = 4*field[i] + mapTileDefenseBonus(tileTypeAtIndex(i));
 
     // capture
     if (infantry && canUnitCaptureAtPosition(unit, tile, ai)) {

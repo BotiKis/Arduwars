@@ -165,6 +165,9 @@ private:
     // buffer) with the most movement left on entering each tile, 0 = unreachable.
     uint8_t * floodMovement(const GameUnit *aUnit);
 
+    // Flood fill from any tile with the given movement into remaining.
+    uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining);
+
     // Movement left after leaving a tile of the given type
     static int8_t movementLeftAfter(MapTileType type, int8_t left);
 
