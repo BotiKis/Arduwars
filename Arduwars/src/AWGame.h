@@ -4,7 +4,7 @@
 #include <Arduboy2.h>
 #include <Tinyfont.h>
 #include <Sprites.h>
-#include <List.h>
+#include "List.h"
 
 #include "DataClasses.h"
 #include "Localization.h"
@@ -134,7 +134,6 @@ private:
 
     // Marks the given unit on the map by showing it's movement radius
     void markUnitOnMap(const GameUnit *aUnit);
-    void markPositionAsSelectedForUnit(Point position, int8_t distance, UnitType unit);
 
     // clears the units marker
     void unmarkUnitOnMap(const GameUnit *aUnit);
@@ -220,8 +219,22 @@ private:
     List<GameBuilding, 24> gameBuildings;
 
     // Map data
-    MapTile *mapTileData = nullptr;
+    // The largest map is 24x16. The state is kept in a fixed array so its RAM
+    // use shows up in the compiler's size report (no runtime allocation).
+    static constexpr uint8_t MaxMapWidth = 24;
+    static constexpr uint8_t MaxMapHeight = 16;
+    MapTile mapTileData[MaxMapWidth*MaxMapHeight];
+    const unsigned char *mapData = nullptr; // terrain of the current map in PROGMEM
+    static constexpr uint8_t MapDataHeaderSize = 10; // same as MAPDATAOFFSET_Main in MapData.h
     Point mapSize = {0, 0}; // Mapsize is in Maptile coordinates and not in screen coordinates.
+
+    // Terrain lookup straight from PROGMEM
+    MapTileType tileTypeAtIndex(uint16_t index){
+      return static_cast<MapTileType>(pgm_read_byte(mapData+MapDataHeaderSize+index));
+    }
+    MapTileType tileTypeAt(int16_t x, int16_t y){
+      return tileTypeAtIndex(y*mapSize.x+x);
+    }
     static constexpr uint8_t mapOffsetY = 8;
 };
 #endif
