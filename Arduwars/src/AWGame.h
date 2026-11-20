@@ -162,7 +162,24 @@ private:
     // Helper method to get a Pointer to the Gamebuilding for a certain location on the map
     // The parameter position is in map coordinates.
     // returns nullptr if there is no building at the Location
-    const GameBuilding * getBuildingAtCoordinate(Point coordinate);
+    GameBuilding * getBuildingAtCoordinate(Point coordinate);
+
+    // Resolves an attack of the given unit on the enemy unit at target,
+    // including the counterattack. Removes destroyed units and sets winner.
+    void attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer);
+
+    // Infantry on a building lowers its capture points; takes it at 0.
+    // Capturing the enemy HQ sets winner.
+    void captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPlayer);
+
+    // Resets capture progress on buildings nobody is standing on anymore.
+    void resetAbandonedCaptures();
+
+    // Returns true if the given unit could start or continue capturing at position.
+    bool canUnitCaptureAtPosition(const GameUnit *unit, Point position, AWPlayer &aPlayer);
+
+    // Returns the BelongsToPlayer1/2 value for a player.
+    uint8_t playerIndex(AWPlayer &aPlayer){ return (aPlayer == player1) ? MapTile::BelongsToPlayer1 : MapTile::BelongsToPlayer2; }
 
     // ======================
     // Data
@@ -194,6 +211,10 @@ private:
     // A day passes if both players has ended their rounds.
     // The game ends with a draw when it reaches 255 days.
     uint8_t daysPlayed;
+
+    // Set when a game is decided. NoWinner while the game is running.
+    static constexpr uint8_t NoWinner = 0xFF;
+    uint8_t winner = NoWinner; // BelongsToPlayer1 or BelongsToPlayer2 when decided
 
     // In this attribute we store the buildings on the map - max 16.
     List<GameBuilding, 24> gameBuildings;
