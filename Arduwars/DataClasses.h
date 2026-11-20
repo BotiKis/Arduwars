@@ -176,9 +176,8 @@ public:
   // 3 Bytes in total.
   // Every Player can have 24 Units. That makes 144 Bytes in RAM.
 
-  // Constructor
-  // Default constructor initializes an all 0 filled UnitType::Soldier Unit.
-  GameUnit();
+  // No constructor on purpose: the unit lists hold 24 slots per player and a
+  // constructor would run for every slot. New units are set up in the shop.
 
   // returns the name of a certain UnitType
   static char_P* nameForUnitType(UnitType unitType);
@@ -211,6 +210,9 @@ public:
   }
   static inline bool isAir(UnitType unitType){
     return unitType >= UnitType::Heli && unitType <= UnitType::Bomber;
+  }
+  static inline bool isShip(UnitType unitType){
+    return unitType >= UnitType::Cruiser && unitType <= UnitType::Transportship;
   }
 };
 
@@ -270,12 +272,7 @@ public:
   uint8_t others          :2; // reserved for future use
   // 3 Bytes in total.
 
-  // Constructor
-  // Default constructor initializes an all 0 filled BuildingType::None Building.
-  GameBuilding();
-
-  // initializes with corresponding data
-  GameBuilding(MapTileType type);
+  // No constructor on purpose (see GameUnit). Buildings are set up in AWGame::loadMap.
 
   // attribute is the global viewdistance for all buildings
   static constexpr uint8_t buildingViewDistance = 3;
@@ -308,7 +305,7 @@ public:
   List<GameUnit, 24> units; // 24 Units make approximately 72 Bytes.
   // Approximately 75 bytes in total.
 
-  // Constructor calls the reset function.
+  // Constructor only stores the id. reset() runs when a game starts.
   AWPlayer(uint8_t aid);
 
   // reset the data of this class
