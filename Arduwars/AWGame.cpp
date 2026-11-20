@@ -392,6 +392,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
   Point cameraPosition = {0, 0};
   Point currentIndex = {0, 0};
 
+  // tile the movement arrow currently leads to
+  Point pathEnd = {-1, -1};
+
   // store additional helpers
   GameUnit *selectedUnit = nullptr;
   Point originalUnitPosition = {0, 0};
@@ -402,24 +405,35 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
   // stores the state of the round
   AWTurnState turnState = AWTurnState::Default;
 
-  // helper function to reset  unit
+  // The walk of the selected unit: where its sprite is (in map pixels),
+  // how many frames it has walked and if it walks back to its start.
+  Point walkPosition = {0, 0};
+  uint8_t walkFrame = 0;
+  bool walkBack = false;
+
+  // helper function to start the walk of the selected unit
   // This is a lambda function.  Also called anonymous function
   // It only exists inside this one certain method.
   // We do it this way because we will call it on different user interactions.
-  auto resetSelectedUnit = [&cursorPosition, &selectedUnit, this, &originalUnitPosition]() {
+  auto walkSelectedUnit = [&](bool backwards) {
 
-    // cancel unit movement
-    unmarkUnitOnMap(selectedUnit);
+    // clear the markers
+    unmarkUnitOnMap(nullptr);
 
-    // reset original unit
-    selectedUnit->mapPosX = originalUnitPosition.x;
-    selectedUnit->mapPosY = originalUnitPosition.y;
-    selectedUnit = nullptr;
+    // hide the unit on the map, its sprite walks instead
+    mapTileData[selectedUnit->mapPosY*mapSize.x+selectedUnit->mapPosX].hasUnit = 0;
 
-    // reset camera
-    cursorPosition = originalUnitPosition*TILE_SIZE;
-    cursorPosition.x -= 8;
-    cursorPosition.y -= 8;
+    walkPosition.x = selectedUnit->mapPosX*TILE_SIZE;
+    walkPosition.y = selectedUnit->mapPosY*TILE_SIZE;
+    walkFrame = 0;
+    walkBack = backwards;
+    turnState = AWTurnState::UnitWalking;
+  };
+
+  // moves the camera halfway to its target, then locks on once it is close
+  auto glide = [](int16_t from, int16_t to) -> int16_t {
+    int16_t difference = to - from;
+    return (difference > 2 || difference < -2) ? from + difference/2 : to;
   };
 
     // Game loop
@@ -431,7 +445,36 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
         // Handle Button Inputs
         arduboy.pollButtons();
 
-        if (turnState == AWTurnState::UnitAttack) {
+        if (turnState == AWTurnState::UnitWalking) {
+          if (walkFrame == pathLength*(TILE_SIZE/2)) {
+            // arrived: the unit takes its new place on the map
+            selectedUnit->mapPosX = walkPosition.x/TILE_SIZE;
+            selectedUnit->mapPosY = walkPosition.y/TILE_SIZE;
+            updateMapForPlayer(currentPlayer);
+
+            if (walkBack) {
+              selectedUnit = nullptr;
+              turnState = AWTurnState::Default;
+            }
+            else {
+              turnState = AWTurnState::UnitMoved;
+            }
+          }
+          else {
+            // The unit walks 2 pixels per frame, 8 frames per tile.
+            // Walking back takes the steps from the end, each one turned around.
+            uint8_t step = walkFrame/(TILE_SIZE/2);
+            uint8_t direction = walkBack ? (pathDirections[pathLength-1-step]+2)%4 : pathDirections[step];
+            walkPosition.x += 2*((direction == 0) - (direction == 2));
+            walkPosition.y += 2*((direction == 3) - (direction == 1));
+            walkFrame++;
+          }
+
+          // the cursor rides along, so the camera follows the unit
+          cursorPosition.x = walkPosition.x-8;
+          cursorPosition.y = walkPosition.y-8;
+        }
+        else if (turnState == AWTurnState::UnitAttack) {
           // Step through the possible targets, one per button press:
           // right/down go forward, left/up go backward.
           int8_t direction = 0;
@@ -454,17 +497,18 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
           if (arduboy.pressed(UP_BUTTON))    cursorPosition.y -= scrollMultiplier;
           if (arduboy.pressed(LEFT_BUTTON))  cursorPosition.x -= scrollMultiplier;
           if (arduboy.pressed(RIGHT_BUTTON)) cursorPosition.x += scrollMultiplier;
-        }
-        if (arduboy.pressed(A_BUTTON)){
-          scrollMultiplier = SCROLLSPEED_FAST;
-        }
-        else{
-          scrollMultiplier = SCROLLSPEED_NORMAL;
-        }
-        if (arduboy.pressed(B_BUTTON)) {
-          // snap to grid
-          cursorPosition.x = (((int16_t)((cursorPosition.x+TILE_SIZE)/TILE_SIZE))*TILE_SIZE)-8;
-          cursorPosition.y = (((int16_t)((cursorPosition.y+TILE_SIZE)/TILE_SIZE))*TILE_SIZE)-8;
+
+          if (arduboy.pressed(A_BUTTON)){
+            scrollMultiplier = SCROLLSPEED_FAST;
+          }
+          else{
+            scrollMultiplier = SCROLLSPEED_NORMAL;
+          }
+          if (arduboy.pressed(B_BUTTON)) {
+            // snap to grid
+            cursorPosition.x = (((int16_t)((cursorPosition.x+TILE_SIZE)/TILE_SIZE))*TILE_SIZE)-8;
+            cursorPosition.y = (((int16_t)((cursorPosition.y+TILE_SIZE)/TILE_SIZE))*TILE_SIZE)-8;
+          }
         }
 
         // Check for bounds
@@ -478,12 +522,31 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
         if(cursorPosition.y > mapSizeInPixel.y-32+8) cursorPosition.y = mapSizeInPixel.y-32+8;
 
         // Calculate camera position
-        cameraPosition = calculateCameraPosition(cursorPosition);
-        cameraPosition.y -= mapOffsetY;
+        Point cameraTarget = calculateCameraPosition(cursorPosition);
+        cameraTarget.y -= mapOffsetY;
+
+        // While a unit walks the camera glides after it instead of jumping.
+        if (turnState == AWTurnState::UnitWalking) {
+          cameraPosition.x = glide(cameraPosition.x, cameraTarget.x);
+          cameraPosition.y = glide(cameraPosition.y, cameraTarget.y);
+        }
+        else {
+          cameraPosition = cameraTarget;
+        }
 
         // calc currentIndex
         currentIndex.x = ((int16_t)(cursorPosition.x+TILE_SIZE))/TILE_SIZE;
         currentIndex.y = ((int16_t)(cursorPosition.y+TILE_SIZE))/TILE_SIZE;
+
+        // Update the movement arrow when the cursor reaches a new tile.
+        // This uses the screen buffer as scratch, so it must run before clear().
+        if (turnState == AWTurnState::UnitSelected && !(currentIndex == pathEnd)) {
+          pathEnd = currentIndex;
+          if (mapTileData[currentIndex.y*mapSize.x+currentIndex.x].showSelection)
+            buildPathTo(selectedUnit, currentIndex);
+          else
+            pathLength = 0;
+        }
 
         // Start Drawing
         arduboy.clear();
@@ -491,11 +554,12 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
         // Draw the map first
         drawMapAtPosition(cameraPosition * -1);
 
-        // Draw the cursor on top
-        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
+        // movement arrow from the selected unit to the cursor
+        if (turnState == AWTurnState::UnitSelected)
+          drawPath(selectedUnit, cameraPosition);
 
         // draw relevant cursor helper
-        if (turnState == AWTurnState::UnitSelected && selectedUnit != nullptr) {
+        if (turnState == AWTurnState::UnitSelected || turnState == AWTurnState::UnitWalking) {
 
           // get correct sprite
           const unsigned char *unitSprite = nullptr;
@@ -504,15 +568,131 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
           else
             unitSprite = unitsB_plus_mask;
 
-          // draw unit
-          sprites.drawPlusMask(cursorPosition.x-cameraPosition.x+8, cursorPosition.y-cameraPosition.y+8, unitSprite, selectedUnit->unitType*2+(arduboy.frameCount/10)%2);
+          // draw the unit on top of the arrow, or where it walks
+          sprites.drawPlusMask(walkPosition.x-cameraPosition.x, walkPosition.y-cameraPosition.y, unitSprite, selectedUnit->unitType*2+(arduboy.frameCount/10)%2);
         }
+
+        // Draw the cursor on top
+        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
 
         // Draw HUD
         drawHudForPlayer(currentPlayer);
 
         // Draw everything
         arduboy.display();
+
+        // no buttons while a unit walks
+        if (turnState == AWTurnState::UnitWalking) continue;
+
+        // The unit has walked to its destination: ask what it does there.
+        // The menu draws on top of the frame we just showed.
+        if (turnState == AWTurnState::UnitMoved) {
+
+          // Build the options for this unit and destination.
+          // actions[] remembers what each visible option does.
+          constexpr uint8_t ActionWait = 0;
+          constexpr uint8_t ActionAttack = 1;
+          constexpr uint8_t ActionCapture = 2;
+          constexpr uint8_t ActionCancel = 3;
+
+          UnitType unitType = static_cast<UnitType>(selectedUnit->unitType);
+          UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+          Point unitPosition = {selectedUnit->mapPosX, selectedUnit->mapPosY};
+          bool hasMoved = !(unitPosition == originalUnitPosition);
+
+          char_P* options[4];
+          uint8_t actions[4];
+          uint8_t numberOfOptions = 0;
+
+          // Indirect units (range > 1) can't move and attack in the same turn.
+          // Only offer the attack when a target is in range.
+          if (traits.attackPower > 0 && !(traits.attackRange > 1 && hasMoved)) {
+            markPositionForAttack(unitPosition, traits.attackRange, unitType, currentPlayer);
+            if (nextMarkedMapPosition({-1, 0}).x >= 0) {
+              options[numberOfOptions] = LOCA_attack;
+              actions[numberOfOptions++] = ActionAttack;
+            }
+          }
+
+          if (canUnitCaptureAtPosition(selectedUnit, unitPosition, currentPlayer)) {
+            options[numberOfOptions] = LOCA_capture;
+            actions[numberOfOptions++] = ActionCapture;
+          }
+
+          options[numberOfOptions] = LOCA_wait;
+          actions[numberOfOptions++] = ActionWait;
+
+          options[numberOfOptions] = LOCA_cancel;
+          actions[numberOfOptions++] = ActionCancel;
+
+          int8_t selectedOption = showOptions(options, numberOfOptions);
+          uint8_t action = (selectedOption < 0) ? ActionCancel : actions[selectedOption];
+
+          // the attack markers stay only when we attack
+          if (action != ActionAttack) unmarkUnitOnMap(nullptr);
+
+          switch (action) {
+
+            ///////
+            // WAIT
+            case ActionWait:{
+              // set unit to sleep
+              selectedUnit->activated = GameUnit::UnitStateDisabled;
+              updateMapForPlayer(currentPlayer);
+              selectedUnit = nullptr;
+
+              // update state
+              turnState = AWTurnState::Default;
+            }
+            break;
+
+            /////////
+            // ATTACK
+            case ActionAttack:{
+              // prepare for attack
+              turnState = AWTurnState::UnitAttack;
+
+              // move the cursor to the first target (search from the start of the map)
+              Point nextPos = nextMarkedMapPosition({-1, 0});
+              cursorPosition = nextPos*TILE_SIZE;
+              cursorPosition.x -= 8;
+              cursorPosition.y -= 8;
+            }
+            break;
+
+            //////////
+            // CAPTURE
+            case ActionCapture:{
+              // the unit stays on the building and ends its turn
+              selectedUnit->activated = GameUnit::UnitStateDisabled;
+
+              captureBuildingWithUnit(selectedUnit, currentPlayer);
+
+              updateMapForPlayer(currentPlayer);
+              selectedUnit = nullptr;
+              turnState = AWTurnState::Default;
+
+              // capturing the enemy HQ ends the game
+              if (winner != NoWinner) {
+                currentPlayer.cursorIndex = currentIndex;
+                return;
+              }
+            }
+            break;
+
+            /////////////////
+            // CANCEL ACTION
+            default:{
+
+              // walk the unit back to its start
+              walkSelectedUnit(true);
+            }
+          }
+          // End of options
+
+          // skip the button handling below, the menu used up this press
+          continue;
+        }
 
         //// Check for single button presses
         // THE A BUTTON
@@ -533,18 +713,13 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
 
             case AWTurnState::UnitAttack:{
 
-              // move unit to his original position
-              selectedUnit->mapPosX = originalUnitPosition.x;
-              selectedUnit->mapPosY = originalUnitPosition.y;
+              // remove the attack markers
+              unmarkUnitOnMap(nullptr);
 
-              // update map
-              updateMapForPlayer(currentPlayer);
-
-              // select unit on map
-              markUnitOnMap(selectedUnit);
-
-              // update state
-              turnState = AWTurnState::UnitSelected;
+              // back to the menu, the unit stays where it walked to
+              cursorPosition.x = selectedUnit->mapPosX*TILE_SIZE-8;
+              cursorPosition.y = selectedUnit->mapPosY*TILE_SIZE-8;
+              turnState = AWTurnState::UnitMoved;
             }
             break; // End attack state
           }
@@ -572,6 +747,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
                 // select unit on map
                 originalUnitPosition = currentIndex;
                 markUnitOnMap(selectedUnit);
+                walkPosition = currentIndex*TILE_SIZE;
+                pathLength = 0;
+                pathEnd = {-1, -1};
 
                 // update state
                 turnState = AWTurnState::UnitSelected;
@@ -631,141 +809,8 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
               // only continue if unit can move here
               if (currentTile.showSelection && selectedUnit != nullptr){
 
-                // Build the options for this unit and destination.
-                // actions[] remembers what each visible option does.
-                constexpr uint8_t ActionMove = 0;
-                constexpr uint8_t ActionAttack = 1;
-                constexpr uint8_t ActionCapture = 2;
-                constexpr uint8_t ActionCancel = 3;
-
-                UnitType unitType = static_cast<UnitType>(selectedUnit->unitType);
-                UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-                bool hasMoved = !(currentIndex == originalUnitPosition);
-
-                char_P* options[4];
-                uint8_t actions[4];
-                uint8_t numberOfOptions = 0;
-
-                options[numberOfOptions] = LOCA_move;
-                actions[numberOfOptions++] = ActionMove;
-
-                // Indirect units (range > 1) can't move and attack in the same turn.
-                if (traits.attackPower > 0 && !(traits.attackRange > 1 && hasMoved)) {
-                  options[numberOfOptions] = LOCA_attack;
-                  actions[numberOfOptions++] = ActionAttack;
-                }
-
-                if (canUnitCaptureAtPosition(selectedUnit, currentIndex, currentPlayer)) {
-                  options[numberOfOptions] = LOCA_capture;
-                  actions[numberOfOptions++] = ActionCapture;
-                }
-
-                options[numberOfOptions] = LOCA_cancel;
-                actions[numberOfOptions++] = ActionCancel;
-
-                int8_t selectedOption = showOptions(options, numberOfOptions);
-                uint8_t action = (selectedOption < 0) ? ActionCancel : actions[selectedOption];
-
-                switch (action) {
-
-                  ///////
-                  // MOVE
-                  case ActionMove:{
-                    // unmark unit
-                    unmarkUnitOnMap(selectedUnit);
-
-                    // update units position
-                    selectedUnit->mapPosX = currentIndex.x;
-                    selectedUnit->mapPosY = currentIndex.y;
-
-                    // set unit to sleep
-                    selectedUnit->activated = GameUnit::UnitStateDisabled;
-                    updateMapForPlayer(currentPlayer);
-                    selectedUnit = nullptr;
-
-                    // update state
-                    turnState = AWTurnState::Default;
-                  }
-                  break;
-
-                  /////////
-                  // ATTACK
-                  case ActionAttack:{
-                    // prepare for attack
-                    turnState = AWTurnState::UnitAttack;
-
-                    // unmark unit
-                    unmarkUnitOnMap(selectedUnit);
-
-                    // update units position
-                    selectedUnit->mapPosX = currentIndex.x;
-                    selectedUnit->mapPosY = currentIndex.y;
-
-                    // update map
-                    updateMapForPlayer(currentPlayer);
-
-                    // mark attack positions
-                    markPositionForAttack({selectedUnit->mapPosX,selectedUnit->mapPosY}, traits.attackRange, unitType, currentPlayer);
-
-                    // get first marked position if it exists (search from the start of the map)
-                    Point nextPos = nextMarkedMapPosition({-1, 0});
-                    if (nextPos.x >= 0) {
-                      // move camera to tile
-                      cursorPosition = nextPos*TILE_SIZE;
-                      cursorPosition.x -= 8;
-                      cursorPosition.y -= 8;
-                    }
-                    else {
-                      // nothing in range: tell the player and go back to the selection
-                      showDialog(LOCA_noTarget);
-                      selectedUnit->mapPosX = originalUnitPosition.x;
-                      selectedUnit->mapPosY = originalUnitPosition.y;
-                      updateMapForPlayer(currentPlayer);
-                      markUnitOnMap(selectedUnit);
-                      turnState = AWTurnState::UnitSelected;
-                    }
-                  }
-                  break;
-
-                  //////////
-                  // CAPTURE
-                  case ActionCapture:{
-                    // unmark unit
-                    unmarkUnitOnMap(selectedUnit);
-
-                    // move unit onto the building and end its turn
-                    selectedUnit->mapPosX = currentIndex.x;
-                    selectedUnit->mapPosY = currentIndex.y;
-                    selectedUnit->activated = GameUnit::UnitStateDisabled;
-
-                    captureBuildingWithUnit(selectedUnit, currentPlayer);
-
-                    updateMapForPlayer(currentPlayer);
-                    selectedUnit = nullptr;
-                    turnState = AWTurnState::Default;
-
-                    // capturing the enemy HQ ends the game
-                    if (winner != NoWinner) {
-                      currentPlayer.cursorIndex = currentIndex;
-                      return;
-                    }
-                  }
-                  break;
-
-                  /////////////////
-                  // CANCEL ACTION
-                  default:{
-                    turnState = AWTurnState::Default;
-
-                    // unmark unit
-                    unmarkUnitOnMap(selectedUnit);
-
-                    // reset unit
-                    resetSelectedUnit();
-                    updateMapForPlayer(currentPlayer);
-                  }
-                }
-                // End of options
+                // walk the unit along the arrow, the menu follows
+                walkSelectedUnit(false);
               }
             }
             break; // End of Unit selected state
@@ -1316,7 +1361,18 @@ void AWGame::clearMap(bool withFog){
 }
 
 
-void AWGame::markUnitOnMap(const GameUnit *aUnit){
+int8_t AWGame::movementLeftAfter(MapTileType type, int8_t left){
+  // movement malus for leaving this tile
+  if (type == MapTileType::Forest || type == MapTileType::Hill)
+    left--;
+  else if (type == MapTileType::Mountain)
+    left = min(2, left);
+
+  // every step costs one
+  return left-1;
+}
+
+uint8_t * AWGame::floodMovement(const GameUnit *aUnit){
   UnitType unitType = static_cast<UnitType>(aUnit->unitType);
   UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
   uint8_t moveDistance = traits.moveDistance+1;
@@ -1324,10 +1380,6 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   // check if maptile is a street and give a small bonus
   if (mapTileIsStreet(tileTypeAt(aUnit->mapPosX, aUnit->mapPosY)))
     moveDistance += 1;
-
-  // hide unit on map since it follow the cursor
-  uint16_t startIndex = aUnit->mapPosY*mapSize.x+aUnit->mapPosX;
-  mapTileData[startIndex].hasUnit = 0;
 
   // Movement range as a flood fill.
   // Every tile gets a number: the most moves the unit has left when it
@@ -1341,10 +1393,11 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   // This is safe because we only get here after display() has sent the
   // picture to the screen, and the next frame starts with clear().
   // Only call this between display() and clear().
-  // The result stays in the map (showSelection), the numbers are thrown away.
+  // The caller reads the numbers right away. The next clear() wipes them.
   static_assert(MaxMapWidth*MaxMapHeight <= WIDTH*HEIGHT/8, "map does not fit in the screen buffer");
   uint8_t *remaining = arduboy.getBuffer();
   uint16_t mapLength = mapSize.x*mapSize.y;
+  uint16_t startIndex = aUnit->mapPosY*mapSize.x+aUnit->mapPosX;
   memset(remaining, 0, mapLength);
 
   if (MapTile::canBeAccessedByUnit(tileTypeAtIndex(startIndex), unitType))
@@ -1355,18 +1408,9 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
     changed = false;
 
     for (uint16_t i = 0; i < mapLength; i++) {
-      int8_t left = remaining[i];
-      if (left <= 0) continue;
+      if (remaining[i] == 0) continue;
 
-      // movement malus for leaving this tile
-      MapTileType type = tileTypeAtIndex(i);
-      if (type == MapTileType::Forest || type == MapTileType::Hill)
-        left--;
-      else if (type == MapTileType::Mountain)
-        left = min(2, left);
-
-      // every step costs one
-      left--;
+      int8_t left = movementLeftAfter(tileTypeAtIndex(i), remaining[i]);
       if (left <= 0) continue;
 
       int8_t x = i % mapSize.x;
@@ -1386,11 +1430,101 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
       }
     }
   }
+  return remaining;
+}
+
+void AWGame::markUnitOnMap(const GameUnit *aUnit){
+  uint8_t *remaining = floodMovement(aUnit);
 
   // show every reachable tile that has no other unit on it
+  uint16_t mapLength = mapSize.x*mapSize.y;
   for (uint16_t i = 0; i < mapLength; i++) {
     if (remaining[i] && !mapTileData[i].hasUnit)
       mapTileData[i].showSelection = 1;
+  }
+
+  // the unit may also stay where it is
+  mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX].showSelection = 1;
+}
+
+void AWGame::buildPathTo(const GameUnit *aUnit, Point target){
+  uint8_t *remaining = floodMovement(aUnit);
+  pathLength = 0;
+
+  // Walk back from the target: a tile we could have come from is a
+  // neighbour whose leftover movement equals what the target got.
+  int8_t x = target.x;
+  int8_t y = target.y;
+  while (x != aUnit->mapPosX || y != aUnit->mapPosY) {
+    if (pathLength == MaxPathLength) { pathLength = 0; return; }
+
+    uint8_t needed = remaining[y*mapSize.x+x];
+    uint8_t direction = 0;
+    for (; direction < 4; direction++) {
+      // the neighbour we would have stepped from when moving in this direction
+      int8_t px = x - (direction == 0) + (direction == 2);
+      int8_t py = y - (direction == 3) + (direction == 1);
+      if (px < 0 || px >= mapSize.x || py < 0 || py >= mapSize.y) continue;
+
+      uint8_t r = remaining[py*mapSize.x+px];
+      if (r && movementLeftAfter(tileTypeAt(px, py), r) >= (int8_t)needed) {
+        x = px;
+        y = py;
+        break;
+      }
+    }
+    if (direction == 4) { pathLength = 0; return; } // not reachable
+    pathDirections[pathLength++] = direction;
+  }
+
+  // the steps were found from the end, so reverse them
+  for (uint8_t i = 0; i < pathLength/2; i++) {
+    uint8_t swap = pathDirections[i];
+    pathDirections[i] = pathDirections[pathLength-1-i];
+    pathDirections[pathLength-1-i] = swap;
+  }
+}
+
+void AWGame::drawPath(const GameUnit *aUnit, Point camera){
+  if (pathLength == 0) return;
+
+  // Two passes: a black outline first, then the white arrow on top,
+  // so the arrow stays readable on any terrain.
+  for (uint8_t pass = 0; pass < 2; pass++) {
+    uint8_t color = (pass == 0) ? BLACK : WHITE;
+    uint8_t grow = (pass == 0) ? 1 : 0; // the outline is 1 pixel bigger
+
+    // x and y are the tile centre: the line covers x-1 to x+2
+    int16_t x = aUnit->mapPosX*TILE_SIZE + 7 - camera.x;
+    int16_t y = aUnit->mapPosY*TILE_SIZE + 7 - camera.y;
+    uint8_t direction = 0;
+    for (uint8_t i = 0; i < pathLength; i++) {
+      direction = pathDirections[i];
+      int16_t nx = x + TILE_SIZE*((direction == 0) - (direction == 2));
+      int16_t ny = y + TILE_SIZE*((direction == 3) - (direction == 1));
+      int16_t left = min(x, nx);
+      int16_t top = min(y, ny);
+      uint8_t width = abs(nx - x);
+      uint8_t height = abs(ny - y);
+      arduboy.fillRect(left-1-grow, top-1-grow, width+4+2*grow, height+4+2*grow, color);
+      x = nx;
+      y = ny;
+    }
+
+    // Arrowhead in the last direction: 5 rows that get narrower
+    // toward the tip, 10 pixels wide at the back.
+    bool horizontal = (direction == 0 || direction == 2);
+    bool forward = (direction == 0 || direction == 3);
+    for (uint8_t row = 0; row < 5; row++) {
+      int8_t half = 5 - row + grow;
+      int8_t length = 1 + grow;
+      // distance from the tile centre along the arrow (mirrored for left and up)
+      int8_t along = forward ? 3+row : -2-row-grow;
+      if (horizontal)
+        arduboy.fillRect(x+along, y+1-half, length, 2*half, color);
+      else
+        arduboy.fillRect(x+1-half, y+along, 2*half, length, color);
+    }
   }
 }
 
