@@ -92,6 +92,60 @@ Sprite  |  Name   |  Description
 ![Mission-Report-6](https://github.com/yinkou/Arduwars/blob/master/Assets/ReadmeAssets/Reports/mission-report-06-05.04.2063.png "Mission Report 6")
 
 
+## Building
+
+Arduwars is an Arduino sketch: open `Arduwars/Arduwars.ino`. The Arduboy uses the same chip as the **Arduino Leonardo**, so build for that board.
+
+You need:
+* Arduino AVR Boards 1.8.8 (`arduino:avr`)
+* [Arduboy2](https://github.com/MLXXXp/Arduboy2) 6.0.0
+* The small container library in `Arduwars/lib/SimpleArduinoUtilitiesAlpha2`. Copy that folder into your Arduino `libraries` folder.
+
+### Compiler settings
+Arduwars needs two settings of the compiler to fit on the Arduboy. They change how the program is packed, not what it does, and make it about 1,150 bytes smaller.
+* `-mcall-prologues`: every function saves the chip's registers at its start and restores them at its end. This setting keeps one shared copy of that code instead of one in every function.
+* `-mrelax`: uses the short form of jumps and calls wherever the target is close enough.
+
+**arduino-cli**
+```
+arduino-cli compile --fqbn arduino:avr:leonardo \
+  --library Arduwars/lib/SimpleArduinoUtilitiesAlpha2 \
+  --build-property "compiler.c.extra_flags=-mcall-prologues -mrelax" \
+  --build-property "compiler.cpp.extra_flags=-mcall-prologues -mrelax" \
+  --build-property "compiler.c.elf.extra_flags=-mcall-prologues -mrelax" \
+  Arduwars
+```
+
+**Arduino IDE**
+
+The IDE has no per-sketch compiler settings. Create a file `platform.local.txt` next to the `platform.txt` of the Arduino AVR Boards package:
+* macOS: `~/Library/Arduino15/packages/arduino/hardware/avr/1.8.8/`
+* Windows: `%LOCALAPPDATA%\Arduino15\packages\arduino\hardware\avr\1.8.8\`
+* Linux: `~/.arduino15/packages/arduino/hardware/avr/1.8.8/`
+
+with these three lines:
+```
+compiler.c.extra_flags=-mcall-prologues -mrelax
+compiler.cpp.extra_flags=-mcall-prologues -mrelax
+compiler.c.elf.extra_flags=-mcall-prologues -mrelax
+```
+It must be plain text named exactly `platform.local.txt` (in TextEdit: Format > Make Plain Text). On macOS the `Library` folder is hidden: in Finder use Go > Go to Folder and paste the path. Or create the file from Terminal:
+```
+printf 'compiler.c.extra_flags=-mcall-prologues -mrelax\ncompiler.cpp.extra_flags=-mcall-prologues -mrelax\ncompiler.c.elf.extra_flags=-mcall-prologues -mrelax\n' > ~/Library/Arduino15/packages/arduino/hardware/avr/1.8.8/platform.local.txt
+```
+
+Then restart the IDE. The file applies to every sketch you build for Arduino AVR boards. Delete it to go back.
+
+The IDE reuses files it compiled before and does not notice changed settings. After you add or remove `platform.local.txt`, quit the IDE and delete its build cache, or the size it shows mixes old and new settings:
+* macOS: `~/Library/Caches/arduino/`
+* Windows: `%LOCALAPPDATA%\arduino\`
+* Linux: `~/.cache/arduino/`
+
+With the settings the game uses about 26,900 bytes of 28,672. Without them about 28,000.
+
+### Uploading
+Arduwars turns USB off to save space, so the Arduboy does not restart for an upload by itself. Hold **DOWN** while you switch the Arduboy on, then start the upload.
+
 ## Do you like Arduwars?
 Arduwars is free and should never be monetized.
 Anyhow I would appreciate any little donation if you think this game was worth playing.

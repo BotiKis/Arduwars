@@ -10,6 +10,7 @@
 #include <Utility.h>
 #include <FlashString.h>
 #include "PointMath.h"
+#include "AWSounds.h"
 #include "UnitSprites.h"
 #include <TinyfontSprite.c> // the letter pictures of the Tinyfont library, see printChar
 
@@ -24,6 +25,7 @@ void AWGame::run(void){
   arduboy.flashlight();
   arduboy.setFrameRate(60);
   arduboy.audio.begin();
+  soundBegin();
 
   // Set up text
   textColor = BLACK;
@@ -88,10 +90,10 @@ int8_t AWGame::showTitleMenu(char_P * const items[], uint8_t count, char_P *subt
     if (cursorIdx >= count) cursorIdx = 0;
 
     // React to users choice
-    if (arduboy.justPressed(B_BUTTON)) return cursorIdx;
+    if (arduboy.justPressed(B_BUTTON)) { playSound(SoundConfirm); return cursorIdx; }
 
     // When the A Button is pressed return nothing.
-    if (subtitle != nullptr && arduboy.justPressed(A_BUTTON)) return -1;
+    if (subtitle != nullptr && arduboy.justPressed(A_BUTTON)) { playSound(SoundBack); return -1; }
 
     // Now we start drawing the menu to the screen
 
@@ -131,6 +133,7 @@ AWGameState AWGame::showMainMenu(){
   // In this variable we will store the index of the cursor so
   // we know what the player has selected.
   int8_t cursorIdx = 0;
+  playMenuTheme();
   while (true) {
     char_P* items[3] = {LOCA_SinglePlayer, LOCA_MultiPlayer, arduboy.audio.enabled() ? LOCA_Sound_on : LOCA_Sound_off};
     cursorIdx = showTitleMenu(items, 3, nullptr, cursorIdx);
@@ -140,6 +143,7 @@ AWGameState AWGame::showMainMenu(){
 
     // toggle sound and stay in the menu
     arduboy.audio.toggle();
+    arduboy.audio.saveOnOff();
   }
 }
 
@@ -193,6 +197,7 @@ static void __attribute__((noinline)) healUnit(GameUnit &unit, uint8_t amount){
 void AWGame::runGame(bool againstAI){
 
   AWPlayer *currentPlayer = &player1;
+  playGameTheme();
 
   // the first turn wipes in from the map selection
   bool firstTurn = true;
@@ -296,6 +301,7 @@ void AWGame::runGame(bool againstAI){
 
     // check for win condition
     if (winner != NoWinner) {
+      playEndTune(!againstAI || winner == MapTile::BelongsToPlayer1);
       if (againstAI)
         showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_youWin : LOCA_youLose);
       else
@@ -729,6 +735,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             break; // End of unit selected state
 
             case AWTurnState::UnitAttack:{
+              playSound(SoundBack);
 
               // remove the attack markers
               unmarkUnitOnMap(nullptr);
@@ -743,6 +750,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
         }
         // THE B BUTTON
         if (arduboy.justPressed(B_BUTTON)){
+          playSound(SoundConfirm);
 
           // state machine for the turn
           switch (turnState) {
@@ -900,11 +908,11 @@ int8_t AWGame::showBox(char_P * const options[], uint8_t count, bool isDialog){
 
     // Close dialog and return with selected index.
     // A dialog only exits on B.
-    if (arduboy.justPressed(B_BUTTON)) return selectedIndex;
+    if (arduboy.justPressed(B_BUTTON)) { playSound(SoundConfirm); return selectedIndex; }
 
     if (!isDialog) {
       // Cancel
-      if (arduboy.justPressed(A_BUTTON)) return -1;
+      if (arduboy.justPressed(A_BUTTON)) { playSound(SoundBack); return -1; }
       if (arduboy.justPressed(DOWN_BUTTON)) selectedIndex++;
       if (arduboy.justPressed(UP_BUTTON)) selectedIndex--;
 
@@ -964,10 +972,12 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
     }
     // Exit on A button press
     if (arduboy.justPressed(A_BUTTON)){
+      playSound(SoundBack);
       return UnitType::None;
     }
     // Buy Unit on button press
     if (arduboy.justPressed(B_BUTTON)){
+      playSound(SoundConfirm);
       // get selected unit
       UnitType unitToBuy = static_cast<UnitType>(pgm_read_byte(buyableUnits+menuCursorIDX));
       uint8_t unitCosts = GameUnit::costsOfUnit(unitToBuy);
@@ -1871,7 +1881,7 @@ void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPl
   GameBuilding *building = getBuildingAtCoordinate(position);
 
   // the cursor blinks on the building and the unit hops while it takes it over
-  playEffect(position, position, EffectHop);
+  bool seen = playEffect(position, position, EffectHop);
 
   // a hurt unit captures slower
   if (unit->healthPoints < building->healthPoints) {
@@ -1883,6 +1893,7 @@ void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPl
   building->isOccupied = 1;
   building->belongsToPlayer = playerIndex(capturingPlayer);
   building->healthPoints = GameBuilding::CapturePoints;
+  if (seen) playSound(SoundCaptured);
 
   MapTileType type = static_cast<MapTileType>(building->buildingType);
   if (type == MapTileType::P1HQ || type == MapTileType::P2HQ) {
@@ -2036,6 +2047,8 @@ bool AWGame::playEffect(Point first, Point second, uint8_t effect){
   Point target = calculateCameraPosition(cursorForTile(firstSeen ? first : second));
   target.y -= mapOffsetY;
 
+  if (effect == EffectFlicker) playSound(SoundDestroyed);
+
   uint8_t frame = 0;
   while (frame < 60) {
     while (!arduboy.nextFrame()) {}
@@ -2070,7 +2083,7 @@ bool AWGame::playEffect(Point first, Point second, uint8_t effect){
           sprites.drawOverwrite(x, position.y+dip-TILE_SIZE, worldSprite, (type == MapTileType::P1HQ)?32:33);
 
         // on the ground the unit dips with the building
-        if (height == 0) position.y += dip;
+        if (height == 0) { position.y += dip; playSound(SoundThump); }
       }
       AWPlayer &owner = (firstTile.unitBelongsTo == MapTile::BelongsToPlayer1) ? player1 : player2;
       drawUnit(position.x, position.y - height, &owner == &player1, owner.getUnitForMapCoordinates(first)->unitType, false);
@@ -2094,6 +2107,7 @@ bool AWGame::playEffect(Point first, Point second, uint8_t effect){
 void AWGame::flashScreen(uint8_t times){
   // the hit: the screen turns inverted for a moment
   while (times--) {
+    playSound(SoundHit);
     arduboy.invert(true);
     delay(70);
     arduboy.invert(false);
