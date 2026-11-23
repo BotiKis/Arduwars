@@ -12,6 +12,7 @@
 #include "PointMath.h"
 #include "AWSounds.h"
 #include "UnitSprites.h"
+#include "PinupSprite.h"
 #include <TinyfontSprite.c> // the letter pictures of the Tinyfont library, see printChar
 
 // This method starts the actual game and is called in the Arduwars.ino file.
@@ -66,11 +67,15 @@ void AWGame::run(void){
 }
 
 
-// Title screen with a vertical menu below the logo.
-// With a subtitle the menu can be left with A (returns -1) and shows a hint.
-int8_t AWGame::showTitleMenu(char_P * const items[], uint8_t count, char_P *subtitle, int8_t cursorIdx){
-  // cursorIdx is the index of the cursor, so we know what the player has selected.
-  constexpr uint8_t yOffset = 44;
+// The title coming in, one step every 5 frames for the logo, every 3 for the pinup.
+// The logo waits above the screen for half a second, falls, lands at 2, bounces once.
+const int8_t titleDropY[] PROGMEM = {-16, -16, -16, -16, -16, -16, -16, -13, -9, -4, 2, -1, -2, -1, 2, 1, 2, 2};
+// The pinup slides in from the left in the meantime and slows down at the end (ease out).
+const uint8_t titleSlideX[] PROGMEM = {56, 45, 36, 27, 20, 14, 9, 5, 2, 0};
+
+// Title screen: the logo top right, the menu below it, the pinup in front of both.
+// With canGoBack (the map choice) the menu can be left with A (returns -1).
+int8_t AWGame::showTitleMenu(char_P * const items[], uint8_t count, bool canGoBack, int8_t cursorIdx){
 
   // Again a Game loop
   while(true){
@@ -83,41 +88,68 @@ int8_t AWGame::showTitleMenu(char_P * const items[], uint8_t count, char_P *subt
     // Now we handle the button input of the arduboy
     arduboy.pollButtons();
 
-    // Here we limit and wrap the cursor so it cannot be larger than count-1 nor smaller then 0.
-    if (arduboy.justPressed(UP_BUTTON)) cursorIdx--;
-    if (arduboy.justPressed(DOWN_BUTTON)) cursorIdx++;
-    if (cursorIdx < 0) cursorIdx = count-1;
-    if (cursorIdx >= count) cursorIdx = 0;
+    // The menu waits until the logo has dropped.
+    bool menuShows = titleDrop >= TitleDropLength;
+    if (menuShows) {
+      // Here we limit and wrap the cursor so it cannot be larger than count-1 nor smaller then 0.
+      if (arduboy.justPressed(UP_BUTTON)) cursorIdx--;
+      if (arduboy.justPressed(DOWN_BUTTON)) cursorIdx++;
+      if (cursorIdx < 0) cursorIdx = count-1;
+      if (cursorIdx >= count) cursorIdx = 0;
 
-    // React to users choice
-    if (arduboy.justPressed(B_BUTTON)) { playSound(SoundConfirm); return cursorIdx; }
+      // React to users choice
+      if (arduboy.justPressed(B_BUTTON)) { playSound(SoundConfirm); return cursorIdx; }
 
-    // When the A Button is pressed return nothing.
-    if (subtitle != nullptr && arduboy.justPressed(A_BUTTON)) { playSound(SoundBack); return -1; }
+      // When the A Button is pressed return nothing.
+      if (canGoBack && arduboy.justPressed(A_BUTTON)) { playSound(SoundBack); return -1; }
+    }
 
     // Now we start drawing the menu to the screen
 
     // This clears the dispaly and makes everything black.
     arduboy.clear();
 
-    // draw title logo
-    sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
+    // After power-on and after a match the title comes in:
+    // first the pinup slides in from the left for half a second, slowing down at the end,
+    // then the logo falls in, lands with a thump and shakes sideways for 20 frames.
+    int8_t logoX = 50;
+    int8_t logoY = 2;
+    int8_t pinupX = 0;
+    if (!menuShows) {
+      logoY = pgm_read_byte(titleDropY + titleDrop/5);
+      if (titleDrop < TitleSlideLength) pinupX -= pgm_read_byte(titleSlideX + titleDrop/3);
+      if (titleDrop == 50) playSound(SoundThump);
+      if ((uint8_t)(titleDrop - 50) < 20) logoX += (titleDrop & 2) - 1;   // frames 50-69: 1 pixel left, right, left...
+      titleDrop++;
+    }
+    sprites.drawSelfMasked(logoX, logoY, arduwarsLogo, 0);
 
-    // Here we draw the menu text
-    textColor = WHITE;
+    if (menuShows) {
+      // Behind the chosen item: diagonal stripes, 2 pixels wide with 4 pixel gaps,
+      // moving 1 pixel every 3 frames.
+      int8_t boxY = TitleMenuY + TitleMenuStep*cursorIdx - 2;
+      for (uint8_t y = 0; y < 13; y++) {
+        for (uint8_t x = TitleStripesX + (y + arduboy.frameCount/3) % 6; x < WIDTH; x += 6) {
+          arduboy.fillRect(x, boxY+y, 2, 1, WHITE);
+        }
+      }
 
-    if (subtitle != nullptr) {
-      printAt((arduboy.width() - strlen_P(subtitle)*5)/2, 20, subtitle);
-      printAt(2, yOffset-8, LOCA_BackWithA);
+      // The menu text. The chosen item gets a black edge so it reads on the stripes.
+      for (uint8_t i = 0; i < count; i++) {
+        int8_t y = TitleMenuY + TitleMenuStep*i + 2;
+        if (i == cursorIdx) {
+          textColor = BLACK;
+          for (int8_t dx = -1; dx <= 1; dx++)
+            for (int8_t dy = -1; dy <= 1; dy++) printAt(TitleMenuX+dx, y+dy, items[i]);
+        }
+        textColor = WHITE;
+        printAt(TitleMenuX, y, items[i]);
+      }
+      textColor = BLACK;
     }
 
-    for (uint8_t i = 0; i < count; i++) {
-      printAt(10, yOffset + 8*i, items[i]);
-    }
-
-    printAt(2, yOffset + 8*cursorIdx, LOCA_Cursor);
-
-    textColor = BLACK;
+    // the pinup stands in front of the menu, the stripes run on behind her
+    sprites.drawOverwrite(pinupX, 2, pinup, 0);
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
@@ -136,7 +168,7 @@ AWGameState AWGame::showMainMenu(){
   playMenuTheme();
   while (true) {
     char_P* items[3] = {LOCA_SinglePlayer, LOCA_MultiPlayer, arduboy.audio.enabled() ? LOCA_Sound_on : LOCA_Sound_off};
-    cursorIdx = showTitleMenu(items, 3, nullptr, cursorIdx);
+    cursorIdx = showTitleMenu(items, 3, false, cursorIdx);
 
     if (cursorIdx == 0) return AWGameState::playSinglePlayer;
     if (cursorIdx == 1) return AWGameState::playMultiPlayer;
@@ -149,11 +181,11 @@ AWGameState AWGame::showMainMenu(){
 
 // This method displays the map selection menu to the player.
 // It returns the selected map in progmem, nullptr if cancelled.
-const unsigned char * AWGame::showMapSelection(AWGameState aState){
+const unsigned char * AWGame::showMapSelection(){
   char_P* items[3] = {LOCA_mapSmall, LOCA_mapMedium, LOCA_mapBig};
 
   // select map to users choice
-  switch (showTitleMenu(items, 3, (aState == AWGameState::playSinglePlayer) ? LOCA_SinglePlayer : LOCA_MultiPlayer, 0)) {
+  switch (showTitleMenu(items, 3, true, 0)) {
     case 0: return mapData_3;
     case 1: return mapData_2;
     case 2: return mapData_1;
@@ -172,10 +204,13 @@ void AWGame::startNewGame(AWGameState mode){
   player2.reset();
 
   // shop map selection
-  const unsigned char *mapData = showMapSelection(mode);
+  const unsigned char *mapData = showMapSelection();
 
   // return if no map has been selected
   if (mapData == nullptr) return;
+
+  // the logo drops in again when the title comes back after the match
+  titleDrop = 0;
 
   // The time the player took in the menus starts the AI's randomness.
   randomState = arduboy.frameCount;

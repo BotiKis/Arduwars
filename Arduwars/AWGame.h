@@ -60,6 +60,12 @@ enum class AWTurnState : uint8_t {
 constexpr uint8_t SCROLLSPEED_NORMAL = 1;
 constexpr uint8_t SCROLLSPEED_FAST = 3;
 constexpr uint8_t TILE_SIZE = 16;
+constexpr uint8_t TitleSlideLength = 30; // title: frames the pinup slides in before the logo drops
+constexpr uint8_t TitleDropLength = 90;  // title: slide plus logo drop in frames, the menu shows after it
+constexpr uint8_t TitleMenuX = 58;    // title menu: left edge of the text
+constexpr uint8_t TitleStripesX = 0;  // title menu: the stripes run across the whole screen, behind the pinup
+constexpr uint8_t TitleMenuY = 23;    // title menu: top of the first item
+constexpr uint8_t TitleMenuStep = 14; // title menu: rows apart
 
 
 // The Game class
@@ -87,13 +93,12 @@ private:
     AWGameState showMainMenu();  // Displays the menu
 
     // Title screen menu shared by the main menu and the map selection.
-    // Returns the selected index, -1 if cancelled (only with a subtitle).
-    int8_t showTitleMenu(char_P * const items[], uint8_t count, char_P *subtitle, int8_t cursorIdx);
+    // Returns the selected index, -1 if cancelled (only in the map choice).
+    int8_t showTitleMenu(char_P * const items[], uint8_t count, bool canGoBack, int8_t cursorIdx);
 
     // Displays map selection
     // It returns a pointer to the selected map in progmem. nullptr if none was selected
-    // Attribute is the current state, only multi/singleplayer is relevant.
-    const unsigned char * showMapSelection(AWGameState aState);
+    const unsigned char * showMapSelection();
 
     // Starts a new single player (against the AI) or multiplayer game
     void startNewGame(AWGameState mode);
@@ -289,6 +294,9 @@ private:
     // We create a variable which will store the current gamestate.
 	// We also give it a default value using a C++11 technique.
     AWGameState gameState = AWGameState::showMainMenu;
+
+    // Frames the title logo has dropped so far. 0 starts the drop.
+    uint8_t titleDrop = 0;
 
     // In these two variables we store the players.
     // In single player the first one is the actual player and the second the AI.
