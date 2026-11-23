@@ -51,7 +51,7 @@ Point AWGame::aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target){
       position = {enemy.units[i].mapPosX, enemy.units[i].mapPosY};
 
       // units hidden in our fog don't count
-      if (mapTileData[position.y*mapSize.x+position.x].showsFog) continue;
+      if (tileAt(position.x, position.y).showsFog) continue;
     }
     else {
       GameBuilding &building = gameBuildings[i - enemy.units.getCount()];

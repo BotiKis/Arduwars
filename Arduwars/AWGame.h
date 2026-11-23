@@ -272,10 +272,13 @@ private:
     // We need this to draw tilesets and animations which Arduboy2 can not do.
     SpritesB sprites;
 
-    // This is tinyfont, a small font we use to print text on the display.
-    // It is much smaller that Arduboy2s font so we can fit it better on the screen.
-    // The disadvantage is the poor readability.
-    Tinyfont tinyfont = Tinyfont(arduboy.getBuffer(), Arduboy2::width(), Arduboy2::height());
+    // Text uses the small 4x4 letters of the Tinyfont library, drawn by our
+    // own printChar. They are much smaller than Arduboy2's font so more fits
+    // on the screen. The disadvantage is the poor readability.
+    // printX and printY are where the next letter goes.
+    int16_t printX = 0;
+    int16_t printY = 0;
+    uint8_t textColor = BLACK;
 
     // Here we see our enum again.
     // We create a variable which will store the current gamestate.
@@ -327,10 +330,11 @@ private:
     List<GameBuilding, 24> gameBuildings;
 
     // Map data
-    // The largest map is 24x16. The state is kept in a fixed array so its RAM
-    // use shows up in the compiler's size report (no runtime allocation).
-    static constexpr uint8_t MaxMapWidth = 24;
-    static constexpr uint8_t MaxMapHeight = 16;
+    // The widest map is 25 tiles (TWIN LAKES), the tallest 12 (OPEN SEA, SKIRMISH).
+    // The state is kept in a fixed array so its RAM use shows up in the
+    // compiler's size report (no runtime allocation).
+    static constexpr uint8_t MaxMapWidth = 25;
+    static constexpr uint8_t MaxMapHeight = 12;
     MapTile mapTileData[MaxMapWidth*MaxMapHeight];
     const unsigned char *mapData = nullptr; // terrain of the current map in PROGMEM
     static constexpr uint8_t MapDataHeaderSize = 10; // same as MAPDATAOFFSET_Main in MapData.h
@@ -343,8 +347,22 @@ private:
     // Cursor pixel position for a map tile
     __attribute__((noinline)) static Point cursorForTile(Point tile);
 
-    // Prints a number with tinyfont at the current cursor
-    void printNumber(uint16_t number);
+    // Prints a number with its top left corner at x, y
+    void printNumber(int16_t x, int16_t y, uint16_t number);
+
+    // The map tile at x, y (in tiles)
+    __attribute__((noinline)) MapTile &tileAt(int16_t x, int16_t y);
+
+    // Prints a text from PROGMEM with its top left corner at x, y
+    __attribute__((noinline)) void printAt(int16_t x, int16_t y, char_P *text);
+    void printChar(char c);
+
+    // Draws the 32x32 cursor, frame 0 or 1
+    void drawCursor(int16_t x, int16_t y, uint8_t frame);
+
+    // Draws a filled box with rounded corners, see AWGame.cpp
+    void fillBox(int16_t x, int16_t y, uint8_t w, uint8_t h, uint8_t cut, uint8_t color);
+
     static constexpr uint8_t mapOffsetY = 8;
 };
 #endif

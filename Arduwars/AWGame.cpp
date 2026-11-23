@@ -11,6 +11,7 @@
 #include <FlashString.h>
 #include "PointMath.h"
 #include "UnitSprites.h"
+#include <TinyfontSprite.c> // the letter pictures of the Tinyfont library, see printChar
 
 // This method starts the actual game and is called in the Arduwars.ino file.
 void AWGame::run(void){
@@ -25,7 +26,7 @@ void AWGame::run(void){
   arduboy.audio.begin();
 
   // Set up text
-  tinyfont.setTextColor(BLACK);
+  textColor = BLACK;
 
   // Game loop
   // The gameloop works like the loop() in the Arduwars.ino file.
@@ -101,24 +102,20 @@ int8_t AWGame::showTitleMenu(char_P * const items[], uint8_t count, char_P *subt
     sprites.drawSelfMasked(7, 0, arduwarsLogo, 0);
 
     // Here we draw the menu text
-    tinyfont.setTextColor(WHITE);
+    textColor = WHITE;
 
     if (subtitle != nullptr) {
-      tinyfont.setCursor((arduboy.width() - strlen_P(subtitle)*5)/2, 20);
-      tinyfont.print(AsFlashString(subtitle));
-      tinyfont.setCursor(2, yOffset-8);
-      tinyfont.print(AsFlashString(LOCA_BackWithA));
+      printAt((arduboy.width() - strlen_P(subtitle)*5)/2, 20, subtitle);
+      printAt(2, yOffset-8, LOCA_BackWithA);
     }
 
     for (uint8_t i = 0; i < count; i++) {
-      tinyfont.setCursor(10, yOffset + 8*i);
-      tinyfont.print(AsFlashString(items[i]));
+      printAt(10, yOffset + 8*i, items[i]);
     }
 
-    tinyfont.setCursor(2, yOffset + 8*cursorIdx);
-    tinyfont.print(AsFlashString(LOCA_Cursor));
+    printAt(2, yOffset + 8*cursorIdx, LOCA_Cursor);
 
-    tinyfont.setTextColor(BLACK);
+    textColor = BLACK;
 
     // this one draws everything we have drawn to the actual screen.
     arduboy.display();
@@ -380,7 +377,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
     }
 
     // hide the unit on the map, its sprite walks instead
-    mapTileData[selectedUnit->mapPosY*mapSize.x+selectedUnit->mapPosX].hasUnit = 0;
+    tileAt(selectedUnit->mapPosX, selectedUnit->mapPosY).hasUnit = 0;
 
     walkPosition.x = selectedUnit->mapPosX*TILE_SIZE;
     walkPosition.y = selectedUnit->mapPosY*TILE_SIZE;
@@ -431,7 +428,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
           // An AI unit in player 1's fog stays hidden. Check the tile under its middle.
           if (aiTurn) {
             Point center = (walkPosition + Point{8, 8}) / TILE_SIZE;
-            walkerSeen = !mapTileData[center.y*mapSize.x+center.x].showsFog;
+            walkerSeen = !tileAt(center.x, center.y).showsFog;
           }
 
           // the cursor rides along, so the camera follows the unit
@@ -506,7 +503,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
         // This uses the screen buffer as scratch, so it must run before clear().
         if (turnState == AWTurnState::UnitSelected && !(currentIndex == pathEnd)) {
           pathEnd = currentIndex;
-          if (mapTileData[currentIndex.y*mapSize.x+currentIndex.x].showSelection)
+          if (tileAt(currentIndex.x, currentIndex.y).showSelection)
             buildPathTo(selectedUnit, currentIndex);
           else
             pathLength = 0;
@@ -531,7 +528,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
 
         // Draw the cursor on top. The AI plays without one.
         if (!aiTurn)
-          sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
+          drawCursor(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, (arduboy.frameCount/30)%2); // the y+1 looks more correct
 
         // Draw HUD
         drawHudForPlayer(viewer);
@@ -591,8 +588,8 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
           // A walk that starts and ends in player 1's fog is not shown.
           // An ambush always is: it ends next to one of player 1's units.
           if (!ambushed &&
-              mapTileData[start.y*mapSize.x+start.x].showsFog &&
-              mapTileData[destination.y*mapSize.x+destination.x].showsFog) {
+              tileAt(start.x, start.y).showsFog &&
+              tileAt(destination.x, destination.y).showsFog) {
             walkPosition = destination*TILE_SIZE;
             walkFrame = pathLength*(TILE_SIZE/2);
           }
@@ -754,7 +751,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             default:
             case AWTurnState::Default:{
               // check for tile
-              MapTile currentMapTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+              MapTile currentMapTile = tileAt(currentIndex.x, currentIndex.y);
               MapTileType currentTileType = tileTypeAt(currentIndex.x, currentIndex.y);
               GameUnit *unitAtCursor = currentPlayer.getUnitForMapCoordinates(currentIndex);
 
@@ -815,7 +812,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             case AWTurnState::UnitSelected:{
 
               // get tile at current index
-              MapTile currentTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+              MapTile currentTile = tileAt(currentIndex.x, currentIndex.y);
 
               // only continue if unit can move here
               if (currentTile.showSelection && selectedUnit != nullptr){
@@ -830,7 +827,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             case AWTurnState::UnitAttack:{
 
               // only attack marked targets
-              MapTile targetTile = mapTileData[currentIndex.x + mapSize.x*currentIndex.y];
+              MapTile targetTile = tileAt(currentIndex.x, currentIndex.y);
               if (!targetTile.showSelection || selectedUnit == nullptr) break;
 
               // the attacking unit is done for this turn
@@ -918,19 +915,17 @@ int8_t AWGame::showBox(char_P * const options[], uint8_t count, bool isDialog){
 
     // Drawing
     // Infobox
-    arduboy.fillRoundRect(frame.x, frame.y, frame.width, frame.height, 5, BLACK);
-    arduboy.fillRoundRect(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 5, WHITE);
+    fillBox(frame.x, frame.y, frame.width, frame.height, 3, BLACK);
+    fillBox(frame.x + 1, frame.y + 1, frame.width-2, frame.height-3, 3, WHITE);
 
     // options
     for (uint8_t i = 0; i < count; i++) {
-      tinyfont.setCursor(textX, textY + 7*i);
-      tinyfont.print(AsFlashString(options[i]));
+      printAt(textX, textY + 7*i, options[i]);
     }
 
     // cursor
     if (!isDialog) {
-      tinyfont.setCursor(frame.x + 4, textY + 7*selectedIndex);
-      tinyfont.print(AsFlashString(LOCA_Cursor));
+      printAt(frame.x + 4, textY + 7*selectedIndex, LOCA_Cursor);
     }
 
     arduboy.display();
@@ -996,8 +991,8 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
 
     // Drawing
     // Infobox
-    arduboy.fillRoundRect(3, 9, arduboy.width()-6, arduboy.height()-10, 5, BLACK);
-    arduboy.fillRoundRect(4, 10, arduboy.width()-8, arduboy.height()-13, 3, WHITE);
+    fillBox(3, 9, arduboy.width()-6, arduboy.height()-10, 3, BLACK);
+    fillBox(4, 10, arduboy.width()-8, arduboy.height()-13, 2, WHITE);
 
     // draw Units to buy
     for (uint8_t i = 0; i < numberOfUnits; i++) {
@@ -1016,7 +1011,7 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
 
       // set cursor
       // Intend the text if unit is buyable and selected
-      tinyfont.setCursor(12 + (((menuCursorIDX == i) && canAffordUnit)?4:0), yPos);
+      int16_t nameX = 12 + (((menuCursorIDX == i) && canAffordUnit)?4:0);
 
       // The unitnames are stored in progmem inside an array wich is also in progmem.
       // This means we have to do two special things.
@@ -1027,18 +1022,16 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
       // to the first character and not the whole string. A pointer takes up 2 bytes which
       // is called a word and that's why we use pgm_read_word() to read it from there.
       // Now that we have the string we can pass it as a FlashString.
-      tinyfont.print(AsFlashString(reinterpret_cast<char_P*>(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitToDraw)])))));
+      printAt(nameX, yPos, reinterpret_cast<char_P*>(pgm_read_word(&(LOCA_Unit_Names[static_cast<uint8_t>(unitToDraw)]))));
 
       // if unit is not affordable draw a x as a hint
       if (!canAffordUnit) {
-          tinyfont.setCursor(66, yPos);
-          tinyfont.print(F("x"));
+          printAt(66, yPos, LOCA_cannotAfford);
       }
     }
 
     // draw cursor
-    tinyfont.setCursor(6, 14 + menuCursorIDX*textPadding + yOffset);
-    tinyfont.print(AsFlashString(LOCA_Cursor));
+    printAt(6, 14 + menuCursorIDX*textPadding + yOffset, LOCA_Cursor);
 
     // draw the sprite of the selected unit
 
@@ -1054,22 +1047,16 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
 
     // Costs
     uint8_t unitPrice = GameUnit::costsOfUnit(unitToDraw);
-    tinyfont.setCursor(76, 34);
-    tinyfont.print(AsFlashString(LOCA_funds));
-    tinyfont.setCursor(100 - ((unitPrice>100)?5:0), 34);
-    printNumber(unitPrice*100); // Times 100 makes the value look larger but we still can store it in a byte :)
+    printAt(76, 34, LOCA_funds);
+    printNumber(100 - ((unitPrice>100)?5:0), 34, unitPrice*100); // Times 100 makes the value look larger but we still can store it in a byte :)
 
     // Attack
-    tinyfont.setCursor(76, 42);
-    tinyfont.print(AsFlashString(LOCA_Trait_attack));
-    tinyfont.setCursor(115, 42);
-    printNumber(traits.attackPower);
+    printAt(76, 42, LOCA_Trait_attack);
+    printNumber(115, 42, traits.attackPower);
 
     // Speed
-    tinyfont.setCursor(76, 50);
-    tinyfont.print(AsFlashString(LOCA_Trait_speed));
-    tinyfont.setCursor(115, 50);
-    printNumber(traits.moveDistance);
+    printAt(76, 50, LOCA_Trait_speed);
+    printNumber(115, 50, traits.moveDistance);
 
     arduboy.display();
   }
@@ -1081,17 +1068,12 @@ void AWGame::drawHudForPlayer(AWPlayer &aPlayer){
   // Draw player, day and funds
   arduboy.fillRect(0, 0, 128, 7, BLACK);
   arduboy.fillRect(0, 0, 128, 6, WHITE);
-  tinyfont.setCursor(1, 1);
-  tinyfont.print((aPlayer == player1)?AsFlashString(LOCA_player1):AsFlashString(LOCA_player2));
+  printAt(1, 1, (aPlayer == player1) ? LOCA_player1 : LOCA_player2);
 
-  tinyfont.setCursor(46, 1);
-  tinyfont.print(AsFlashString(LOCA_day));
-  tinyfont.setCursor(66, 1);
-  printNumber(daysPlayed);
-  tinyfont.setCursor(86, 1);
-  tinyfont.print(AsFlashString(LOCA_funds));
-  tinyfont.setCursor(100, 1);
-  printNumber(aPlayer.money*100);
+  printAt(46, 1, LOCA_day);
+  printNumber(66, 1, daysPlayed);
+  printAt(86, 1, LOCA_funds);
+  printNumber(100, 1, aPlayer.money*100);
 }
 
 Point AWGame::calculateCameraPosition(Point forCursorPosition){
@@ -1231,45 +1213,28 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
   // fill map with fog
   clearMap(true);
 
-  // add the enemies units
+  // Mark the units of both players on the map, the enemy's first.
+  // Only the player's own units remove fog.
   AWPlayer &enemyPlayer = (aPlayer == player1)?player2:player1;
-  for (uint8_t i = 0; i < enemyPlayer.units.getCount(); i++) {
-    GameUnit unit = enemyPlayer.units[i];
+  for (uint8_t side = 0; side < 2; side++) {
+    AWPlayer &owner = side ? aPlayer : enemyPlayer;
+    for (uint8_t i = 0; i < owner.units.getCount(); i++) {
+      GameUnit unit = owner.units[i];
 
-    // get the corresponding map tile
-    MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
-    tile.hasUnit = 1;
-    tile.unitBelongsTo = (enemyPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
-    mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
-  }
+      // get the corresponding map tile
+      MapTile &tile = tileAt(unit.mapPosX, unit.mapPosY);
+      tile.hasUnit = 1;
+      tile.unitBelongsTo = playerIndex(owner);
+      if (!side) continue;
 
-  // udpate the player units
-  for (uint8_t i = 0; i < aPlayer.units.getCount(); i++) {
-    GameUnit unit = aPlayer.units[i];
-
-    // get the corresponding map tile
-    MapTile tile = mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x];
-    tile.hasUnit = 1;
-    tile.unitBelongsTo = (aPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
-    mapTileData[unit.mapPosX+unit.mapPosY*mapSize.x] = tile;
-
-    // undo fog for units
-    // Units can see same far as they can move.
-    // get the traits of the unit
-    UnitType unitType = static_cast<UnitType>(unit.unitType);
-    UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-    uint8_t sightRadius = traits.moveDistance;
-
-    // add sight to unit if its on a mountain
-    // Only infantry units can be on hills and mountains and they get a sight boost.
-    if (tileTypeAt(unit.mapPosX, unit.mapPosY) == MapTileType::Mountain)
-      sightRadius +=1;
-
-    // remove the fog
-    // The fog for a unit gets removed accordingly to it's sight.
-    // Obstacles will conceal the things behind it so a unit can't
-    // see through the enviroment.
-    removeFogAtPositionRadiusAndPlayer({unit.mapPosX,unit.mapPosY}, sightRadius, aPlayer);
+      // undo fog for units
+      UnitType unitType = static_cast<UnitType>(unit.unitType);
+      UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+      uint8_t sightRadius = traits.moveDistance;
+      if (tileTypeAt(unit.mapPosX, unit.mapPosY) == MapTileType::Mountain)
+        sightRadius +=1;
+      removeFogAtPositionRadiusAndPlayer({unit.mapPosX,unit.mapPosY}, sightRadius, aPlayer);
+    }
   }
 
   // udpate the  buildings
@@ -1278,7 +1243,7 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
     uint8_t thisPlayer = (aPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2;
 
     // get the corresponding map tile
-    MapTile tile = mapTileData[building.mapPosX+building.mapPosY*mapSize.x];
+    MapTile tile = tileAt(building.mapPosX, building.mapPosY);
 
     // check if building belongs to current player
     if (building.isOccupied) {
@@ -1292,7 +1257,7 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
     }
 
     // udpate maptile
-    mapTileData[building.mapPosX+building.mapPosY*mapSize.x] = tile;
+    tileAt(building.mapPosX, building.mapPosY) = tile;
 
     // check if building belongs to player, because now we remove the fog of war calculations
     if (!(building.isOccupied && building.belongsToPlayer == thisPlayer)) continue;
@@ -1308,7 +1273,7 @@ void AWGame::clearMap(bool withFog){
     for (int8_t x = 0; x < mapSize.x; x++) {
 
         // get the tile
-        MapTile tile = mapTileData[y*mapSize.x+x];
+        MapTile tile = tileAt(x, y);
 
         // turn fog on
         tile.showsFog = withFog?1:0;
@@ -1321,7 +1286,7 @@ void AWGame::clearMap(bool withFog){
         tile.unitBelongsTo = 0;
 
         // update tile
-         mapTileData[y*mapSize.x+x] = tile;
+         tileAt(x, y) = tile;
     }
   }
 }
@@ -1421,7 +1386,7 @@ void AWGame::markUnitOnMap(const GameUnit *aUnit){
   }
 
   // the unit may also stay where it is
-  mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX].showSelection = 1;
+  tileAt(aUnit->mapPosX, aUnit->mapPosY).showSelection = 1;
 }
 
 void AWGame::buildPathTo(const GameUnit *aUnit, Point target){
@@ -1550,14 +1515,14 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
   //safety check
   if (aUnit != nullptr){
     // show again on map
-    mapTileData[aUnit->mapPosY*mapSize.x+aUnit->mapPosX].hasUnit = 1;
+    tileAt(aUnit->mapPosX, aUnit->mapPosY).hasUnit = 1;
   }
 
   // go trough the whole map and remove selection
   for (int8_t y = 0; y < mapSize.y; y++) {
     for (int8_t x = 0; x < mapSize.x; x++) {
         // get the tile
-        mapTileData[y*mapSize.x+x].showSelection = 0;
+        tileAt(x, y).showSelection = 0;
     }
   }
 }
@@ -1578,7 +1543,7 @@ uint8_t AWGame::scanTargets(const GameUnit *unit, Point position, AWPlayer &atta
       if (tile.x < 0 || tile.x >= mapSize.x || tile.y < 0 || tile.y >= mapSize.y) continue;
 
       // only enemies we can see count, for the player and for the AI
-      MapTile &mapTile = mapTileData[tile.y*mapSize.x+tile.x];
+      MapTile &mapTile = tileAt(tile.x, tile.y);
       if (mapTile.showsFog) continue;
 
       const GameUnit *enemyUnit = enemy.getUnitForMapCoordinates(tile);
@@ -1634,7 +1599,7 @@ void AWGame::drawMapAtPosition(Point pos){
       if (drawPos.x <= -TILE_SIZE || drawPos.x >= arduboy.width() || drawPos.y <= -TILE_SIZE || drawPos.y >= (arduboy.height()+TILE_SIZE)) continue;
 
       // get the tile
-      const MapTile tile = mapTileData[y*mapSize.x+x];
+      const MapTile tile = tileAt(x, y);
       const MapTileType tileType = tileTypeAt(x, y);
 
       // draw maptile
@@ -1703,8 +1668,7 @@ void AWGame::drawMapAtPosition(Point pos){
             textX >= 0 && textX <= arduboy.width()-4 && textY >= 0 && textY <= arduboy.height()-8) {
           arduboy.fillRect(drawPos.x+10, drawPos.y+9, 6, 7, BLACK);
           arduboy.fillRect(drawPos.x+11, drawPos.y+10, 5, 6, WHITE);
-          tinyfont.setCursor(textX, textY);
-          printNumber(unit->healthPoints);
+          printNumber(textX, textY, unit->healthPoints);
         }
       }
     }
@@ -1801,13 +1765,13 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t 
     if (x0 >= 0 && y0 >= 0 && x0 < mapSize.x && y0 < mapSize.y && currentDistance <= r) {
 
       // get the corresponding map tile
-      MapTile tile = mapTileData[x0+y0*mapSize.x];
+      MapTile tile = tileAt(x0, y0);
 
       // update tile data
       if (forestLimit >= 0 || seeThrough)
         tile.showsFog = 0;
 
-      mapTileData[x0+y0*mapSize.x] = tile;
+      tileAt(x0, y0) = tile;
 
       // ignore the origin
       if (currentDistance != 0 && !seeThrough){
@@ -1947,14 +1911,16 @@ void AWGame::resetAbandonedCaptures(){
 // Small helpers. Kept out of line on purpose: they are called from many
 // places and inlining them everywhere costs more flash than the calls.
 
-void AWGame::printNumber(uint16_t number){
+void AWGame::printNumber(int16_t x, int16_t y, uint16_t number){
   char digits[5];
   uint8_t count = 0;
   do {
     digits[count++] = '0' + number % 10;
     number /= 10;
   } while (number > 0);
-  while (count > 0) tinyfont.print(digits[--count]);
+  printX = x;
+  printY = y;
+  while (count > 0) printChar(digits[--count]);
 }
 
 MapTileType AWGame::tileTypeAtIndex(uint16_t index){
@@ -2062,9 +2028,9 @@ bool AWGame::playEffect(Point first, Point second, uint8_t effect){
   // EffectFlicker: the unit on first flickers before it is removed.
   // EffectHop: the cursor blinks on first and the unit there hops 3 times.
   // Tiles in the viewer's fog show nothing.
-  MapTile &firstTile = mapTileData[first.y*mapSize.x+first.x];
+  MapTile &firstTile = tileAt(first.x, first.y);
   bool firstSeen = !firstTile.showsFog;
-  if (!firstSeen && mapTileData[second.y*mapSize.x+second.x].showsFog) return false;
+  if (!firstSeen && tileAt(second.x, second.y).showsFog) return false;
 
   // the camera glides to the tile, then the animation starts
   Point target = calculateCameraPosition(cursorForTile(firstSeen ? first : second));
@@ -2112,9 +2078,9 @@ bool AWGame::playEffect(Point first, Point second, uint8_t effect){
 
     for (uint8_t i = 0; on && effect != EffectFlicker && i < 2; i++) {
       Point tile = i ? second : first;
-      if (mapTileData[tile.y*mapSize.x+tile.x].showsFog) continue;
+      if (tileAt(tile.x, tile.y).showsFog) continue;
       Point cursor = cursorForTile(tile) - cameraPosition;
-      sprites.drawPlusMask(cursor.x, cursor.y+1, gameCursorAnimation_plus_mask, 0);
+      drawCursor(cursor.x, cursor.y+1, 0);
     }
     drawHudForPlayer(*viewingPlayer);
     arduboy.display();
@@ -2133,4 +2099,67 @@ void AWGame::flashScreen(uint8_t times){
     arduboy.invert(false);
     delay(70);
   }
+}
+
+void AWGame::fillBox(int16_t x, int16_t y, uint8_t w, uint8_t h, uint8_t cut, uint8_t color){
+  // A box with rounded corners: the outer columns on each side are cut
+  // shorter in steps. Cut 3 gives the same pixels as Arduboy's
+  // fillRoundRect with radius 5, cut 2 the same as radius 3.
+  for (uint8_t i = 0; i < cut; i++) {
+    uint8_t inset = cut - i;
+    arduboy.drawFastVLine(x+i, y+inset, h-2*inset, color);
+    arduboy.drawFastVLine(x+w-1-i, y+inset, h-2*inset, color);
+  }
+  arduboy.fillRect(x+cut, y, w-2*cut, h, color);
+}
+
+void AWGame::drawCursor(int16_t x, int16_t y, uint8_t frame){
+  // The 32x32 cursor from its pieces. Frame 1 spreads them 2 pixels further out.
+  int8_t spread = frame ? 2 : 0;
+  sprites.drawPlusMask(x+4-spread, y+4-spread, cursorCorners_plus_mask, 0);
+  sprites.drawPlusMask(x+20+spread, y+4-spread, cursorCorners_plus_mask, 1);
+  sprites.drawPlusMask(x+4-spread, y+20+spread, cursorCorners_plus_mask, 2);
+  sprites.drawPlusMask(x+22+spread, y+22+spread, cursorHand_plus_mask, frame);
+}
+
+void AWGame::printAt(int16_t x, int16_t y, char_P *text){
+  printX = x;
+  printY = y;
+  char c;
+  while ((c = pgm_read_byte(text++)) != 0) printChar(c);
+}
+
+void AWGame::printChar(char c){
+  // Draws one letter at printX, printY and moves printX on to the next one.
+  // The letters come from the Tinyfont library: 4x4 pixels, 5 pixels apart.
+  // Two letters share 4 bytes, one byte per column: the even letter sits
+  // in the low 4 bits, the odd one in the high 4 bits.
+  // Same pixels as Tinyfont, only it must not print off the screen.
+  uint8_t index = c - 32;
+  int16_t y = printY;
+  if ((index >= 65 && index <= 90) || index == 12 || index == 27) y++; // lowercase and commas sit lower
+  const uint8_t *letter = TINYFONT_SPRITE + (index/2)*4;
+
+  // The screen buffer holds rows of 8 pixels, one byte per column.
+  // A letter that starts low in a row reaches into the next row.
+  uint8_t *column = arduboy.getBuffer() + printX + (y/8)*WIDTH;
+  uint8_t shift = y % 8;
+  for (uint8_t i = 0; i < 4; i++) {
+    uint8_t bits = pgm_read_byte(letter+i);
+    bits = (c % 2) ? bits >> 4 : bits & 0x0f;
+    uint16_t pixels = bits << shift;
+    if (textColor) {
+      column[i] |= pixels;
+      if (shift > 4) column[i+WIDTH] |= pixels >> 8;
+    }
+    else {
+      column[i] &= ~pixels;
+      if (shift > 4) column[i+WIDTH] &= ~(pixels >> 8);
+    }
+  }
+  printX += 5;
+}
+
+MapTile &AWGame::tileAt(int16_t x, int16_t y){
+  return mapTileData[y*mapSize.x+x];
 }

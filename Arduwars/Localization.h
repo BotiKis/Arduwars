@@ -16,10 +16,13 @@ char_P LOCA_Sound_off[] PROGMEM       = "SOUND OFF";
 char_P LOCA_BackWithA[] PROGMEM       = "BACK WITH A";
 char_P LOCA_Cursor[] PROGMEM          = ">";
 
+// Shop: marks a unit the player cannot afford
+char_P LOCA_cannotAfford[] PROGMEM    = "x";
+
 // Map selection
 char_P LOCA_mapSmall[] PROGMEM        = "SKIRMISH";
-char_P LOCA_mapMedium[] PROGMEM       = "BATTLE";
-char_P LOCA_mapBig[] PROGMEM          = "ARDUWARS";
+char_P LOCA_mapMedium[] PROGMEM       = "OPEN SEA";
+char_P LOCA_mapBig[] PROGMEM          = "TWIN LAKES";
 
 // Playernames
 char_P LOCA_player1[] PROGMEM        = "PLAYER 1";
