@@ -1393,8 +1393,11 @@ void AWGame::drawPath(const GameUnit *aUnit, Point camera){
     uint8_t direction = 0;
     for (uint8_t i = 0; i < pathLength; i++) {
       direction = pathDirections[i];
-      int16_t nx = x + TILE_SIZE*((direction == 0) - (direction == 2));
-      int16_t ny = y + TILE_SIZE*((direction == 3) - (direction == 1));
+      // The last step stops at the edge of the target tile, so the
+      // arrowhead tip ends a third into the tile.
+      int8_t step = (i == pathLength-1) ? TILE_SIZE-9 : TILE_SIZE;
+      int16_t nx = x + step*((direction == 0) - (direction == 2));
+      int16_t ny = y + step*((direction == 3) - (direction == 1));
       int16_t left = min(x, nx);
       int16_t top = min(y, ny);
       uint8_t width = abs(nx - x);
