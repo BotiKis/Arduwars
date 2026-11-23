@@ -189,20 +189,27 @@ void AWGame::runGame(bool againstAI){
 
   AWPlayer *currentPlayer = &player1;
 
+  // the first turn wipes in from the map selection
+  bool firstTurn = true;
+
   // Game Loop
   while (true) {
-
-    // show transition effect
-    makeScreenTransition();
 
     // the AI plays player 2 in single player
     bool aiTurn = againstAI && *currentPlayer == player2;
 
+    // Against the AI the player's turn starts right on the map, the view
+    // stays the same. Otherwise the old view wipes out and the turn text
+    // shows on black, so a second player can't peek.
+    bool startOnMap = againstAI && !aiTurn;
+    bool wipe = !startOnMap || firstTurn;
+    firstTurn = false;
+
+    if (wipe) makeScreenTransition(false);
+
     // show dialog for player
-    if (againstAI)
-      showDialog(aiTurn ? LOCA_enemyTurn : LOCA_yourTurn);
-    else
-      showDialog((*currentPlayer == player1)?LOCA_player1:LOCA_player2);
+    if (!startOnMap)
+      showDialog(aiTurn ? LOCA_enemyTurn : (*currentPlayer == player1) ? LOCA_player1 : LOCA_player2);
 
     // activate all units
     for (uint8_t i = 0; i < currentPlayer->units.getCount(); i++) {
@@ -235,7 +242,7 @@ void AWGame::runGame(bool againstAI){
     Point cursorPosition = cursorForTile(viewer.cursorIndex);
 
     // Calculate camera position
-    Point cameraPosition = calculateCameraPosition(cursorPosition);
+    cameraPosition = calculateCameraPosition(cursorPosition);
     cameraPosition.y -= mapOffsetY;
 
     // Draw map
@@ -244,7 +251,12 @@ void AWGame::runGame(bool againstAI){
     // Draw HUD
     drawHudForPlayer(viewer);
 
-    arduboy.display();
+    // the new view wipes in from black
+    if (wipe) makeScreenTransition(true);
+    else arduboy.display();
+
+    // against the AI the turn text pops up on the map
+    if (startOnMap) showDialog(LOCA_yourTurn);
 
     // show player round
     doRoundOfPlayer(*currentPlayer, aiTurn);
@@ -281,13 +293,13 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
 
   // Against the AI the screen always shows player 1's view.
   AWPlayer &viewer = aiTurn ? player1 : currentPlayer;
+  viewingPlayer = &viewer;
 
   // the enemy the AI unit attacks after its walk, {-1,-1} for none
   Point aiTarget = {-1, -1};
 
   // Store cursor data
   Point cursorPosition = cursorForTile(viewer.cursorIndex);
-  Point cameraPosition = {0, 0};
   Point currentIndex = {0, 0};
 
   // tile the movement arrow currently leads to
@@ -329,12 +341,6 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
     walkFrame = 0;
     walkBack = backwards;
     turnState = AWTurnState::UnitWalking;
-  };
-
-  // moves the camera halfway to its target, then locks on once it is close
-  auto glide = [](int16_t from, int16_t to) -> int16_t {
-    int16_t difference = to - from;
-    return (difference > 2 || difference < -2) ? from + difference/2 : to;
   };
 
     // Game loop
@@ -433,11 +439,11 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
         cameraTarget.y -= mapOffsetY;
 
         // While a unit walks the camera glides after it instead of jumping.
+        // In the AI's turn it stays where the last walk or animation left it.
         if (turnState == AWTurnState::UnitWalking) {
-          cameraPosition.x = glide(cameraPosition.x, cameraTarget.x);
-          cameraPosition.y = glide(cameraPosition.y, cameraTarget.y);
+          if (walkerSeen) glideCameraTo(cameraTarget);
         }
-        else {
+        else if (!aiTurn) {
           cameraPosition = cameraTarget;
         }
 
@@ -763,6 +769,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
               // the attacking unit is done for this turn
               selectedUnit->activated = GameUnit::UnitStateDisabled;
 
+              // the target markers go away for the battle
+              unmarkUnitOnMap(nullptr);
+
               // Note: selectedUnit may be destroyed by the counterattack,
               // so it must not be used after this call.
               attackUnitAtPosition(selectedUnit, currentIndex, currentPlayer);
@@ -1019,22 +1028,22 @@ void AWGame::drawHudForPlayer(AWPlayer &aPlayer){
 }
 
 Point AWGame::calculateCameraPosition(Point forCursorPosition){
-  Point cameraPosition;
+  Point camera;
 
   // Calculate camera offset
-  cameraPosition.x = forCursorPosition.x - (arduboy.width()-32)/2;
-  cameraPosition.y = forCursorPosition.y - (arduboy.height()-32)/2;
+  camera.x = forCursorPosition.x - (arduboy.width()-32)/2;
+  camera.y = forCursorPosition.y - (arduboy.height()-32)/2;
 
   // calculate mapsize in pixels
   Point mapSizeInPixel = mapSize*TILE_SIZE;
 
   // Check for bounds
-  if(cameraPosition.x < 0) cameraPosition.x = 0;
-  if(cameraPosition.y < 1) cameraPosition.y = 1;
-  if(cameraPosition.x > mapSizeInPixel.x-arduboy.width()) cameraPosition.x = mapSizeInPixel.x-arduboy.width();
-  if(cameraPosition.y > mapSizeInPixel.y-arduboy.height()+mapOffsetY) cameraPosition.y = mapSizeInPixel.y-arduboy.height()+mapOffsetY;
+  if(camera.x < 0) camera.x = 0;
+  if(camera.y < 1) camera.y = 1;
+  if(camera.x > mapSizeInPixel.x-arduboy.width()) camera.x = mapSizeInPixel.x-arduboy.width();
+  if(camera.y > mapSizeInPixel.y-arduboy.height()+mapOffsetY) camera.y = mapSizeInPixel.y-arduboy.height()+mapOffsetY;
 
-  return cameraPosition;
+  return camera;
 }
 
 void AWGame::loadMap(const unsigned char *newMapData){
@@ -1590,31 +1599,28 @@ void AWGame::drawMapAtPosition(Point pos){
   }
 }
 
-void AWGame::makeScreenTransition(){
+void AWGame::makeScreenTransition(bool wipeIn){
+  // The rows of 8 pixels slide sideways, even rows one way, odd rows the other.
+  // Wiping out, the screen ends black. Wiping in, the frame in the buffer
+  // slides in from black, the wipe out played backwards.
+  // The buffer is not moved: each step sends a shifted copy to the display.
   uint8_t *dbuff = arduboy.getBuffer();
 
-  for (uint8_t i = 0; i < arduboy.width(); i++) {
+  for (uint8_t step = 0; step < arduboy.width(); step++) {
+    uint8_t shift = wipeIn ? arduboy.width()-step : step+1;
+    for (uint8_t y = 0; y < 8; y++) {
       for (uint8_t x = 0; x < arduboy.width(); x++) {
-        for (uint8_t y = 0; y < 8; y++) {
-          if (y%2==0) {
-            if (x == arduboy.width()-1)
-              dbuff[x+y*arduboy.width()] = 0;
-            else
-              dbuff[x+y*arduboy.width()] = dbuff[x+y*arduboy.width()+1];
-          }
-          else{
-            uint8_t helperX = arduboy.width()-1-x;
-            if (helperX == 0)
-              dbuff[helperX+y*arduboy.width()] = 0;
-            else
-              dbuff[helperX+y*arduboy.width()] = dbuff[helperX+y*arduboy.width()-1];
-          }
-        }
+        // a source left of the screen wraps around to 128 and up, so the
+        // one check below catches both edges
+        uint8_t source = (y%2 == 0) ? x+shift : x-shift;
+        Arduboy2Core::SPItransfer((source < arduboy.width()) ? dbuff[source+y*arduboy.width()] : 0);
       }
-
-      arduboy.display();
-      delay(1);
+    }
+    delay(1);
   }
+
+  if (wipeIn) arduboy.display();
+  else arduboy.clear();
 }
 
 GameBuilding * AWGame::getBuildingAtCoordinate(Point coordinate){
@@ -1732,15 +1738,17 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
   MapTileType defenderTile = tileTypeAt(target.x, target.y);
   MapTileType attackerTile = tileTypeAt(attacker->mapPosX, attacker->mapPosY);
 
-  // short flash so the player sees the hit
-  arduboy.invert(true);
-  delay(60);
-  arduboy.invert(false);
+  Point attackerPosition = {attacker->mapPosX, attacker->mapPosY};
+
+  // show who fights whom, then the hit
+  bool seen = playEffect(target, attackerPosition, EffectBlink);
+  if (seen) flashScreen(3);
 
   uint8_t damage = GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile);
 
   if (damage >= defender->healthPoints) {
-    // defender destroyed
+    // defender destroyed: it flickers, then it's gone
+    playEffect(target, target, EffectFlicker);
     defendingPlayer.units.removeAt(defender - defendingPlayer.units.getData());
     if (defendingPlayer.units.isEmpty()) winner = playerIndex(attackingPlayer);
     return;
@@ -1757,8 +1765,12 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
   damage = GameUnit::calculateDamage(defenderType, defender->healthPoints, attackerType, attackerTile);
   if (damage == 0) return; // defender can't hit this unit type
 
+  // the counterattack hits
+  if (seen) flashScreen(2);
+
   if (damage >= attacker->healthPoints) {
     // attacker destroyed by the counterattack
+    playEffect(attackerPosition, attackerPosition, EffectFlicker);
     attackingPlayer.units.removeAt(attacker - attackingPlayer.units.getData());
     if (attackingPlayer.units.isEmpty()) winner = playerIndex(defendingPlayer);
     return;
@@ -1782,6 +1794,9 @@ void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPl
 
   GameBuilding *building = getBuildingAtCoordinate(position);
 
+  // the cursor blinks on the building and the unit hops while it takes it over
+  playEffect(position, position, EffectHop);
+
   // a hurt unit captures slower
   if (unit->healthPoints < building->healthPoints) {
     building->healthPoints -= unit->healthPoints;
@@ -1797,7 +1812,8 @@ void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPl
   if (type == MapTileType::P1HQ || type == MapTileType::P2HQ) {
     winner = playerIndex(capturingPlayer);
   }
-  else {
+  else if (capturingPlayer == *viewingPlayer) {
+    // only the player's own captures get a popup, the enemy's show on the map
     showDialog(LOCA_captured);
   }
 }
@@ -1885,5 +1901,124 @@ uint8_t AWGame::shopListForBuilding(MapTileType building, const UnitType *&buyab
       return NumberOfBuyableUnitsAtShipyard;
     default:
       return 0;
+  }
+}
+
+void AWGame::glideCameraTo(Point target){
+  // moves the camera halfway to its target, then locks on once it is close
+  auto glide = [](int16_t from, int16_t to) -> int16_t {
+    int16_t difference = to - from;
+    return (difference > 2 || difference < -2) ? from + difference/2 : to;
+  };
+  cameraPosition.x = glide(cameraPosition.x, target.x);
+  cameraPosition.y = glide(cameraPosition.y, target.y);
+}
+
+// The capture bounce for each of the 60 frames of playEffect.
+// Low 4 bits: the unit's height in pixels. Seven hops of 8 down to 1 pixel
+// under one gravity, like a ball, touching the ground for one frame between.
+// High 4 bits: 0 for still, else 1 + the frame of the building's shake in
+// hopShake. Each landing starts a shake that runs on under the next hop,
+// later landings start further in, so the shake fades.
+static constexpr uint8_t hopFrame(uint8_t height, uint8_t shake){ return height | (shake << 4); }
+static const uint8_t hopFrames[60] PROGMEM = {
+  0,   // start on the ground
+  4, 6, 7, 8, 7, 6, 4,   // hop 1, 8 pixels
+  hopFrame(0,1),   // landing
+  hopFrame(3,2), hopFrame(5,3), hopFrame(6,4), hopFrame(6,5), hopFrame(5,6), hopFrame(3,7),   // hop 2, 6 pixels
+  hopFrame(0,1),   // landing
+  hopFrame(3,2), hopFrame(4,3), hopFrame(5,4), hopFrame(4,5), hopFrame(3,6),   // hop 3, 5 pixels
+  hopFrame(0,3),   // landing
+  hopFrame(3,4), hopFrame(4,5), hopFrame(4,6), hopFrame(3,7),   // hop 4, 4 pixels
+  hopFrame(0,4),   // landing
+  hopFrame(2,5), hopFrame(3,6), hopFrame(3,7), hopFrame(2,8),   // hop 5, 3 pixels
+  hopFrame(0,5),   // landing
+  hopFrame(1,6), hopFrame(2,7), hopFrame(1,8),   // hop 6, 2 pixels
+  hopFrame(0,6),   // landing
+  hopFrame(1,7), hopFrame(1,8),   // hop 7, 1 pixel
+  hopFrame(0,7),   // landing
+  hopFrame(0,8), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    // shake fades, rest (21 frames)
+};
+
+// The building's shake after a landing: sideways jolt in pixels.
+// The first 2 frames also dip it 1 pixel.
+static const int8_t hopShake[8] PROGMEM = {2, -2, 2, -1, 1, -1, 1, 0};
+
+bool AWGame::playEffect(Point first, Point second, uint8_t effect){
+  // About one second of animation for a battle, a destroyed unit or a capture.
+  // EffectBlink: the cursor blinks on first and second.
+  // EffectFlicker: the unit on first flickers before it is removed.
+  // EffectHop: the cursor blinks on first and the unit there hops 3 times.
+  // Tiles in the viewer's fog show nothing.
+  MapTile &firstTile = mapTileData[first.y*mapSize.x+first.x];
+  bool firstSeen = !firstTile.showsFog;
+  if (!firstSeen && mapTileData[second.y*mapSize.x+second.x].showsFog) return false;
+
+  // the camera glides to the tile, then the animation starts
+  Point target = calculateCameraPosition(cursorForTile(firstSeen ? first : second));
+  target.y -= mapOffsetY;
+
+  uint8_t frame = 0;
+  while (frame < 60) {
+    while (!arduboy.nextFrame()) {}
+    glideCameraTo(target);
+    if (cameraPosition == target) frame++;
+
+    // on for 10 frames, off for 10
+    bool on = (frame/10)%2 == 0;
+    if (effect == EffectFlicker) firstTile.hasUnit = on;
+
+    // the hopping unit is drawn on its own, so the map leaves it out
+    if (effect == EffectHop) firstTile.hasUnit = 0;
+
+    arduboy.clear();
+    drawMapAtPosition(cameraPosition * -1);
+
+    if (effect == EffectHop) {
+      // The capture bounce, one entry per frame (see hopFrames).
+      uint8_t step = pgm_read_byte(hopFrames + frame);
+      uint8_t height = step & 0x0F;
+      Point position = first*TILE_SIZE - cameraPosition;
+      if (step >> 4) {
+        // the building shakes, the map drew it still underneath
+        uint8_t shake = (step >> 4) - 1;
+        int8_t dip = (shake < 2);
+        int16_t x = position.x + (int8_t)pgm_read_byte(hopShake + shake);
+        MapTileType type = tileTypeAt(first.x, first.y);
+        sprites.drawOverwrite(x, position.y+dip, worldSprite, static_cast<uint8_t>(type));
+
+        // the HQ's top half sits on the tile above
+        if (type == MapTileType::P1HQ || type == MapTileType::P2HQ)
+          sprites.drawOverwrite(x, position.y+dip-TILE_SIZE, worldSprite, (type == MapTileType::P1HQ)?32:33);
+
+        // on the ground the unit dips with the building
+        if (height == 0) position.y += dip;
+      }
+      AWPlayer &owner = (firstTile.unitBelongsTo == MapTile::BelongsToPlayer1) ? player1 : player2;
+      drawUnit(position.x, position.y - height, &owner == &player1, owner.getUnitForMapCoordinates(first)->unitType, false);
+    }
+
+    for (uint8_t i = 0; on && effect != EffectFlicker && i < 2; i++) {
+      Point tile = i ? second : first;
+      if (mapTileData[tile.y*mapSize.x+tile.x].showsFog) continue;
+      Point cursor = cursorForTile(tile) - cameraPosition;
+      sprites.drawPlusMask(cursor.x, cursor.y+1, gameCursorAnimation_plus_mask, 0);
+    }
+    drawHudForPlayer(*viewingPlayer);
+    arduboy.display();
+  }
+
+  // the hopping unit is back on the map
+  if (effect == EffectHop) firstTile.hasUnit = 1;
+  return true;
+}
+
+void AWGame::flashScreen(uint8_t times){
+  // the hit: the screen turns inverted for a moment
+  while (times--) {
+    arduboy.invert(true);
+    delay(70);
+    arduboy.invert(false);
+    delay(70);
   }
 }

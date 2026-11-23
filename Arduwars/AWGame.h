@@ -156,7 +156,10 @@ private:
     void drawHudForPlayer(AWPlayer &aPlayer);
 
     // Helper to calculate the camera
-    Point calculateCameraPosition(Point forCursorPosition);
+    __attribute__((noinline)) Point calculateCameraPosition(Point forCursorPosition);
+
+    // Moves the camera a step towards target: halfway, then it locks on.
+    __attribute__((noinline)) void glideCameraTo(Point target);
 
     // Loads the map from progmem to memory
     void loadMap(const unsigned char *mapData);
@@ -213,8 +216,8 @@ private:
     // Helper function for removeFogAtPositionRadiusAndPlayer
     void castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t xEnd, int8_t yEnd);
 
-    // neat effect directly on the display buffer
-    void makeScreenTransition();
+    // Wipe between turns: out to black, or (wipeIn) in from black to the buffer's frame
+    void makeScreenTransition(bool wipeIn);
 
     // Helper method to get a Pointer to the Gamebuilding for a certain location on the map
     // The parameter position is in map coordinates.
@@ -224,6 +227,17 @@ private:
     // Resolves an attack of the given unit on the enemy unit at target,
     // including the counterattack. Removes destroyed units and sets winner.
     void attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer);
+
+    // About one second of animation: the cursor blinks on first and second,
+    // the unit on first flickers, or it hops. The camera glides there first.
+    // Shows nothing and returns false when both tiles are in the viewer's fog.
+    static constexpr uint8_t EffectBlink = 0;   // battle
+    static constexpr uint8_t EffectFlicker = 1; // destroyed unit
+    static constexpr uint8_t EffectHop = 2;     // capture
+    bool playEffect(Point first, Point second, uint8_t effect);
+
+    // Inverts the screen briefly the given number of times (a hit).
+    void flashScreen(uint8_t times);
 
     // Infantry on a building lowers its capture points; takes it at 0.
     // Capturing the enemy HQ sets winner.
@@ -268,6 +282,12 @@ private:
     // A day passes if both players has ended their rounds.
     // The game ends with a draw when it reaches 255 days.
     uint8_t daysPlayed;
+
+    // Where the screen looks at the map, in map pixels.
+    Point cameraPosition = {0, 0};
+
+    // Whose view the screen shows: the current player, or player 1 against the AI.
+    AWPlayer *viewingPlayer = &player1;
 
     // Movement path (0 right, 1 up, 2 left, 3 down) from the selected unit to the cursor
     // The longest move is 8 steps: 7 tiles plus 1 when starting on a street.
