@@ -2004,6 +2004,14 @@ void AWGame::drawUnit(int16_t x, int16_t y, bool firstPlayer, uint8_t unitType, 
   }
   sprites.drawPlusMask(x, y+9+lowerBob, firstPlayer ? unitsA_lower_plus_mask : unitsB_lower_plus_mask, unitType);
   sprites.drawPlusMask(x, y+bob, firstPlayer ? unitsA_upper_plus_mask : unitsB_upper_plus_mask, unitType);
+
+  // A shadow stays on the ground in the bottom row.
+  // While a plane floats up it loses 1 pixel at each end.
+  uint8_t shadow = pgm_read_byte((firstPlayer ? unitsA_shadows : unitsB_shadows) + unitType);
+  if (shadow) {
+    uint8_t up = bob < 0;
+    arduboy.fillRect(x + (shadow >> 4) + up, y + 15, (shadow & 0x0F) - 2*up, 1, BLACK);
+  }
 }
 
 Point AWGame::cursorForTile(Point tile){
