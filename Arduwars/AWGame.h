@@ -95,13 +95,40 @@ private:
     // Attribute is the current state, only multi/singleplayer is relevant.
     const unsigned char * showMapSelection(AWGameState aState);
 
-    void startNewSinglePlayerGame();  // Starts a new singleplayer game
-    void runSinglePlayerGame();       // Place where the singleplayer game runs
+    // Starts a new single player (against the AI) or multiplayer game
+    void startNewGame(AWGameState mode);
 
-    void startNewMultiplayerPlayerGame();  // Starts a new multiplayer game
-    void runMultiPlayerGame();       // Place where the multiplayer game runs
+    // Place where a game runs. With againstAI the AI plays player 2.
+    void runGame(bool againstAI);
 
-    void doRoundOfPlayer(AWPlayer &currentPlayer);
+    // One turn of a player. With aiTurn the AI plays it and the screen
+    // shows player 1's view.
+    void doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn);
+
+    // ======================
+    // Enemy AI, in AWGameAI.cpp
+
+    // Picks where the unit goes. Returns the tile and puts the enemy it
+    // attacks there in target, {-1,-1} for none.
+    Point aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target);
+
+    // The unit has arrived: it attacks target or captures, then waits.
+    void aiAct(GameUnit *unit, Point target, AWPlayer &ai);
+
+    // Buys new units at every free factory, airport and shipyard of the AI.
+    void aiBuyUnits(AWPlayer &ai);
+
+    // Light randomness: the next number of a fixed shuffled order (0-255).
+    uint8_t nextRandom();
+    uint8_t randomState = 0;
+
+    // ======================
+
+    // Adds a new unit with full health that can act from the next turn on.
+    void addNewUnit(AWPlayer &owner, UnitType unitType, Point position);
+
+    // Units sold at a building. Returns the count, 0 if it is not a shop.
+    static uint8_t shopListForBuilding(MapTileType building, const UnitType *&buyableUnits);
 
     // Game Helper
     void drawMapAtPosition(Point pos); // Draws the map at the given position
@@ -151,6 +178,9 @@ private:
     // buffer) with the most movement left on entering each tile, 0 = unreachable.
     uint8_t * floodMovement(const GameUnit *aUnit);
 
+    // Flood fill from any tile with the given movement into remaining.
+    uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining);
+
     // Movement left after leaving a tile of the given type
     static int8_t movementLeftAfter(MapTileType type, int8_t left);
 
@@ -164,8 +194,10 @@ private:
     void drawUnit(int16_t x, int16_t y, bool firstPlayer, uint8_t unitType, bool animate);
 
 
-    // This method marks the maptiles, where an enemy unit is which can be attacked.
-    void markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer);
+    // Looks at every visible enemy the unit could attack from position.
+    // Returns the best damage (0 = nothing in range) and that enemy's tile in target.
+    // With markTargets, the targets are marked on the map for the player.
+    uint8_t scanTargets(const GameUnit *unit, Point position, AWPlayer &attackingPlayer, Point &target, bool markTargets);
 
     // returns the position of the next marked tile.
     // Arguments:
@@ -228,7 +260,7 @@ private:
     AWGameState gameState = AWGameState::showMainMenu;
 
     // In these two variables we store the players.
-    // There are always two players where the first one is the actual player and the second the AI.
+    // In single player the first one is the actual player and the second the AI.
     AWPlayer player1 = AWPlayer(1);
     AWPlayer player2 = AWPlayer(2);
 

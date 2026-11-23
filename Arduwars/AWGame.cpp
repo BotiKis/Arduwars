@@ -39,7 +39,7 @@ void AWGame::run(void){
       switch (gameState) {
         case AWGameState::playSinglePlayer:{
           // start game
-          startNewSinglePlayerGame();
+          startNewGame(AWGameState::playSinglePlayer);
 
           // If played, return to main menu
           this->gameState = AWGameState::showMainMenu;
@@ -47,7 +47,7 @@ void AWGame::run(void){
         }
         case AWGameState::playMultiPlayer:{
           // start game
-          startNewMultiplayerPlayerGame();
+          startNewGame(AWGameState::playMultiPlayer);
 
           // If played, return to main menu
           this->gameState = AWGameState::showMainMenu;
@@ -160,7 +160,7 @@ const unsigned char * AWGame::showMapSelection(AWGameState aState){
   }
 }
 
-void AWGame::startNewSinglePlayerGame(){
+void AWGame::startNewGame(AWGameState mode){
   // reset day count and result
   daysPlayed = 0;
   winner = NoWinner;
@@ -170,62 +170,22 @@ void AWGame::startNewSinglePlayerGame(){
   player2.reset();
 
   // shop map selection
-  const unsigned char *mapData = showMapSelection(AWGameState::playSinglePlayer);
+  const unsigned char *mapData = showMapSelection(mode);
 
   // return if no map has been selected
   if (mapData == nullptr) return;
 
-  // load map
-  loadMap(mapData);
-
-  // run game
-  runSinglePlayerGame();
-}
-
-void AWGame::runSinglePlayerGame(){
-
-  // The game loop
-  while(true){
-
-    if(!arduboy.nextFrame()) continue;
-
-    arduboy.pollButtons();
-
-    if (arduboy.justPressed(A_BUTTON)) {
-      return;
-    }
-
-    // fill the screen white
-    arduboy.fillScreen(WHITE);
-
-    tinyfont.setCursor(1,1);
-
-    arduboy.display();
-  }
-}
-
-void AWGame::startNewMultiplayerPlayerGame(){
-  // reset day count and result
-  daysPlayed = 0;
-  winner = NoWinner;
-
-  // reset players
-  player1.reset();
-  player2.reset();
-
-  // shop map selection
-  const unsigned char *mapData = showMapSelection(AWGameState::playMultiPlayer);
-
-  // return if no map has been selected
-  if (mapData == nullptr) return;
+  // The time the player took in the menus starts the AI's randomness.
+  randomState = arduboy.frameCount;
 
   // load map
   loadMap(mapData);
 
-  runMultiPlayerGame();
+  // In single player the AI plays player 2.
+  runGame(mode == AWGameState::playSinglePlayer);
 }
 
-void AWGame::runMultiPlayerGame(){
+void AWGame::runGame(bool againstAI){
 
   AWPlayer *currentPlayer = &player1;
 
@@ -235,8 +195,14 @@ void AWGame::runMultiPlayerGame(){
     // show transition effect
     makeScreenTransition();
 
+    // the AI plays player 2 in single player
+    bool aiTurn = againstAI && *currentPlayer == player2;
+
     // show dialog for player
-    showDialog((*currentPlayer == player1)?LOCA_player1:LOCA_player2);
+    if (againstAI)
+      showDialog(aiTurn ? LOCA_enemyTurn : LOCA_yourTurn);
+    else
+      showDialog((*currentPlayer == player1)?LOCA_player1:LOCA_player2);
 
     // activate all units
     for (uint8_t i = 0; i < currentPlayer->units.getCount(); i++) {
@@ -256,14 +222,17 @@ void AWGame::runMultiPlayerGame(){
       }
     }
 
+    // Against the AI the screen always shows player 1's view.
+    AWPlayer &viewer = aiTurn ? player1 : *currentPlayer;
+
     // update player map
-    updateMapForPlayer(*currentPlayer);
+    updateMapForPlayer(viewer);
 
     // Draw map and HUD for new player
     arduboy.clear();
 
     // Calculate camera Position
-    Point cursorPosition = cursorForTile(currentPlayer->cursorIndex);
+    Point cursorPosition = cursorForTile(viewer.cursorIndex);
 
     // Calculate camera position
     Point cameraPosition = calculateCameraPosition(cursorPosition);
@@ -273,16 +242,19 @@ void AWGame::runMultiPlayerGame(){
     drawMapAtPosition(cameraPosition * -1);
 
     // Draw HUD
-    drawHudForPlayer(*currentPlayer);
+    drawHudForPlayer(viewer);
 
     arduboy.display();
 
     // show player round
-    doRoundOfPlayer(*currentPlayer);
+    doRoundOfPlayer(*currentPlayer, aiTurn);
 
     // check for win condition
     if (winner != NoWinner) {
-      showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_player1Wins : LOCA_player2Wins);
+      if (againstAI)
+        showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_youWin : LOCA_youLose);
+      else
+        showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_player1Wins : LOCA_player2Wins);
       return;
     }
 
@@ -303,12 +275,18 @@ void AWGame::runMultiPlayerGame(){
   }
 }
 
-void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
+void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
 
   uint8_t scrollMultiplier = SCROLLSPEED_NORMAL;
 
+  // Against the AI the screen always shows player 1's view.
+  AWPlayer &viewer = aiTurn ? player1 : currentPlayer;
+
+  // the enemy the AI unit attacks after its walk, {-1,-1} for none
+  Point aiTarget = {-1, -1};
+
   // Store cursor data
-  Point cursorPosition = cursorForTile(currentPlayer.cursorIndex);
+  Point cursorPosition = cursorForTile(viewer.cursorIndex);
   Point cameraPosition = {0, 0};
   Point currentIndex = {0, 0};
 
@@ -330,6 +308,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
   Point walkPosition = {0, 0};
   uint8_t walkFrame = 0;
   bool walkBack = false;
+
+  // False while an AI unit walks inside player 1's fog: it stays hidden.
+  bool walkerSeen = true;
 
   // helper function to start the walk of the selected unit
   // This is a lambda function.  Also called anonymous function
@@ -370,7 +351,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             // arrived: the unit takes its new place on the map
             selectedUnit->mapPosX = walkPosition.x/TILE_SIZE;
             selectedUnit->mapPosY = walkPosition.y/TILE_SIZE;
-            updateMapForPlayer(currentPlayer);
+            updateMapForPlayer(viewer);
 
             if (walkBack) {
               selectedUnit = nullptr;
@@ -390,9 +371,17 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
             walkFrame++;
           }
 
+          // An AI unit in player 1's fog stays hidden. Check the tile under its middle.
+          if (aiTurn) {
+            Point center = (walkPosition + Point{8, 8}) / TILE_SIZE;
+            walkerSeen = !mapTileData[center.y*mapSize.x+center.x].showsFog;
+          }
+
           // the cursor rides along, so the camera follows the unit
-          cursorPosition.x = walkPosition.x-8;
-          cursorPosition.y = walkPosition.y-8;
+          if (walkerSeen) {
+            cursorPosition.x = walkPosition.x-8;
+            cursorPosition.y = walkPosition.y-8;
+          }
         }
         else if (turnState == AWTurnState::UnitAttack) {
           // Step through the possible targets, one per button press:
@@ -477,23 +466,71 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
           drawPath(selectedUnit, cameraPosition);
 
         // draw relevant cursor helper
-        if (turnState == AWTurnState::UnitSelected || turnState == AWTurnState::UnitWalking) {
+        if ((turnState == AWTurnState::UnitSelected || turnState == AWTurnState::UnitWalking) && walkerSeen) {
 
           // draw the unit on top of the arrow, or where it walks
           drawUnit(walkPosition.x-cameraPosition.x, walkPosition.y-cameraPosition.y, currentPlayer == player1, selectedUnit->unitType, true);
         }
 
-        // Draw the cursor on top
-        sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
+        // Draw the cursor on top. The AI plays without one.
+        if (!aiTurn)
+          sprites.drawPlusMask(cursorPosition.x-cameraPosition.x, cursorPosition.y-cameraPosition.y+1, gameCursorAnimation_plus_mask, (arduboy.frameCount/30)%2); // the y+1 looks more correct
 
         // Draw HUD
-        drawHudForPlayer(currentPlayer);
+        drawHudForPlayer(viewer);
 
         // Draw everything
         arduboy.display();
 
         // no buttons while a unit walks
         if (turnState == AWTurnState::UnitWalking) continue;
+
+        // The AI's turn: no buttons, it plays its units one by one.
+        // Its thinking lives in AWGameAI.cpp. It borrows the screen buffer,
+        // so it runs here, between display() and the next clear().
+        if (aiTurn) {
+          if (turnState == AWTurnState::UnitMoved) {
+            // the unit arrived: attack or capture
+            aiAct(selectedUnit, aiTarget, currentPlayer);
+            updateMapForPlayer(player1);
+            turnState = AWTurnState::Default;
+            if (winner != NoWinner) return;
+            continue;
+          }
+
+          // the next unit that hasn't acted yet
+          selectedUnit = nullptr;
+          for (uint8_t i = 0; i < currentPlayer.units.getCount(); i++) {
+            if (currentPlayer.units[i].activated == GameUnit::UnitStateActive) {
+              selectedUnit = &currentPlayer.units[i];
+              break;
+            }
+          }
+
+          // all units are done: buy new ones and end the turn
+          if (selectedUnit == nullptr) {
+            aiBuyUnits(currentPlayer);
+            return;
+          }
+
+          Point start = {selectedUnit->mapPosX, selectedUnit->mapPosY};
+          Point destination = aiPlanMove(selectedUnit, currentPlayer, aiTarget);
+          if (destination == start) {
+            turnState = AWTurnState::UnitMoved;
+            continue;
+          }
+
+          buildPathTo(selectedUnit, destination);
+          walkSelectedUnit(false);
+
+          // A walk that starts and ends in player 1's fog is not shown.
+          if (mapTileData[start.y*mapSize.x+start.x].showsFog &&
+              mapTileData[destination.y*mapSize.x+destination.x].showsFog) {
+            walkPosition = destination*TILE_SIZE;
+            walkFrame = pathLength*(TILE_SIZE/2);
+          }
+          continue;
+        }
 
         // The unit has walked to its destination: ask what it does there.
         // The menu draws on top of the frame we just showed.
@@ -518,7 +555,8 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
           // Indirect units (range > 1) can't move and attack in the same turn.
           // Only offer the attack when a target is in range.
           if (traits.attackPower > 0 && !(traits.attackRange > 1 && hasMoved)) {
-            markPositionForAttack(unitPosition, traits.attackRange, unitType, currentPlayer);
+            Point unusedTarget;
+            scanTargets(selectedUnit, unitPosition, currentPlayer, unusedTarget, true);
             if (nextMarkedMapPosition({-1, 0}).x >= 0) {
               options[numberOfOptions] = LOCA_attack;
               actions[numberOfOptions++] = ActionAttack;
@@ -680,17 +718,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer){
 
                   // react to the users choice if he buys a unit
                   if(selectedUnit != UnitType::None){
-                    GameUnit newUnit;
-
-                    // init unit: full health, it waits until the next turn
-                    newUnit.unitType = static_cast<uint8_t>(selectedUnit);
-                    newUnit.healthPoints = GameUnit::UnitDefaultHealth;
-                    newUnit.payload = GameUnit::PayloadNone;
-                    newUnit.mapPosX = currentIndex.x;
-                    newUnit.mapPosY = currentIndex.y;
-                    newUnit.activated = GameUnit::UnitStateDisabled;
-
-                    currentPlayer.units.add(newUnit);
+                    addNewUnit(currentPlayer, selectedUnit, currentIndex);
                     updateMapForPlayer(currentPlayer);
                   }
                 }
@@ -846,24 +874,8 @@ UnitType AWGame::showShopForBuildingAndPlayer(MapTileType building, AWPlayer &aP
   const uint8_t textPadding = 8;
 
   // check building type
-  switch (building) {
-    case MapTileType::Factory:{
-      numberOfUnits = NumberOfBuyableUnitsAtFactory;
-      buyableUnits = buyableUnitsAtFactory;
-      break;
-    }
-    case MapTileType::Airport:{
-      numberOfUnits = NumberOfBuyableUnitsAtAirport;
-      buyableUnits = buyableUnitsAtAirPort;
-      break;
-    }
-    case MapTileType::Shipyard:{
-      numberOfUnits = NumberOfBuyableUnitsAtShipyard;
-      buyableUnits = buyableUnitsAtShipyard;
-      break;
-    }
-    default: return UnitType::None;
-  }
+  numberOfUnits = shopListForBuilding(building, buyableUnits);
+  if (numberOfUnits == 0) return UnitType::None;
 
   // game Loop
   while (true) {
@@ -1272,14 +1284,17 @@ uint8_t * AWGame::floodMovement(const GameUnit *aUnit){
   // picture to the screen, and the next frame starts with clear().
   // Only call this between display() and clear().
   // The caller reads the numbers right away. The next clear() wipes them.
-  static_assert(MaxMapWidth*MaxMapHeight <= WIDTH*HEIGHT/8, "map does not fit in the screen buffer");
-  uint8_t *remaining = arduboy.getBuffer();
-  uint16_t mapLength = mapSize.x*mapSize.y;
-  uint16_t startIndex = aUnit->mapPosY*mapSize.x+aUnit->mapPosX;
-  memset(remaining, 0, mapLength);
+  // The AI keeps a second map of numbers in the other half of the buffer.
+  static_assert(2*MaxMapWidth*MaxMapHeight <= WIDTH*HEIGHT/8, "two maps do not fit in the screen buffer");
+  return floodFrom({aUnit->mapPosX, aUnit->mapPosY}, unitType, moveDistance, arduboy.getBuffer());
+}
 
-  if (MapTile::canBeAccessedByUnit(tileTypeAtIndex(startIndex), unitType))
-    remaining[startIndex] = moveDistance;
+uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining){
+  // The start tile always gets the moves, even if this unit type couldn't
+  // stand there: the AI floods outward from enemy positions.
+  uint16_t mapLength = mapSize.x*mapSize.y;
+  memset(remaining, 0, mapLength);
+  remaining[start.y*mapSize.x+start.x] = moves;
 
   bool changed = true;
   while (changed) {
@@ -1423,32 +1438,43 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
   }
 }
 
-void AWGame::markPositionForAttack(Point position, int8_t distance, UnitType unit, AWPlayer &attackingPlayer){
+uint8_t AWGame::scanTargets(const GameUnit *unit, Point position, AWPlayer &attackingPlayer, Point &target, bool markTargets){
+  AWPlayer &enemy = (attackingPlayer == player1) ? player2 : player1;
+  UnitType unitType = static_cast<UnitType>(unit->unitType);
+  int8_t range = UnitTraits::traitsForUnitType(unitType).attackRange;
+  uint8_t bestDamage = 0;
 
-    // check player
-    uint8_t thisPlayer = playerIndex(attackingPlayer);
-    AWPlayer &enemyPlayer = (attackingPlayer == player1) ? player2 : player1;
+  // Walk every tile within the attack range (a diamond around the position)
+  for (int8_t dy = -range; dy <= range; dy++) {
+    int8_t span = range - abs(dy);
+    for (int8_t dx = -span; dx <= span; dx++) {
+      Point tile = {(int16_t)(position.x + dx), (int16_t)(position.y + dy)};
 
-    // Walk every tile within the attack range (a diamond around the unit)
-    for (int8_t dy = -distance; dy <= distance; dy++) {
-      int8_t span = distance - abs(dy);
-      for (int8_t dx = -span; dx <= span; dx++) {
-        int8_t x = position.x + dx;
-        int8_t y = position.y + dy;
+      // check for bounds
+      if (tile.x < 0 || tile.x >= mapSize.x || tile.y < 0 || tile.y >= mapSize.y) continue;
 
-        // check for bounds
-        if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) continue;
+      // only enemies we can see count, for the player and for the AI
+      MapTile &mapTile = mapTileData[tile.y*mapSize.x+tile.x];
+      if (mapTile.showsFog) continue;
 
-        // mark visible enemy units this unit is able to attack
-        MapTile &tile = mapTileData[y*mapSize.x+x];
-        if (tile.showsFog || !tile.hasUnit || tile.unitBelongsTo == thisPlayer) continue;
+      const GameUnit *enemyUnit = enemy.getUnitForMapCoordinates(tile);
+      if (enemyUnit == nullptr) continue;
 
-        const GameUnit *target = enemyPlayer.getUnitForMapCoordinates({x, y});
-        if (target != nullptr && GameUnit::canUnitAttackUnit(unit, static_cast<UnitType>(target->unitType))) {
-          tile.showSelection = 1;
-        }
+      // 0 means this unit can't attack that unit type
+      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileTypeAt(tile.x, tile.y));
+      if (damage == 0) continue;
+
+      if (markTargets) mapTile.showSelection = 1;
+
+      // finishing a unit off is worth more
+      if (damage >= enemyUnit->healthPoints) damage += 5;
+      if (damage > bestDamage) {
+        bestDamage = damage;
+        target = tile;
       }
     }
+  }
+  return bestDamage;
 }
 
 
@@ -1829,4 +1855,32 @@ void AWGame::drawUnit(int16_t x, int16_t y, bool firstPlayer, uint8_t unitType, 
 Point AWGame::cursorForTile(Point tile){
   // the 32x32 cursor is centered on the 16x16 tile
   return {(int16_t)(tile.x*TILE_SIZE-8), (int16_t)(tile.y*TILE_SIZE-8)};
+}
+
+void AWGame::addNewUnit(AWPlayer &owner, UnitType unitType, Point position){
+  // A new unit has full health and waits until the next turn.
+  GameUnit newUnit;
+  newUnit.unitType = static_cast<uint8_t>(unitType);
+  newUnit.healthPoints = GameUnit::UnitDefaultHealth;
+  newUnit.payload = GameUnit::PayloadNone;
+  newUnit.mapPosX = position.x;
+  newUnit.mapPosY = position.y;
+  newUnit.activated = GameUnit::UnitStateDisabled;
+  owner.units.add(newUnit);
+}
+
+uint8_t AWGame::shopListForBuilding(MapTileType building, const UnitType *&buyableUnits){
+  switch (building) {
+    case MapTileType::Factory:
+      buyableUnits = buyableUnitsAtFactory;
+      return NumberOfBuyableUnitsAtFactory;
+    case MapTileType::Airport:
+      buyableUnits = buyableUnitsAtAirPort;
+      return NumberOfBuyableUnitsAtAirport;
+    case MapTileType::Shipyard:
+      buyableUnits = buyableUnitsAtShipyard;
+      return NumberOfBuyableUnitsAtShipyard;
+    default:
+      return 0;
+  }
 }

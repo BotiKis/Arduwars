@@ -25,6 +25,12 @@ char_P LOCA_mapBig[] PROGMEM          = "ARDUWARS";
 char_P LOCA_player1[] PROGMEM        = "PLAYER 1";
 char_P LOCA_player2[] PROGMEM        = "PLAYER 2";
 
+// Single player
+char_P LOCA_yourTurn[] PROGMEM       = "YOUR TURN";
+char_P LOCA_enemyTurn[] PROGMEM      = "ENEMY TURN";
+char_P LOCA_youWin[] PROGMEM         = "YOU WIN";
+char_P LOCA_youLose[] PROGMEM        = "YOU LOSE";
+
 // Game
 char_P LOCA_endTurn[] PROGMEM             = "END TURN";
 char_P LOCA_day[] PROGMEM                 = "DAY:";
