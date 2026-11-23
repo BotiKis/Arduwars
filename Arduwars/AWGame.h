@@ -108,12 +108,13 @@ private:
     // ======================
     // Enemy AI, in AWGameAI.cpp
 
-    // Picks where the unit goes. Returns the tile and puts the enemy it
-    // attacks there in target, {-1,-1} for none.
+    // Picks where the unit goes and builds the path there. Returns the tile
+    // and puts the enemy it attacks there in target, {-1,-1} for none.
     Point aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target);
 
     // The unit has arrived: it attacks target or captures, then waits.
-    void aiAct(GameUnit *unit, Point target, AWPlayer &ai);
+    // After an ambush it only attacks what it sees now.
+    __attribute__((noinline)) void aiAct(GameUnit *unit, Point target, AWPlayer &ai, bool ambushed);
 
     // Buys new units at every free factory, airport and shipyard of the AI.
     void aiBuyUnits(AWPlayer &ai);
@@ -182,6 +183,7 @@ private:
     uint8_t * floodMovement(const GameUnit *aUnit);
 
     // Flood fill from any tile with the given movement into remaining.
+    // Visible units of the side that is not moving block the way.
     uint8_t * floodFrom(Point start, UnitType unitType, int8_t moves, uint8_t *remaining);
 
     // Movement left after leaving a tile of the given type
@@ -189,6 +191,13 @@ private:
 
     // Finds a shortest path for the unit to target and stores it in pathDirections.
     void buildPathTo(const GameUnit *aUnit, Point target);
+
+    // Ambush: if the path runs into a hidden enemy, cuts it to end on the
+    // last free tile before it and returns true.
+    bool cutPathAtAmbush(const GameUnit *aUnit);
+
+    // How many units of the side that is not moving are outside the fog.
+    uint8_t countVisibleEnemies();
 
     // Draws the movement arrow along pathDirections.
     void drawPath(const GameUnit *aUnit, Point camera);
@@ -289,11 +298,26 @@ private:
     // Whose view the screen shows: the current player, or player 1 against the AI.
     AWPlayer *viewingPlayer = &player1;
 
+    // Whose turn it is (BelongsToPlayer1/2). Their units block nobody of
+    // their own side.
+    uint8_t movingSide = MapTile::BelongsToPlayer1;
+
     // Movement path (0 right, 1 up, 2 left, 3 down) from the selected unit to the cursor
     // The longest move is 8 steps: 7 tiles plus 1 when starting on a street.
     static constexpr uint8_t MaxPathLength = 8;
     uint8_t pathDirections[MaxPathLength];
     uint8_t pathLength = 0;
+
+    // The last walk ran into a hidden enemy and stopped before it.
+    // showAmbush stays true until the AMBUSH message was shown.
+    // (Members, not locals of the turn loop: that costs less flash.)
+    bool ambushed = false;
+    bool showAmbush = false;
+
+    // Enemies in sight before the walk. If it uncovers more, or after an
+    // ambush, the menu offers no Cancel.
+    uint8_t enemiesSeen = 0;
+    bool canCancel = true;
 
     // Set when a game is decided. NoWinner while the game is running.
     static constexpr uint8_t NoWinner = 0xFF;

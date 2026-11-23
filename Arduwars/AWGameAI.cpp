@@ -86,7 +86,8 @@ Point AWGame::aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target){
     if (remaining[i] == 0) continue;
     Point tile = {(int16_t)(i % mapSize.x), (int16_t)(i / mapSize.x)};
     bool isStart = (tile == start);
-    if (!isStart && mapTileData[i].hasUnit) continue;
+    // tiles with a unit we can see are taken (a hidden enemy's tile looks free)
+    if (!isStart && mapTileData[i].hasUnit && !mapTileData[i].showsFog) continue;
 
     // get closer to the goal along a real route, prefer cover
     int16_t score = 4*field[i] + mapTileDefenseBonus(tileTypeAtIndex(i));
@@ -114,14 +115,28 @@ Point AWGame::aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target){
     }
   }
 
+  // The path follows the AI's own fog: it may run into a hidden enemy.
+  buildPathTo(unit, best);
+
   // back to player 1's view for the walk
   updateMapForPlayer(player1);
   return best;
 }
 
-void AWGame::aiAct(GameUnit *unit, Point target, AWPlayer &ai){
+void AWGame::aiAct(GameUnit *unit, Point target, AWPlayer &ai, bool ambushed){
   // the unit is done for this turn
   unit->activated = GameUnit::UnitStateDisabled;
+
+  // Ambushed: the plan is off. Attack a unit next to it (direct units
+  // only, it has moved), else just wait. No capture.
+  // The tiles next to a unit are never in its fog, so player 1's view
+  // shows the same neighbours as the AI's own.
+  if (ambushed) {
+    target = {-1, -1};
+    if (UnitTraits::traitsForUnitType(static_cast<UnitType>(unit->unitType)).attackRange == 1)
+      scanTargets(unit, {unit->mapPosX, unit->mapPosY}, ai, target, false);
+    if (target.x < 0) return;
+  }
 
   // Note: the unit may be destroyed by the counterattack,
   // so it must not be used after this call.

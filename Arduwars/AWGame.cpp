@@ -294,6 +294,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
   // Against the AI the screen always shows player 1's view.
   AWPlayer &viewer = aiTurn ? player1 : currentPlayer;
   viewingPlayer = &viewer;
+  movingSide = playerIndex(currentPlayer);
 
   // the enemy the AI unit attacks after its walk, {-1,-1} for none
   Point aiTarget = {-1, -1};
@@ -328,10 +329,19 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
   // This is a lambda function.  Also called anonymous function
   // It only exists inside this one certain method.
   // We do it this way because we will call it on different user interactions.
-  auto walkSelectedUnit = [&](bool backwards) {
+  // Always inlined: as a separate function it costs about 400 bytes of flash.
+  auto walkSelectedUnit = [&](bool backwards) __attribute__((always_inline)) {
 
     // clear the markers
     unmarkUnitOnMap(nullptr);
+
+    // A hidden enemy on the way stops the unit before it.
+    // Count the enemies in sight, to see later if the walk uncovers one.
+    if (!backwards) {
+      ambushed = cutPathAtAmbush(selectedUnit);
+      showAmbush = ambushed;
+      enemiesSeen = countVisibleEnemies();
+    }
 
     // hide the unit on the map, its sprite walks instead
     mapTileData[selectedUnit->mapPosY*mapSize.x+selectedUnit->mapPosX].hasUnit = 0;
@@ -358,6 +368,11 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             selectedUnit->mapPosX = walkPosition.x/TILE_SIZE;
             selectedUnit->mapPosY = walkPosition.y/TILE_SIZE;
             updateMapForPlayer(viewer);
+
+            // No undo after an ambush or when the walk uncovered an enemy.
+            // ponytail: compares counts, so losing sight of one enemy while
+            // uncovering another keeps Cancel. Rare and harmless.
+            canCancel = !ambushed && countVisibleEnemies() <= enemiesSeen;
 
             if (walkBack) {
               selectedUnit = nullptr;
@@ -491,13 +506,21 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
         // no buttons while a unit walks
         if (turnState == AWTurnState::UnitWalking) continue;
 
+        // An ambush shows its message once, when the unit has stopped
+        // and the hidden enemy is in sight.
+        if (turnState == AWTurnState::UnitMoved && showAmbush) {
+          if (walkerSeen) showDialog(LOCA_ambush);
+          showAmbush = false;
+        }
+
         // The AI's turn: no buttons, it plays its units one by one.
         // Its thinking lives in AWGameAI.cpp. It borrows the screen buffer,
         // so it runs here, between display() and the next clear().
         if (aiTurn) {
           if (turnState == AWTurnState::UnitMoved) {
             // the unit arrived: attack or capture
-            aiAct(selectedUnit, aiTarget, currentPlayer);
+            aiAct(selectedUnit, aiTarget, currentPlayer, ambushed);
+            ambushed = false;
             updateMapForPlayer(player1);
             turnState = AWTurnState::Default;
             if (winner != NoWinner) return;
@@ -526,11 +549,13 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             continue;
           }
 
-          buildPathTo(selectedUnit, destination);
+          // aiPlanMove built the path. An ambush may cut it short.
           walkSelectedUnit(false);
 
           // A walk that starts and ends in player 1's fog is not shown.
-          if (mapTileData[start.y*mapSize.x+start.x].showsFog &&
+          // An ambush always is: it ends next to one of player 1's units.
+          if (!ambushed &&
+              mapTileData[start.y*mapSize.x+start.x].showsFog &&
               mapTileData[destination.y*mapSize.x+destination.x].showsFog) {
             walkPosition = destination*TILE_SIZE;
             walkFrame = pathLength*(TILE_SIZE/2);
@@ -569,7 +594,8 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             }
           }
 
-          if (canUnitCaptureAtPosition(selectedUnit, unitPosition, currentPlayer)) {
+          // an ambushed unit can't capture
+          if (!ambushed && canUnitCaptureAtPosition(selectedUnit, unitPosition, currentPlayer)) {
             options[numberOfOptions] = LOCA_capture;
             actions[numberOfOptions++] = ActionCapture;
           }
@@ -577,10 +603,15 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
           options[numberOfOptions] = LOCA_wait;
           actions[numberOfOptions++] = ActionWait;
 
-          options[numberOfOptions] = LOCA_cancel;
-          actions[numberOfOptions++] = ActionCancel;
+          if (canCancel) {
+            options[numberOfOptions] = LOCA_cancel;
+            actions[numberOfOptions++] = ActionCancel;
+          }
 
           int8_t selectedOption = showOptions(options, numberOfOptions);
+
+          // A closes the menu. Without Cancel the menu just opens again.
+          if (selectedOption < 0 && !canCancel) continue;
           uint8_t action = (selectedOption < 0) ? ActionCancel : actions[selectedOption];
 
           // the attack markers stay only when we attack
@@ -1325,6 +1356,12 @@ uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_
         if (nx < 0 || nx >= mapSize.x || ny < 0 || ny >= mapSize.y) continue;
 
         uint16_t neighbour = ny*mapSize.x+nx;
+
+        // Units can pass their own side's units, but enemies block the way.
+        // Enemies hidden in the fog don't: running into one is an ambush.
+        const MapTile &tile = mapTileData[neighbour];
+        if (tile.hasUnit && tile.unitBelongsTo != movingSide && !tile.showsFog) continue;
+
         if (left > remaining[neighbour] && MapTile::canBeAccessedByUnit(tileTypeAtIndex(neighbour), unitType)) {
           remaining[neighbour] = left;
           changed = true;
@@ -1338,10 +1375,12 @@ uint8_t * AWGame::floodFrom(Point start, UnitType unitType, int8_t moves, uint8_
 void AWGame::markUnitOnMap(const GameUnit *aUnit){
   uint8_t *remaining = floodMovement(aUnit);
 
-  // show every reachable tile that has no other unit on it
+  // show every reachable tile with no visible unit on it
+  // (a hidden enemy's tile looks free, the player can't know)
   uint16_t mapLength = mapSize.x*mapSize.y;
   for (uint16_t i = 0; i < mapLength; i++) {
-    if (remaining[i] && !mapTileData[i].hasUnit)
+    const MapTile &tile = mapTileData[i];
+    if (remaining[i] && !(tile.hasUnit && !tile.showsFog))
       mapTileData[i].showSelection = 1;
   }
 
@@ -1385,6 +1424,43 @@ void AWGame::buildPathTo(const GameUnit *aUnit, Point target){
     pathDirections[i] = pathDirections[pathLength-1-i];
     pathDirections[pathLength-1-i] = swap;
   }
+}
+
+bool AWGame::cutPathAtAmbush(const GameUnit *aUnit){
+  uint8_t width = mapSize.x;
+  uint16_t index = aUnit->mapPosY*width+aUnit->mapPosX;
+
+  // steps up to the last tile on the way where no unit stands
+  uint8_t freeSteps = 0;
+
+  for (uint8_t i = 0; i < pathLength; i++) {
+    // one step: right, up, left or down
+    uint8_t direction = pathDirections[i];
+    if (direction == 0) index++;
+    else if (direction == 1) index -= width;
+    else if (direction == 2) index--;
+    else index += width;
+    MapTile tile = mapTileData[index];
+
+    // An enemy on the way. Visible ones block the path, so this one was
+    // hidden. Stop on the last free tile before it.
+    if (tile.hasUnit && tile.unitBelongsTo != movingSide) {
+      pathLength = freeSteps;
+      return true;
+    }
+    if (!tile.hasUnit) freeSteps = i+1;
+  }
+  return false;
+}
+
+uint8_t AWGame::countVisibleEnemies(){
+  uint8_t count = 0;
+  uint16_t mapLength = mapSize.x*mapSize.y;
+  for (uint16_t i = 0; i < mapLength; i++) {
+    const MapTile &tile = mapTileData[i];
+    if (tile.hasUnit && tile.unitBelongsTo != movingSide && !tile.showsFog) count++;
+  }
+  return count;
 }
 
 void AWGame::drawPath(const GameUnit *aUnit, Point camera){
