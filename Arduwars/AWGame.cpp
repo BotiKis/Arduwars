@@ -349,6 +349,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
   // store additional helpers
   GameUnit *selectedUnit = nullptr;
   Point originalUnitPosition = {0, 0};
+  bool wasFortified = false; // fortified before the walk, for Cancel
 
   // calculate mapsize in pixels, needed for camera stuff
   Point mapSizeInPixel = mapSize*TILE_SIZE;
@@ -408,6 +409,14 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             selectedUnit->mapPosX = walkPosition.x/TILE_SIZE;
             selectedUnit->mapPosY = walkPosition.y/TILE_SIZE;
             updateMapForPlayer(viewer);
+
+            // A unit that walks leaves its sandbags. Cancel walks it back
+            // and puts them back.
+            if (walkBack) selectedUnit->fortified = wasFortified;
+            else {
+              wasFortified = selectedUnit->fortified;
+              if (pathLength) selectedUnit->fortified = 0;
+            }
 
             // No undo after an ambush or when the walk uncovered an enemy.
             // ponytail: compares counts, so losing sight of one enemy while
@@ -585,6 +594,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
           Point start = {selectedUnit->mapPosX, selectedUnit->mapPosY};
           Point destination = aiPlanMove(selectedUnit, currentPlayer, aiTarget);
           if (destination == start) {
+            // it stays: with nothing to attack or capture it fortifies
+            if (aiTarget.x < 0 && !canUnitCaptureAtPosition(selectedUnit, start, currentPlayer))
+              selectedUnit->fortified = GameUnit::isLand(static_cast<UnitType>(selectedUnit->unitType));
             turnState = AWTurnState::UnitMoved;
             continue;
           }
@@ -640,7 +652,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             actions[numberOfOptions++] = ActionCapture;
           }
 
-          options[numberOfOptions] = LOCA_wait;
+          // A land unit that stays can fortify instead of wait.
+          bool canFortify = !hasMoved && GameUnit::isLand(unitType);
+          options[numberOfOptions] = canFortify ? LOCA_fortify : LOCA_wait;
           actions[numberOfOptions++] = ActionWait;
 
           if (canCancel) {
@@ -662,8 +676,9 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
             ///////
             // WAIT
             case ActionWait:{
-              // set unit to sleep
+              // set unit to sleep, dug in if it stayed
               selectedUnit->activated = GameUnit::UnitStateDisabled;
+              if (canFortify) selectedUnit->fortified = 1;
               updateMapForPlayer(currentPlayer);
               selectedUnit = nullptr;
 
@@ -1604,7 +1619,7 @@ uint8_t AWGame::scanTargets(const GameUnit *unit, Point position, AWPlayer &atta
       if (enemyUnit == nullptr) continue;
 
       // 0 means this unit can't attack that unit type
-      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileTypeAt(tile.x, tile.y));
+      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileTypeAt(tile.x, tile.y), enemyUnit->fortified);
       if (damage == 0) continue;
 
       if (markTargets) mapTile.showSelection = 1;
@@ -1711,6 +1726,9 @@ void AWGame::drawMapAtPosition(Point pos){
           drawUnit(drawPos.x, drawPos.y, &owner == &player1, unit->unitType, false);
           sprites.drawPlusMask(drawPos.x+10, drawPos.y-2, mapMarkers_plus_mask, 2);
         }
+
+        // a fortified unit stands behind sandbags
+        if (unit->fortified) sprites.drawPlusMask(drawPos.x, drawPos.y+8, sandbags_plus_mask, 0);
 
         // Show remaining health in the bottom right corner once a unit is hurt.
         // Tinyfont does not clip: text near the right or bottom edge writes
@@ -1874,7 +1892,7 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
   bool seen = playEffect(target, attackerPosition, EffectBlink);
   if (seen) flashScreen(3);
 
-  uint8_t damage = GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile);
+  uint8_t damage = GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile, defender->fortified);
 
   if (damage >= defender->healthPoints) {
     // defender destroyed: it flickers, then it's gone
@@ -1893,7 +1911,7 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
 
   if (distance != 1 || attackerTraits.attackRange > 1 || defenderTraits.attackRange > 1) return;
 
-  damage = GameUnit::calculateDamage(defenderType, defender->healthPoints, attackerType, attackerTile);
+  damage = GameUnit::calculateDamage(defenderType, defender->healthPoints, attackerType, attackerTile, attacker->fortified);
   if (damage == 0) return; // defender can't hit this unit type
 
   // the counterattack hits
@@ -2028,6 +2046,7 @@ void AWGame::addNewUnit(AWPlayer &owner, UnitType unitType, Point position){
   newUnit.mapPosX = position.x;
   newUnit.mapPosY = position.y;
   newUnit.activated = GameUnit::UnitStateDisabled;
+  newUnit.fortified = 0;
   owner.units.add(newUnit);
 }
 

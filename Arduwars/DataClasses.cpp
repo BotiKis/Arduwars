@@ -25,7 +25,7 @@ bool GameUnit::canUnitAttackUnit(UnitType attacker, UnitType defender){
   return (lutForAttacker & (0b1000000000000000 >> static_cast<uint16_t>(defender)) );
 }
 
-uint8_t GameUnit::calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile){
+uint8_t GameUnit::calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile, bool defenderFortified){
 
   if (!canUnitAttackUnit(attacker, defender)) return 0;
 
@@ -39,6 +39,7 @@ uint8_t GameUnit::calculateDamage(UnitType attacker, uint8_t attackerHealth, Uni
   // Defense of the unit plus cover. Air units get no cover from terrain.
   uint8_t reduction = defenderTraits.defense;
   if (!isAir(defender)) reduction += mapTileDefenseBonus(defenderTile);
+  if (defenderFortified) reduction += FortifyBonus;
 
   // Every successful attack deals at least 1 damage.
   return (damage > reduction) ? (damage - reduction) : 1;

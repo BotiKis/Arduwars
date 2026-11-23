@@ -166,6 +166,7 @@ public:
   uint8_t mapPosX     :5; // X Position on the map - max 32.
   uint8_t mapPosY     :5; // Y Position on the map - max 32.
   uint8_t activated   :1; // GameUnit::UnitStateDisabled if unit has took its action. Default... GameUnit::UnitStateActive
+  uint8_t fortified   :1; // 1 while the unit is dug in: +FortifyBonus defense until it moves.
 
   // If it's a transport unit we store here the index of the unit in
   // the players Units which is transported.
@@ -197,16 +198,23 @@ public:
   // Default health for units
   static constexpr uint8_t UnitDefaultHealth  = 10;
 
+  // Extra defense of a fortified unit, the same as a hill
+  static constexpr uint8_t FortifyBonus = 2;
+
   // Static method tells if a unit can attack another one.
   static bool canUnitAttackUnit(UnitType attacker, UnitType defender);
 
   // Returns the damage an attacker with the given health deals to a defender
   // standing on the given tile. Always at least 1 if the attack is possible.
-  static uint8_t calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile);
+  static uint8_t calculateDamage(UnitType attacker, uint8_t attackerHealth, UnitType defender, MapTileType defenderTile, bool defenderFortified);
 
   // Unit categories
   static inline bool isInfantry(UnitType unitType){
     return unitType >= UnitType::Soldier && unitType <= UnitType::SpecOps;
+  }
+  // Infantry and vehicles. Only they can fortify.
+  static inline bool isLand(UnitType unitType){
+    return unitType >= UnitType::Soldier && unitType <= UnitType::Missiles;
   }
   static inline bool isAir(UnitType unitType){
     return unitType >= UnitType::Heli && unitType <= UnitType::Bomber;

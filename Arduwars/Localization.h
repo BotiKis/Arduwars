@@ -41,6 +41,7 @@ char_P LOCA_funds[] PROGMEM               = "M:";
 char_P LOCA_Unit_limit_reached[] PROGMEM  = "UNIT LIMIT REACHED";
 char_P LOCA_attack[] PROGMEM              = "ATTACK";
 char_P LOCA_wait[] PROGMEM                = "WAIT";
+char_P LOCA_fortify[] PROGMEM             = "FORTIFY";
 char_P LOCA_cancel[] PROGMEM              = "CANCEL";
 char_P LOCA_load[] PROGMEM                = "LOAD";
 char_P LOCA_loadout[] PROGMEM             = "L. OUT";
