@@ -57,8 +57,8 @@ const UnitType buyableUnitsAtAirPort[] PROGMEM = {
 constexpr static uint8_t NumberOfBuyableUnitsAtAirport = arrayLength(buyableUnitsAtAirPort);
 
 // All units obtainable at a shipyard
+// The Transport ship is left out until carrying units exists.
 const UnitType buyableUnitsAtShipyard[] PROGMEM = {
-  UnitType::Transportship,
   UnitType::Cruiser,
   UnitType::Battleship
 };

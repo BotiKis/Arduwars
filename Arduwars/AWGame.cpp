@@ -185,6 +185,14 @@ void AWGame::startNewGame(AWGameState mode){
   runGame(mode == AWGameState::playSinglePlayer);
 }
 
+// Adds health to a unit, up to its full health.
+// Kept out of line on purpose: two callers, and inlining costs more flash.
+static void __attribute__((noinline)) healUnit(GameUnit &unit, uint8_t amount){
+  uint8_t health = unit.healthPoints + amount;
+  if (health > GameUnit::UnitDefaultHealth) health = GameUnit::UnitDefaultHealth;
+  unit.healthPoints = health;
+}
+
 void AWGame::runGame(bool againstAI){
 
   AWPlayer *currentPlayer = &player1;
@@ -219,13 +227,41 @@ void AWGame::runGame(bool againstAI){
     // capture progress is lost when the capturing unit left or was destroyed
     resetAbandonedCaptures();
 
-    // Calculate Income for every City
+    // Own buildings: every city pays income, and a unit on a building of the
+    // right kind heals 2. Planes heal at an airport, ships at a shipyard,
+    // land units at every other building.
     for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
-      if(gameBuildings[i].buildingType == static_cast<uint8_t>(MapTileType::City) &&
-      gameBuildings[i].isOccupied &&
-      gameBuildings[i].belongsToPlayer == ((*currentPlayer == player1)?MapTile::BelongsToPlayer1:MapTile::BelongsToPlayer2)){
+      GameBuilding &building = gameBuildings[i];
+      if (!building.isOccupied || building.belongsToPlayer != playerIndex(*currentPlayer)) continue;
+
+      MapTileType type = static_cast<MapTileType>(building.buildingType);
+      if (type == MapTileType::City) {
         // money stops at 255, more would wrap around to 0
         currentPlayer->money = min(currentPlayer->money + AWPlayer::BaseIncome, 255);
+      }
+
+      Point position = {building.mapPosX, building.mapPosY};
+      GameUnit *unit = currentPlayer->getUnitForMapCoordinates(position);
+      if (unit == nullptr) continue;
+
+      UnitType unitType = static_cast<UnitType>(unit->unitType);
+      bool rightKind = GameUnit::isAir(unitType)  ? type == MapTileType::Airport :
+                       GameUnit::isShip(unitType) ? type == MapTileType::Shipyard :
+                       type != MapTileType::Airport && type != MapTileType::Shipyard;
+      if (rightKind) healUnit(*unit, 2);
+    }
+
+    // Every own Assist heals each own unit next to it by 1, other Assists too.
+    // A unit next to two Assists heals 2.
+    for (uint8_t a = 0; a < currentPlayer->units.getCount(); a++) {
+      GameUnit &assist = currentPlayer->units[a];
+      if (assist.unitType != static_cast<uint8_t>(UnitType::Assist)) continue;
+
+      for (uint8_t i = 0; i < currentPlayer->units.getCount(); i++) {
+        GameUnit &unit = currentPlayer->units[i];
+        int8_t dx = unit.mapPosX - assist.mapPosX;
+        int8_t dy = unit.mapPosY - assist.mapPosY;
+        if (dx * dx + dy * dy == 1) healUnit(unit, 1);
       }
     }
 
