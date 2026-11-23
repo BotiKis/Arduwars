@@ -688,7 +688,8 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
           }
 
           // A land unit that stays can fortify instead of wait.
-          bool canFortify = !hasMoved && GameUnit::isLand(unitType);
+          // Already fortified: Wait keeps the sandbags.
+          bool canFortify = !hasMoved && GameUnit::isLand(unitType) && !selectedUnit->fortified;
           options[numberOfOptions] = canFortify ? LOCA_fortify : LOCA_wait;
           actions[numberOfOptions++] = ActionWait;
 
