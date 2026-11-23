@@ -240,6 +240,7 @@ private:
     // Resolves an attack of the given unit on the enemy unit at target,
     // including the counterattack. Removes destroyed units and sets winner.
     void attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer);
+    uint8_t rollDamage(uint8_t damage);
 
     // About one second of animation: the cursor blinks on first and second,
     // the unit on first flickers, or it hops. The camera glides there first.

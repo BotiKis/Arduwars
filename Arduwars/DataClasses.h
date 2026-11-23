@@ -25,7 +25,7 @@ enum class UnitType : int8_t {
   BigTank,
   Artillery,
   Rocket,       // Can only shoot Planes and Ships
-  Missiles,
+  Missiles,     // Can not shoot Planes
 
   // Planes
   Heli,
@@ -33,7 +33,7 @@ enum class UnitType : int8_t {
   Bomber,
 
   // Ships    // Can only go over water
-  Cruiser,    // Can only fight Ships
+  Cruiser,    // Can only fight Planes and Ships
   Battleship,
   Transportship, // Can transport Infantry
 
@@ -109,19 +109,21 @@ static inline uint8_t mapTileDefenseBonus(MapTileType mapTileidx){
 // This is a Loockuptable that tells which unit can attack which unit.
 constexpr uint16_t PROGMEM attackLookupTable[16] =
 {
+  // One bit per defender, in UnitType order. Land units are the first 10,
+  // then 3 planes, then 3 ships.
   // Infantry
-  0b1111111111000000,  // Soldier
-  0b1111111111000000, // Mech
-  0b1111111111000000, // SpecOps
+  0b1111111111111111, // Soldier
+  0b1111111111111111, // Mech
+  0b1111111111000111, // SpecOps
 
   // Vehicles
-  0b1111111111000000, // Scout
-  0b0000000000000000, // Assist
-  0b1111111111000000, // Tank
-  0b1111111111000000, // BigTank
-  0b1111111111111111, // Artillery
+  0b1111111111000111, // Scout
+  0b1111111111000111, // Assist
+  0b1111111111000111, // Tank
+  0b1111111111000111, // BigTank
+  0b1111111111000111, // Artillery
   0b0000000000111111, // Rocket
-  0b1111111111111111, // Missiles
+  0b1111111111000111, // Missiles
 
   // Planes
   0b1111111111111111, // Heli
@@ -129,7 +131,7 @@ constexpr uint16_t PROGMEM attackLookupTable[16] =
   0b1111111111111111, // Bomber
 
   // Ships
-  0b0000000000000111, // Cruiser
+  0b0000000000111111, // Cruiser
   0b1111111111111111, // Battleship
   0b0000000000000000, // Transportship
 };
@@ -227,39 +229,41 @@ public:
 class UnitTraits{
 public:
   uint8_t moveDistance:3; // Unit can move in a radius of max 7 tiles.
-  uint8_t attackPower :5; // Unit have max 31 attackPower.
+  uint8_t attackPower :4; // Damage to a full health Soldier on plains. Max 15.
   uint8_t attackRange :3; // Unit can attack in a radius of max 7 tiles.
-  uint8_t defense     :5; // Unit have max 31 defense.
+  uint8_t defense     :3; // Subtracted from every hit it takes. Max 7.
+  uint8_t viewDistance:3; // Unit sees max 7 tiles far.
   // 2 Bytes in total.
 
   // Function returns the traits for a certain unit type
   static UnitTraits traitsForUnitType(UnitType unitType);
 };
 
+// move, attack, range, defense, view
 constexpr UnitTraits PROGMEM allUnitTraits[16] = {
   // Infantry
-  {3,1,1,0},  // Soldier
-  {2,3,1,0}, // Mech
-  {5,3,1,0}, // SpecOps
+  {3, 3,1,0,2}, // Soldier
+  {2, 6,1,0,1}, // Mech
+  {5, 6,1,0,3}, // SpecOps
 
   // Vehicles
-  {6,3,1,1}, // Scout
-  {7,0,0,1}, // Assist
-  {4,5,1,2}, // Tank
-  {2,7,1,3}, // BigTank
-  {3,4,5,1}, // Artillery
-  {3,5,4,1}, // Rocket
-  {4,6,6,0}, // Missiles
+  {6, 5,1,1,4}, // Scout
+  {7, 2,1,1,2}, // Assist
+  {4, 7,1,2,2}, // Tank
+  {2,11,1,3,2}, // BigTank
+  {3, 6,3,1,2}, // Artillery
+  {3, 9,4,1,2}, // Rocket
+  {4, 8,4,0,2}, // Missiles
 
   // Planes
-  {5,3,1,1}, // Heli
-  {7,4,1,2}, // Fighter
-  {3,7,1,3}, // Bomber
+  {5, 6,1,1,4}, // Heli
+  {7, 9,1,2,5}, // Fighter
+  {3,11,1,3,3}, // Bomber
 
   // Ships
-  {4,3,1,1}, // Cruiser
-  {5,5,4,3}, // Battleship
-  {7,0,0,1}, // Transportship
+  {4, 8,1,1,4}, // Cruiser
+  {5, 9,4,3,4}, // Battleship
+  {7, 0,0,1,3}, // Transportship
 };
 
 // ====================================================
@@ -283,7 +287,7 @@ public:
   // No constructor on purpose (see GameUnit). Buildings are set up in AWGame::loadMap.
 
   // attribute is the global viewdistance for all buildings
-  static constexpr uint8_t buildingViewDistance = 3;
+  static constexpr uint8_t buildingViewDistance = 2;
 
   // healthPoints doubles as capture points: infantry reduce it by their own
   // health each turn and take the building when it reaches 0.

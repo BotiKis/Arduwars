@@ -11,7 +11,8 @@
 // The AI is simple and greedy. Every unit looks at all tiles it can reach
 // this turn and picks the one with the best score: attacking for the most
 // damage, capturing, or getting closer to its goal. Then the AI buys units
-// at every free factory, airport and shipyard it owns.
+// at every free factory, airport and shipyard it owns: units that can fight
+// on land, or that can hit an enemy unit it sees (anti-air against planes).
 //
 // The AI plays fair: it only knows about the enemy units its own units can
 // see. When it sees none, it marches on the enemy HQ.
@@ -147,6 +148,18 @@ void AWGame::aiAct(GameUnit *unit, Point target, AWPlayer &ai, bool ambushed){
 }
 
 void AWGame::aiBuyUnits(AWPlayer &ai){
+  AWPlayer &enemy = (ai == player1) ? player2 : player1;
+
+  // Unit types worth fighting, one bit each as in attackLookupTable:
+  // the Soldier (stands for "can fight on land") and every enemy unit
+  // we see in our own fog.
+  updateMapForPlayer(ai);
+  uint16_t targets = 0x8000;
+  for (uint8_t e = 0; e < enemy.units.getCount(); e++) {
+    GameUnit &enemyUnit = enemy.units[e];
+    if (!tileAt(enemyUnit.mapPosX, enemyUnit.mapPosY).showsFog)
+      targets |= 0x8000 >> enemyUnit.unitType;
+  }
 
   // Count infantry: keep at least 3 around for capturing
   uint8_t infantry = 0;
@@ -164,13 +177,16 @@ void AWGame::aiBuyUnits(AWPlayer &ai){
     const UnitType *buyableUnits = nullptr;
     uint8_t numberOfUnits = shopListForBuilding(static_cast<MapTileType>(building.buildingType), buyableUnits);
 
-    // the cheapest unit if we need infantry, else the most expensive one that can fight
+    // the cheapest unit if we need infantry, else the most expensive useful one
     UnitType choice = UnitType::None;
     uint8_t choicePrice = 0;
     for (uint8_t u = 0; u < numberOfUnits; u++) {
       UnitType candidate = static_cast<UnitType>(pgm_read_byte(buyableUnits+u));
       uint8_t price = GameUnit::costsOfUnit(candidate);
-      if (price > ai.money || UnitTraits::traitsForUnitType(candidate).attackPower == 0) continue;
+      if (price > ai.money) continue;
+
+      // worth buying if it can hit one of those types
+      if (!(pgm_read_word(attackLookupTable + static_cast<uint8_t>(candidate)) & targets)) continue;
       if (choice == UnitType::None || (infantry >= 3 && price > choicePrice)) {
         choice = candidate;
         choicePrice = price;

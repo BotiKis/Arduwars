@@ -32,9 +32,9 @@ uint8_t GameUnit::calculateDamage(UnitType attacker, uint8_t attackerHealth, Uni
   UnitTraits attackerTraits = UnitTraits::traitsForUnitType(attacker);
   UnitTraits defenderTraits = UnitTraits::traitsForUnitType(defender);
 
-  // Raw damage is twice the attack power, scaled by the attackers health
+  // Raw damage is the attack power, scaled by the attackers health
   // (rounded up so a hurt unit still hits).
-  uint8_t damage = (attackerTraits.attackPower*2*attackerHealth + UnitDefaultHealth-1) / UnitDefaultHealth;
+  uint8_t damage = (attackerTraits.attackPower*attackerHealth + UnitDefaultHealth-1) / UnitDefaultHealth;
 
   // Defense of the unit plus cover. Air units get no cover from terrain.
   uint8_t reduction = defenderTraits.defense;

@@ -1299,8 +1299,10 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
       // undo fog for units
       UnitType unitType = static_cast<UnitType>(unit.unitType);
       UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
-      uint8_t sightRadius = traits.moveDistance;
-      if (tileTypeAt(unit.mapPosX, unit.mapPosY) == MapTileType::Mountain)
+      // a unit on a mountain or a building sees 1 farther
+      uint8_t sightRadius = traits.viewDistance;
+      MapTileType standsOn = tileTypeAt(unit.mapPosX, unit.mapPosY);
+      if (standsOn == MapTileType::Mountain || mapTileIndexIsBuilding(standsOn))
         sightRadius +=1;
       removeFogAtPositionRadiusAndPlayer({unit.mapPosX,unit.mapPosY}, sightRadius, aPlayer);
     }
@@ -1875,6 +1877,15 @@ void AWGame::castRayTo(Point origin, bool seeThrough, AWPlayer &aPlayer, int8_t 
 // ====================================================
 // Combat and capturing
 
+// A real hit varies a little: 1 less (1 in 4), as planned (2 in 4) or
+// 1 more (1 in 4). Never below 1. Previews and the AI plan with the middle.
+uint8_t AWGame::rollDamage(uint8_t damage){
+  uint8_t roll = nextRandom() >> 6; // 0 to 3
+  if (roll == 0 && damage > 1) damage--;
+  if (roll == 3) damage++;
+  return damage;
+}
+
 void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &attackingPlayer){
 
   AWPlayer &defendingPlayer = (attackingPlayer == player1) ? player2 : player1;
@@ -1892,7 +1903,7 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
   bool seen = playEffect(target, attackerPosition, EffectBlink);
   if (seen) flashScreen(3);
 
-  uint8_t damage = GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile, defender->fortified);
+  uint8_t damage = rollDamage(GameUnit::calculateDamage(attackerType, attacker->healthPoints, defenderType, defenderTile, defender->fortified));
 
   if (damage >= defender->healthPoints) {
     // defender destroyed: it flickers, then it's gone
@@ -1913,6 +1924,7 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
 
   damage = GameUnit::calculateDamage(defenderType, defender->healthPoints, attackerType, attackerTile, attacker->fortified);
   if (damage == 0) return; // defender can't hit this unit type
+  damage = rollDamage(damage);
 
   // the counterattack hits
   if (seen) flashScreen(2);
