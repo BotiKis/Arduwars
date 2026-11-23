@@ -165,6 +165,7 @@ void AWGame::startNewGame(AWGameState mode){
   // reset day count and result
   daysPlayed = 0;
   winner = NoWinner;
+  unitsDestroyed[0] = unitsDestroyed[1] = 0;
 
   // reset players
   player1.reset();
@@ -303,15 +304,15 @@ void AWGame::runGame(bool againstAI){
     if (winner != NoWinner) {
       playEndTune(!againstAI || winner == MapTile::BelongsToPlayer1);
       if (againstAI)
-        showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_youWin : LOCA_youLose);
+        showResults((winner == MapTile::BelongsToPlayer1) ? LOCA_youWin : LOCA_youLose, againstAI);
       else
-        showDialog((winner == MapTile::BelongsToPlayer1) ? LOCA_player1Wins : LOCA_player2Wins);
+        showResults((winner == MapTile::BelongsToPlayer1) ? LOCA_player1Wins : LOCA_player2Wins, againstAI);
       return;
     }
 
     // after 255 days the game ends in a draw
     if (daysPlayed == 255 && *currentPlayer == player2) {
-      showDialog(LOCA_draw);
+      showResults(LOCA_draw, againstAI);
       return;
     }
 
@@ -868,6 +869,49 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
 
 void AWGame::showDialog(char_P *titleText){
   showBox(&titleText, 1, true);
+}
+
+void AWGame::showResults(char_P *titleText, bool againstAI){
+  // box over the last map view, drawn once
+  fillBox(8, 8, 112, 55, 3, BLACK);
+  fillBox(9, 9, 110, 52, 3, WHITE);
+
+  // result centered on top, letters are 5 pixels apart
+  printAt(64 - strlen_P(titleText)*5/2, 13, titleText);
+
+  // column per side
+  printAt(64, 23, againstAI ? LOCA_you : LOCA_p1);
+  printAt(92, 23, againstAI ? LOCA_enemy : LOCA_p2);
+
+  // days are shared, the same number as in the top bar
+  printAt(13, 31, LOCA_days);
+  printNumber(64, 31, daysPlayed);
+  printAt(13, 38, LOCA_destroyed);
+  printAt(13, 45, LOCA_buildings);
+  printAt(13, 52, LOCA_money);
+
+  for (uint8_t side = 0; side < 2; side++) {
+    uint8_t held = 0;
+    for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+      if (gameBuildings[i].isOccupied && gameBuildings[i].belongsToPlayer == side) held++;
+    }
+    uint8_t x = 64 + 28*side;
+    printNumber(x, 38, unitsDestroyed[side]);
+    printNumber(x, 45, held);
+
+    // money counts in hundreds and moves in whole thousands: 40 is 4K
+    // ponytail: the cap 255 shows as 25K, prices and income are multiples of 10
+    printNumber(x, 52, (side ? player2.money : player1.money)/10);
+    printChar('K');
+  }
+  arduboy.display();
+
+  // B goes back to the title
+  while (true) {
+    if (!arduboy.nextFrame()) continue;
+    arduboy.pollButtons();
+    if (arduboy.justPressed(B_BUTTON)) { playSound(SoundConfirm); return; }
+  }
 }
 
 int8_t AWGame::showOptions(char_P *options[], uint8_t count){
@@ -1836,6 +1880,7 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
     // defender destroyed: it flickers, then it's gone
     playEffect(target, target, EffectFlicker);
     defendingPlayer.units.removeAt(defender - defendingPlayer.units.getData());
+    unitsDestroyed[playerIndex(attackingPlayer)]++;
     if (defendingPlayer.units.isEmpty()) winner = playerIndex(attackingPlayer);
     return;
   }
@@ -1858,6 +1903,7 @@ void AWGame::attackUnitAtPosition(GameUnit *attacker, Point target, AWPlayer &at
     // attacker destroyed by the counterattack
     playEffect(attackerPosition, attackerPosition, EffectFlicker);
     attackingPlayer.units.removeAt(attacker - attackingPlayer.units.getData());
+    unitsDestroyed[playerIndex(defendingPlayer)]++;
     if (attackingPlayer.units.isEmpty()) winner = playerIndex(defendingPlayer);
     return;
   }

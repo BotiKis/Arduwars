@@ -138,6 +138,10 @@ private:
     // closes if B is pressed
     void showDialog(char_P *titleText);
 
+    // Shows the end of a match over the map: the result as title, then
+    // days, units destroyed, buildings held and money per side. B closes it.
+    void showResults(char_P *titleText, bool againstAI);
+
     // Shows a option dialog with the titles at the top right of the screen.
     // Used as contextmenu in-game
     // Returns the index of the selected option.
@@ -294,6 +298,10 @@ private:
     // A day passes if both players has ended their rounds.
     // The game ends with a draw when it reaches 255 days.
     uint8_t daysPlayed;
+
+    // Enemy units each side destroyed in this match, for the results.
+    // Index is BelongsToPlayer1/2.
+    uint8_t unitsDestroyed[2];
 
     // Where the screen looks at the map, in map pixels.
     Point cameraPosition = {0, 0};

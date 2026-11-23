@@ -51,6 +51,16 @@ char_P LOCA_player1Wins[] PROGMEM         = "PLAYER 1 WINS";
 char_P LOCA_player2Wins[] PROGMEM         = "PLAYER 2 WINS";
 char_P LOCA_draw[] PROGMEM                = "DRAW";
 
+// Results
+char_P LOCA_you[] PROGMEM                 = "YOU";
+char_P LOCA_enemy[] PROGMEM               = "ENEMY";
+char_P LOCA_p1[] PROGMEM                  = "P1";
+char_P LOCA_p2[] PROGMEM                  = "P2";
+char_P LOCA_days[] PROGMEM                = "DAYS";
+char_P LOCA_destroyed[] PROGMEM           = "DESTROYED";
+char_P LOCA_buildings[] PROGMEM           = "BUILDINGS";
+char_P LOCA_money[] PROGMEM               = "MONEY";
+
 // Unit Traits
 char_P LOCA_Trait_attack[] PROGMEM   = "ATK";
 char_P LOCA_Trait_defense[] PROGMEM  = "DEF";
