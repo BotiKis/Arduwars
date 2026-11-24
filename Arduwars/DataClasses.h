@@ -291,7 +291,12 @@ public:
 
   // healthPoints doubles as capture points: infantry reduce it by their own
   // health each turn and take the building when it reaches 0.
+  // The HQ holds out longer.
   static constexpr uint8_t CapturePoints = 15;
+  static constexpr uint8_t HQCapturePoints = 20;
+  static inline uint8_t capturePointsFor(uint8_t buildingType){
+    return (buildingType == static_cast<uint8_t>(MapTileType::P1HQ) || buildingType == static_cast<uint8_t>(MapTileType::P2HQ)) ? HQCapturePoints : CapturePoints;
+  }
 };
 
 

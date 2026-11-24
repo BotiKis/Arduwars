@@ -16,6 +16,9 @@
 //
 // The AI plays fair: it only knows about the enemy units its own units can
 // see. When it sees none, it marches on the enemy HQ.
+//
+// It defends its buildings: an enemy unit standing on one is its first
+// target, on the HQ most of all, and units up to 2 turns away come back.
 
 uint8_t AWGame::nextRandom(){
   // Multiply by 5, add 1. This visits all 256 numbers in a fixed shuffled
@@ -27,7 +30,8 @@ uint8_t AWGame::nextRandom(){
 Point AWGame::aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target){
   AWPlayer &enemy = (ai == player1) ? player2 : player1;
   UnitType unitType = static_cast<UnitType>(unit->unitType);
-  bool indirect = UnitTraits::traitsForUnitType(unitType).attackRange > 1;
+  UnitTraits traits = UnitTraits::traitsForUnitType(unitType);
+  bool indirect = traits.attackRange > 1;
   Point start = {unit->mapPosX, unit->mapPosY};
 
   // While the AI thinks, the map holds the AI's own fog.
@@ -48,11 +52,16 @@ Point AWGame::aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target){
   uint8_t candidates = enemy.units.getCount() + gameBuildings.getCount();
   for (uint8_t i = 0; i < candidates; i++) {
     Point position;
+    uint8_t boost = 0;
     if (i < enemy.units.getCount()) {
       position = {enemy.units[i].mapPosX, enemy.units[i].mapPosY};
 
       // units hidden in our fog don't count
-      if (tileAt(position.x, position.y).showsFog) continue;
+      MapTile &tile = tileAt(position.x, position.y);
+      if (tile.showsFog) continue;
+
+      // a unit on our building calls back everyone within 2 turns
+      if (tile.buildingIsOccupied && tile.buildingBelongsTo == MapTile::BelongsToPlayer) boost = 128;
     }
     else {
       GameBuilding &building = gameBuildings[i - enemy.units.getCount()];
@@ -67,8 +76,10 @@ Point AWGame::aiPlanMove(GameUnit *unit, AWPlayer &ai, Point &target){
       int8_t x = position.x + (direction == 0) - (direction == 2);
       int8_t y = position.y + (direction == 3) - (direction == 1);
       if (x < 0 || x >= mapSize.x || y < 0 || y >= mapSize.y) continue;
-      if (field[y*mapSize.x+x] > goalCloseness) {
-        goalCloseness = field[y*mapSize.x+x];
+      uint8_t closeness = field[y*mapSize.x+x];
+      if (closeness > FarAway - 2*traits.moveDistance) closeness += boost;
+      if (closeness > goalCloseness) {
+        goalCloseness = closeness;
         goal = position;
       }
     }
@@ -171,7 +182,7 @@ void AWGame::aiBuyUnits(AWPlayer &ai){
     GameBuilding &building = gameBuildings[k];
     Point position = {building.mapPosX, building.mapPosY};
     if (!building.isOccupied || building.belongsToPlayer != playerIndex(ai)) continue;
-    if (player1.getUnitForMapCoordinates(position) || player2.getUnitForMapCoordinates(position)) continue;
+    if (tileAt(position.x, position.y).hasUnit) continue;
     if (ai.units.isFull()) break;
 
     const UnitType *buyableUnits = nullptr;

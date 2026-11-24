@@ -1261,7 +1261,7 @@ void AWGame::loadMap(const unsigned char *newMapData){
       GameBuilding building;
 
       // set upd building
-      building.healthPoints = GameBuilding::CapturePoints;
+      building.healthPoints = GameBuilding::capturePointsFor(static_cast<uint8_t>(tileType));
       building.mapPosX = currentIndex.x;
       building.mapPosY = currentIndex.y;
       building.isOccupied = 0;
@@ -1353,15 +1353,9 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
     MapTile tile = tileAt(building.mapPosX, building.mapPosY);
 
     // check if building belongs to current player
-    if (building.isOccupied) {
-      tile.buildingIsOccupied = 1;
-      tile.buildingBelongsTo = (building.belongsToPlayer == thisPlayer)?MapTile::BelongsToPlayer:MapTile::BelongsToEnemy;
-    }
-    else{
-      // not occupied
-      tile.buildingIsOccupied = 0;
-      tile.buildingBelongsTo = 0;
-    }
+    // the owner only counts when the building is occupied
+    tile.buildingIsOccupied = building.isOccupied;
+    tile.buildingBelongsTo = (building.belongsToPlayer == thisPlayer)?MapTile::BelongsToPlayer:MapTile::BelongsToEnemy;
 
     // udpate maptile
     tileAt(building.mapPosX, building.mapPosY) = tile;
@@ -1376,25 +1370,13 @@ void AWGame::updateMapForPlayer(AWPlayer &aPlayer){
 
 void AWGame::clearMap(bool withFog){
   // go trough the whole map
-  for (int8_t y = 0; y < mapSize.y; y++) {
-    for (int8_t x = 0; x < mapSize.x; x++) {
+  for (uint16_t i = 0; i < mapSize.x*mapSize.y; i++) {
+    MapTile &tile = mapTileData[i];
 
-        // get the tile
-        MapTile tile = tileAt(x, y);
-
-        // turn fog on
-        tile.showsFog = withFog?1:0;
-
-        // disable selection
-        tile.showSelection = 0;
-
-        // remove unit info
-        tile.hasUnit = 0;
-        tile.unitBelongsTo = 0;
-
-        // update tile
-         tileAt(x, y) = tile;
-    }
+    // turn fog on, disable selection, remove unit info
+    tile.showsFog = withFog;
+    tile.showSelection = 0;
+    tile.hasUnit = 0;
   }
 }
 
@@ -1626,12 +1608,8 @@ void AWGame::unmarkUnitOnMap(const GameUnit *aUnit){
   }
 
   // go trough the whole map and remove selection
-  for (int8_t y = 0; y < mapSize.y; y++) {
-    for (int8_t x = 0; x < mapSize.x; x++) {
-        // get the tile
-        tileAt(x, y).showSelection = 0;
-    }
-  }
+  for (uint16_t i = 0; i < mapSize.x*mapSize.y; i++)
+    mapTileData[i].showSelection = 0;
 }
 
 uint8_t AWGame::scanTargets(const GameUnit *unit, Point position, AWPlayer &attackingPlayer, Point &target, bool markTargets){
@@ -1657,13 +1635,17 @@ uint8_t AWGame::scanTargets(const GameUnit *unit, Point position, AWPlayer &atta
       if (enemyUnit == nullptr) continue;
 
       // 0 means this unit can't attack that unit type
-      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileTypeAt(tile.x, tile.y), enemyUnit->fortified);
+      MapTileType tileType = tileTypeAt(tile.x, tile.y);
+      uint8_t damage = GameUnit::calculateDamage(unitType, unit->healthPoints, static_cast<UnitType>(enemyUnit->unitType), tileType, enemyUnit->fortified);
       if (damage == 0) continue;
 
       if (markTargets) mapTile.showSelection = 1;
 
       // finishing a unit off is worth more
       if (damage >= enemyUnit->healthPoints) damage += 5;
+      // a unit on one of our buildings goes first
+      if (mapTile.buildingIsOccupied && mapTile.buildingBelongsTo == MapTile::BelongsToPlayer)
+        damage += (tileType == MapTileType::P1HQ || tileType == MapTileType::P2HQ) ? 40 : 20;
       if (damage > bestDamage) {
         bestDamage = damage;
         target = tile;
@@ -2020,12 +2002,12 @@ void AWGame::captureBuildingWithUnit(const GameUnit *unit, AWPlayer &capturingPl
 void AWGame::resetAbandonedCaptures(){
   for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
     GameBuilding &building = gameBuildings[i];
-    if (building.healthPoints >= GameBuilding::CapturePoints) continue;
 
+    // a building with nobody on it is back to full
     Point position = {building.mapPosX, building.mapPosY};
     if (player1.getUnitForMapCoordinates(position) == nullptr &&
         player2.getUnitForMapCoordinates(position) == nullptr) {
-      building.healthPoints = GameBuilding::CapturePoints;
+      building.healthPoints = GameBuilding::capturePointsFor(building.buildingType);
     }
   }
 }

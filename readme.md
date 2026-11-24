@@ -96,7 +96,7 @@ Damage depends on the attacker's attack and health, and on the defender's defens
 * Not every unit can hit every target. See the units table below.
 
 ### Capturing
-Only infantry can capture. Every building has 15 capture points. Each CAPTURE takes away as many points as the unit has health. A healthy soldier needs 2 turns, a hurt one needs more. If the building is left empty before it is taken, the points go back to 15. Capture the enemy HQ and you win at once.
+Only infantry can capture. Every building has 15 capture points, an HQ has 20. Each CAPTURE takes away as many points as the unit has health. A healthy soldier needs 2 turns, a hurt one needs more. If the building is left empty before it is taken, the points go back to full. Capture the enemy HQ and you win at once.
 
 ### Money and the shop
 Every city you own pays **2000** at the start of your turn. Put the cursor on your own factory, airport or shipyard with no unit on it and press B to open the shop. An **x** marks units you can not afford yet. A new unit can act from your next turn. Each army can have up to 24 units.
@@ -190,17 +190,19 @@ You need:
 * The small container library in `Arduwars/lib/SimpleArduinoUtilitiesAlpha2`. Copy that folder into your Arduino `libraries` folder.
 
 ### Compiler settings
-Arduwars needs two settings of the compiler to fit on the Arduboy. They change how the program is packed, not what it does, and make it about 1,150 bytes smaller.
+Arduwars needs nine settings of the compiler to fit on the Arduboy. They change how the program is packed, not what it does, and make it about 1,900 bytes smaller.
 * `-mcall-prologues`: every function saves the chip's registers at its start and restores them at its end. This setting keeps one shared copy of that code instead of one in every function.
 * `-mrelax`: uses the short form of jumps and calls wherever the target is close enough.
+* `-mstrict-X`: uses one of the chip's address registers in a way that needs fewer instructions.
+* `-fno-move-loop-invariants`, `-fno-tree-loop-optimize`, `-fno-tree-ter`, `-fno-tree-dominator-opts`, `-fno-tree-coalesce-vars`, `-fno-tree-ccp`: turn off speed tricks of the compiler that cost space. Arduwars stays as fast as before.
 
 **arduino-cli**
 ```
 arduino-cli compile --fqbn arduino:avr:leonardo \
   --library Arduwars/lib/SimpleArduinoUtilitiesAlpha2 \
-  --build-property "compiler.c.extra_flags=-mcall-prologues -mrelax" \
-  --build-property "compiler.cpp.extra_flags=-mcall-prologues -mrelax" \
-  --build-property "compiler.c.elf.extra_flags=-mcall-prologues -mrelax" \
+  --build-property "compiler.c.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp" \
+  --build-property "compiler.cpp.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp" \
+  --build-property "compiler.c.elf.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp" \
   Arduwars
 ```
 
@@ -213,13 +215,13 @@ The IDE has no per-sketch compiler settings. Create a file `platform.local.txt` 
 
 with these three lines:
 ```
-compiler.c.extra_flags=-mcall-prologues -mrelax
-compiler.cpp.extra_flags=-mcall-prologues -mrelax
-compiler.c.elf.extra_flags=-mcall-prologues -mrelax
+compiler.c.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp
+compiler.cpp.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp
+compiler.c.elf.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp
 ```
 It must be plain text named exactly `platform.local.txt` (in TextEdit: Format > Make Plain Text). On macOS the `Library` folder is hidden: in Finder use Go > Go to Folder and paste the path. Or create the file from Terminal:
 ```
-printf 'compiler.c.extra_flags=-mcall-prologues -mrelax\ncompiler.cpp.extra_flags=-mcall-prologues -mrelax\ncompiler.c.elf.extra_flags=-mcall-prologues -mrelax\n' > ~/Library/Arduino15/packages/arduino/hardware/avr/1.8.8/platform.local.txt
+printf 'compiler.c.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp\ncompiler.cpp.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp\ncompiler.c.elf.extra_flags=-mcall-prologues -mrelax -mstrict-X -fno-move-loop-invariants -fno-tree-loop-optimize -fno-tree-ter -fno-tree-dominator-opts -fno-tree-coalesce-vars -fno-tree-ccp\n' > ~/Library/Arduino15/packages/arduino/hardware/avr/1.8.8/platform.local.txt
 ```
 
 Then restart the IDE. The file applies to every sketch you build for Arduino AVR boards. Delete it to go back.
@@ -229,7 +231,7 @@ The IDE reuses files it compiled before and does not notice changed settings. Af
 * Windows: `%LOCALAPPDATA%\arduino\`
 * Linux: `~/.cache/arduino/`
 
-With the settings the game uses 28,662 of 28,672 bytes. Without them it is about 1,150 bytes too big.
+With the settings the game uses 27,896 of 28,672 bytes. Without them it is about 1,150 bytes too big.
 
 ### Uploading
 Hold **DOWN** while you switch the Arduboy on, then start the upload. See [Hold DOWN to upload](#hold-down-to-upload).
