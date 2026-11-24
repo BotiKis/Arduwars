@@ -151,10 +151,18 @@ private:
     // Used as contextmenu in-game
     // Returns the index of the selected option.
     // Returns -1 if cancelled with A_BUTTON.
-    int8_t showOptions(char_P *options[], uint8_t count);
+    // A number above 0 is printed in front of the first option.
+    int8_t showOptions(char_P *options[], uint8_t count, uint8_t number = 0);
 
     // Shared drawing and input for dialogs and option lists
-    int8_t showBox(char_P * const options[], uint8_t count, bool isDialog);
+    int8_t showBox(char_P * const options[], uint8_t count, bool isDialog, uint8_t number = 0);
+
+    // How many of the player's units can still act this turn
+    __attribute__((noinline)) uint8_t countReadyUnits(AWPlayer &aPlayer);
+    // The first of the player's units that can still act, nullptr for none
+    __attribute__((noinline)) GameUnit *firstReadyUnit(AWPlayer &aPlayer);
+    // The capture points bar on a building, if a capture is under way
+    void drawCaptureBar(Point drawPos, const GameBuilding &building);
 
     // shows the shop UI for the given Building.
     // Will isntantly return UnitType::None if the building
@@ -240,7 +248,7 @@ private:
     // Helper method to get a Pointer to the Gamebuilding for a certain location on the map
     // The parameter position is in map coordinates.
     // returns nullptr if there is no building at the Location
-    GameBuilding * getBuildingAtCoordinate(Point coordinate);
+    __attribute__((noinline)) GameBuilding * getBuildingAtCoordinate(Point coordinate);
 
     // Resolves an attack of the given unit on the enemy unit at target,
     // including the counterattack. Removes destroyed units and sets winner.
@@ -366,6 +374,8 @@ private:
 
     // Prints a number with its top left corner at x, y
     void printNumber(int16_t x, int16_t y, uint16_t number);
+    // prints a number at printX, printY as at least 2 digits
+    void printTwoDigits(uint8_t number);
 
     // The map tile at x, y (in tiles)
     __attribute__((noinline)) MapTile &tileAt(int16_t x, int16_t y);

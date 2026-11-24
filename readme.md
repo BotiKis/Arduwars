@@ -55,13 +55,14 @@ In **1 PLAYER** you lead player 1 against the computer. In **2 PLAYER** each pla
 ![Title](Assets/ReadmeAssets/screen-title.png "Title")
 
 ### The screen
-The top bar shows the player, the day (it starts at DAY:0) and your money after **M:**.
+The top bar shows the player (P1 or P2), the day (it starts at DAY:0), how many of your units can still act this turn out of all your units (01/04) and your money after **M:**.
 
 Symbol | Meaning
 --|--
 ![marker][marker-captured] | This building is yours.
 ![marker][marker-enemy] | This building belongs to the enemy.
 ![marker][marker-disabled] | This unit has already acted this turn. Ready units bob up and down.
+![bar][marker-capture] | A capture is under way on this building. The black part is the capture points left.
 
 * A number in a small box at the bottom right of a unit is its health. Full health is 10 and shows no number.
 * Sandbags around a unit mean it is fortified.
@@ -96,7 +97,7 @@ Damage depends on the attacker's attack and health, and on the defender's defens
 * Not every unit can hit every target. See the units table below.
 
 ### Capturing
-Only infantry can capture. Every building has 15 capture points, an HQ has 20. Each CAPTURE takes away as many points as the unit has health. A healthy soldier needs 2 turns, a hurt one needs more. If the building is left empty before it is taken, the points go back to full. Capture the enemy HQ and you win at once.
+Only infantry can capture. Every building has 15 capture points, an HQ has 20. Each CAPTURE takes away as many points as the unit has health. A healthy soldier needs 2 turns, a hurt one needs more. A bar at the bottom of the building shows the points left. If the building is left empty before it is taken, the points go back to full. Capture the enemy HQ and you win at once.
 
 ### Money and the shop
 Every city you own pays **2000** at the start of your turn. Put the cursor on your own factory, airport or shipyard with no unit on it and press B to open the shop. An **x** marks units you can not afford yet. A new unit can act from your next turn. Each army can have up to 24 units.
@@ -112,7 +113,7 @@ At the start of your turn:
 Every unit sees a few tiles around it. On a mountain or a building it sees 1 farther. Hills and mountains block the view behind them, and so do enemy units. Thick forest hides what is behind it. Your own buildings always show the 2 tiles around them.
 
 ### Ending your turn
-Press B on an empty tile and choose **END TURN**. After 255 days a match ends in a draw. When the match is over, the results screen shows the days, the units each side destroyed, the buildings held and the money left. Press B to go back to the title.
+Press B on an empty tile and choose **END TURN**. While units can still act, the menu shows how many are left, for example **1 LEFT**. Choose it to jump to the next one. After 255 days a match ends in a draw. When the match is over, the results screen shows the days, the units each side destroyed, the buildings held and the money left. Press B to go back to the title.
 
 ![Mission-Report-3](Assets/ReadmeAssets/Reports/mission-report-03-05.10.2015.png "Mission Report 3")
 
@@ -257,6 +258,7 @@ Anyhow I would appreciate any little donation if you think this game was worth p
 [marker-captured]: Assets/ReadmeAssets/marker-captured.png "marker-captured"
 [marker-enemy]: Assets/ReadmeAssets/marker-enemy.png "marker-enemy"
 [marker-disabled]: Assets/ReadmeAssets/marker-disabled.png "marker-disabled"
+[marker-capture]: Assets/ReadmeAssets/marker-capture.png "marker-capture"
 
 [terrain-forrest]: Assets/ReadmeAssets/terrainAndBuildings/terrain-forrest.png "terrain-forrest"
 [terrain-hill]: Assets/ReadmeAssets/terrainAndBuildings/terrain-hill.png "terrain-hill"

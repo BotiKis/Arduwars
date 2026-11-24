@@ -35,6 +35,7 @@ char_P LOCA_youLose[] PROGMEM        = "YOU LOSE";
 
 // Game
 char_P LOCA_endTurn[] PROGMEM             = "END TURN";
+char_P LOCA_unitsLeft[] PROGMEM           = " LEFT"; // after the number of units that can still act
 char_P LOCA_day[] PROGMEM                 = "DAY:";
 char_P LOCA_funds[] PROGMEM               = "M:";
 char_P LOCA_Unit_limit_reached[] PROGMEM  = "UNIT LIMIT REACHED";

@@ -612,13 +612,7 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
           }
 
           // the next unit that hasn't acted yet
-          selectedUnit = nullptr;
-          for (uint8_t i = 0; i < currentPlayer.units.getCount(); i++) {
-            if (currentPlayer.units[i].activated == GameUnit::UnitStateActive) {
-              selectedUnit = &currentPlayer.units[i];
-              break;
-            }
-          }
+          selectedUnit = firstReadyUnit(currentPlayer);
 
           // all units are done: buy new ones and end the turn
           if (selectedUnit == nullptr) {
@@ -857,12 +851,21 @@ void AWGame::doRoundOfPlayer(AWPlayer &currentPlayer, bool aiTurn){
               /////
               // last show end turn option
               else {
-                  char_P* options[2] = {LOCA_endTurn, LOCA_cancel};
-                  uint8_t selectedOption = showOptions(options, 2);
+                  // "2 LEFT" comes first while units can still act
+                  char_P* options[3] = {LOCA_unitsLeft, LOCA_endTurn, LOCA_cancel};
+                  uint8_t ready = countReadyUnits(currentPlayer);
+                  uint8_t first = (ready > 0) ? 0 : 1;
+                  int8_t selectedOption = showOptions(options+first, 3-first, ready);
+                  if (selectedOption >= 0) selectedOption += first;
 
-                  if (selectedOption == 0) {
+                  if (selectedOption == 1) {
                     currentPlayer.cursorIndex = currentIndex;
                     return;
+                  }
+                  if (selectedOption == 0) {
+                    // jump to the first unit that can still act
+                    GameUnit *unit = firstReadyUnit(currentPlayer);
+                    cursorPosition = cursorForTile({unit->mapPosX, unit->mapPosY});
                   }
               }
             }
@@ -965,11 +968,11 @@ void AWGame::showResults(char_P *titleText, bool againstAI){
   }
 }
 
-int8_t AWGame::showOptions(char_P *options[], uint8_t count){
-  return showBox(options, count, false);
+int8_t AWGame::showOptions(char_P *options[], uint8_t count, uint8_t number){
+  return showBox(options, count, false, number);
 }
 
-int8_t AWGame::showBox(char_P * const options[], uint8_t count, bool isDialog){
+int8_t AWGame::showBox(char_P * const options[], uint8_t count, bool isDialog, uint8_t number){
 
   // frame for the box: a dialog is centered and closes with B only,
   // an option list sits top right and has a cursor.
@@ -1023,7 +1026,12 @@ int8_t AWGame::showBox(char_P * const options[], uint8_t count, bool isDialog){
 
     // options
     for (uint8_t i = 0; i < count; i++) {
-      printAt(textX, textY + 7*i, options[i]);
+      uint8_t x = textX;
+      if (i == 0 && number > 0) {
+        printNumber(x, textY, number);
+        x = printX;
+      }
+      printAt(x, textY + 7*i, options[i]);
     }
 
     // cursor
@@ -1173,12 +1181,24 @@ void AWGame::drawHudForPlayer(AWPlayer &aPlayer){
   // Draw player, day and funds
   arduboy.fillRect(0, 0, 128, 7, BLACK);
   arduboy.fillRect(0, 0, 128, 6, WHITE);
-  printAt(1, 1, (aPlayer == player1) ? LOCA_player1 : LOCA_player2);
+  printAt(1, 1, (aPlayer == player1) ? LOCA_p1 : LOCA_p2);
 
-  printAt(46, 1, LOCA_day);
-  printNumber(66, 1, daysPlayed);
-  printAt(86, 1, LOCA_funds);
-  printNumber(100, 1, aPlayer.money*100);
+  printAt(14, 1, LOCA_day);
+  printNumber(34, 1, daysPlayed);
+
+  // units that can still act of all units, as 01/04, centered
+  printX = 52;
+  printTwoDigits(countReadyUnits(aPlayer));
+  printChar('/');
+  printTwoDigits(aPlayer.units.getCount());
+
+  // the money ends 1 pixel from the right edge, like P1 on the left
+  uint16_t money = aPlayer.money*100;
+  uint8_t x = 128;
+  uint16_t rest = money;
+  do { x -= 5; rest /= 10; } while (rest > 0);
+  printAt(x-14, 1, LOCA_funds);
+  printNumber(x, 1, money);
 }
 
 Point AWGame::calculateCameraPosition(Point forCursorPosition){
@@ -1750,20 +1770,30 @@ void AWGame::drawMapAtPosition(Point pos){
         // a fortified unit stands behind sandbags
         if (unit->fortified) sprites.drawPlusMask(drawPos.x, drawPos.y+8, sandbags_plus_mask, 0);
 
-        // Show remaining health in the bottom right corner once a unit is hurt.
+        // Show remaining health in the bottom right corner once a unit is hurt,
+        // 2 pixels up to leave room for the capture bar.
         // Tinyfont does not clip: text near the right or bottom edge writes
         // past the screen buffer and corrupts RAM, so only draw the badge
         // where the digit fits completely.
         int16_t textX = drawPos.x+12;
-        int16_t textY = drawPos.y+11;
+        int16_t textY = drawPos.y+9;
         if (unit->healthPoints < GameUnit::UnitDefaultHealth &&
             textX >= 0 && textX <= arduboy.width()-4 && textY >= 0 && textY <= arduboy.height()-8) {
-          arduboy.fillRect(drawPos.x+10, drawPos.y+9, 6, 7, BLACK);
-          arduboy.fillRect(drawPos.x+11, drawPos.y+10, 5, 6, WHITE);
+          arduboy.fillRect(drawPos.x+10, drawPos.y+7, 6, 7, BLACK);
+          arduboy.fillRect(drawPos.x+11, drawPos.y+8, 5, 6, WHITE);
           printNumber(textX, textY, unit->healthPoints);
         }
       }
     }
+  }
+
+  // A building under capture shows its capture points left. The bar
+  // reaches 2 pixels into the tile below, so it is drawn after the map.
+  for (uint8_t i = 0; i < gameBuildings.getCount(); i++) {
+    const GameBuilding &building = gameBuildings[i];
+    const MapTile tile = tileAt(building.mapPosX, building.mapPosY);
+    if (tile.hasUnit && !tile.showsFog)
+      drawCaptureBar({pos.x+building.mapPosX*TILE_SIZE, pos.y+building.mapPosY*TILE_SIZE}, building);
   }
 }
 
@@ -2015,6 +2045,37 @@ void AWGame::resetAbandonedCaptures(){
 // ====================================================
 // Small helpers. Kept out of line on purpose: they are called from many
 // places and inlining them everywhere costs more flash than the calls.
+
+void AWGame::printTwoDigits(uint8_t number){
+  // prints at printX, printY with a leading 0 below 10
+  printChar('0' + number/10);
+  printChar('0' + number%10);
+}
+
+void AWGame::drawCaptureBar(Point drawPos, const GameBuilding &building){
+  // A bar at the bottom of a building, black for the
+  // points left. 14 pixels for full points: 1 pixel per point on a building of 15.
+  uint8_t full = GameBuilding::capturePointsFor(building.buildingType);
+  if (building.healthPoints >= full) return; // no bar at full points
+  uint8_t left = (uint8_t)(building.healthPoints*7)/(full/2);
+  arduboy.fillRect(drawPos.x, drawPos.y+14, 16, 4, BLACK);
+  arduboy.fillRect(drawPos.x+1+left, drawPos.y+15, 14-left, 2, WHITE);
+}
+
+GameUnit *AWGame::firstReadyUnit(AWPlayer &aPlayer){
+  for (uint8_t i = 0; i < aPlayer.units.getCount(); i++) {
+    if (aPlayer.units[i].activated == GameUnit::UnitStateActive) return &aPlayer.units[i];
+  }
+  return nullptr;
+}
+
+uint8_t AWGame::countReadyUnits(AWPlayer &aPlayer){
+  uint8_t ready = 0;
+  for (uint8_t i = 0; i < aPlayer.units.getCount(); i++) {
+    if (aPlayer.units[i].activated == GameUnit::UnitStateActive) ready++;
+  }
+  return ready;
+}
 
 void AWGame::printNumber(int16_t x, int16_t y, uint16_t number){
   char digits[5];
