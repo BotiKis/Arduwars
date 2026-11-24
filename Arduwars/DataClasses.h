@@ -112,8 +112,8 @@ constexpr uint16_t PROGMEM attackLookupTable[16] =
   // One bit per defender, in UnitType order. Land units are the first 10,
   // then 3 planes, then 3 ships.
   // Infantry
-  0b1111111111111111, // Soldier
-  0b1111111111111111, // Mech
+  0b1111111111100111, // Soldier
+  0b1111111111100111, // Mech
   0b1111111111000111, // SpecOps
 
   // Vehicles
@@ -242,15 +242,15 @@ public:
 // move, attack, range, defense, view
 constexpr UnitTraits PROGMEM allUnitTraits[16] = {
   // Infantry
-  {3, 3,1,0,2}, // Soldier
-  {2, 6,1,0,1}, // Mech
+  {3, 2,1,0,2}, // Soldier
+  {2, 5,1,0,1}, // Mech
   {5, 6,1,0,3}, // SpecOps
 
   // Vehicles
   {6, 5,1,1,4}, // Scout
   {7, 2,1,1,2}, // Assist
   {4, 7,1,2,2}, // Tank
-  {2,11,1,3,2}, // BigTank
+  {4,11,1,3,2}, // BigTank
   {3, 6,3,1,2}, // Artillery
   {3, 9,4,1,2}, // Rocket
   {4, 8,4,0,2}, // Missiles
@@ -258,11 +258,11 @@ constexpr UnitTraits PROGMEM allUnitTraits[16] = {
   // Planes
   {5, 6,1,1,4}, // Heli
   {7, 9,1,2,5}, // Fighter
-  {3,11,1,3,3}, // Bomber
+  {4,11,1,3,4}, // Bomber
 
   // Ships
-  {4, 8,1,1,4}, // Cruiser
-  {5, 9,4,3,4}, // Battleship
+  {5, 8,1,1,4}, // Cruiser
+  {6, 9,4,3,5}, // Battleship
   {7, 0,0,1,3}, // Transportship
 };
 
@@ -328,7 +328,7 @@ public:
   GameUnit * getUnitForMapCoordinates(Point coordinates);
 
   // Default income for one building
-  static constexpr uint8_t BaseIncome = 10;
+  static constexpr uint8_t BaseIncome = 20;
 
   // operator compares the player ID
   bool operator==(const AWPlayer& other) const;

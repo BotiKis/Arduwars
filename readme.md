@@ -99,7 +99,7 @@ Damage depends on the attacker's attack and health, and on the defender's defens
 Only infantry can capture. Every building has 15 capture points. Each CAPTURE takes away as many points as the unit has health. A healthy soldier needs 2 turns, a hurt one needs more. If the building is left empty before it is taken, the points go back to 15. Capture the enemy HQ and you win at once.
 
 ### Money and the shop
-Every city you own pays **1000** at the start of your turn. Put the cursor on your own factory, airport or shipyard with no unit on it and press B to open the shop. An **x** marks units you can not afford yet. A new unit can act from your next turn. Each army can have up to 24 units.
+Every city you own pays **2000** at the start of your turn. Put the cursor on your own factory, airport or shipyard with no unit on it and press B to open the shop. An **x** marks units you can not afford yet. A new unit can act from your next turn. Each army can have up to 24 units.
 
 ![Shop](Assets/ReadmeAssets/screen-shop.png "Shop")
 
@@ -136,7 +136,7 @@ Sprite  |  Name   | Cover | Description
 
 Sprite  |  Name   |  Description
 --|--|--
-![building][building-city]      |  Cities                   |   Cities are the foundation of a nation. Every city you own pays 1000 at the start of your turn.
+![building][building-city]      |  Cities                   |   Cities are the foundation of a nation. Every city you own pays 2000 at the start of your turn.
 ![building][building-factory]   |  Factories                |   Build land units here.
 ![building][building-airport]   |  Airports                 |   Build planes here. Planes heal here.
 ![building][building-shipyard]  |  Shipyards                |   Build ships here. Ships heal here.
@@ -148,13 +148,13 @@ Sprite  |  Name   |  Description
 ### Units
 Sprite | Name | Hits | Description
 --|--|--|--
-![unit][unit-soldier] | Soldier | Land, air, sea | Basic infantry. Weak, but key for a win: only infantry can capture and climb mountains.
-![unit][unit-mech] | Mech | Land, air, sea | Heavy infantry with good damage against armor.
+![unit][unit-soldier] | Soldier | Land, Heli, sea | Basic infantry. Weak, but key for a win: only infantry can capture and climb mountains.
+![unit][unit-mech] | Mech | Land, Heli, sea | Heavy infantry with good damage against armor.
 ![unit][unit-specops] | SpecOps | Land, sea | Fast and well trained special forces.
 ![unit][unit-scout] | Scout | Land, sea | A light vehicle with high mobility and a wide view.
 ![unit][unit-support] | Assist | Land, sea | Heals every own unit next to it by 1 at the start of your turn.
 ![unit][unit-tank] | Tank | Land, sea | Powerful armored vehicle with good mobility.
-![unit][unit-bigtank] | BigTank | Land, sea | Slow and very strong. For desperate times.
+![unit][unit-bigtank] | BigTank | Land, sea | Heavy armor and the hardest hits on land. For desperate times.
 ![unit][unit-artillery] | Artillery | Land, sea | Fires from afar. Can not move and attack in the same turn.
 ![unit][unit-rocket] | Rocket | Air, sea | Long range anti-air and anti-ship. Can not move and attack in the same turn.
 ![unit][unit-missiles] | Missiles | Land, sea | Long range against the ground. Can not move and attack in the same turn.

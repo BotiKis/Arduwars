@@ -16,8 +16,8 @@ const uint8_t unitPrices[] PROGMEM = {
 
   40,
   50,
-  70,
-  160,
+  60,
+  120,
   60,
   100,
   150,
@@ -27,7 +27,7 @@ const uint8_t unitPrices[] PROGMEM = {
   220,
 
   120,
-  255,
+  200,
   120
 };
 

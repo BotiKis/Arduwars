@@ -62,8 +62,8 @@ AWPlayer::AWPlayer(uint8_t aid){
 }
 
 void AWPlayer::reset(){
-  // default 30 money
-  money = 30;
+  // default 10 money: 1000 on screen, 3000 after the first income
+  money = 10;
 
   // Set cursor
   cursorIndex = {0,0};
