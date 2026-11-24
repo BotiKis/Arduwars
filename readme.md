@@ -170,7 +170,7 @@ Sprite | Name | Hits | Description
 ---
 
 ## Put Arduwars on your Arduboy
-Download `Arduwars.hex` from the [releases page](https://github.com/BotiKis/Arduwars/releases/latest) and upload it with any Arduboy uploader. You can also play it in an Arduboy emulator like [Ardens](https://github.com/tiberiusbrown/Ardens).
+Download `Arduwars-1.1.hex` from the [releases page](https://github.com/BotiKis/Arduwars/releases/latest) and upload it with any Arduboy uploader. You can also play it in an Arduboy emulator like [Ardens](https://github.com/tiberiusbrown/Ardens).
 
 ### Hold DOWN to upload
 Arduwars has no USB support. Leaving it out made room for more of the game. The catch: an uploader can no longer restart the Arduboy by itself. So once Arduwars is on your Arduboy, every new upload works like this, for Arduwars and for any other game:
